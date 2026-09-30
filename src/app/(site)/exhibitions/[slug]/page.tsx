@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { CldImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/cloudinary-image";
 import { getExhibitionBySlug } from "@/lib/queries";
 import { formatDateRange } from "@/lib/format";
 
@@ -35,7 +35,7 @@ export default async function ExhibitionDetailPage({
       {exhibition.images?.length > 0 ? (
         <div className="flex flex-col gap-6">
           {exhibition.images.map((image: { publicId: string; alt?: string; width: number; height: number }) => (
-            <CldImage
+            <ProtectedImage
               key={image.publicId}
               src={image.publicId}
               alt={image.alt || exhibition.title}

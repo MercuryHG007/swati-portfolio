@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CldImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/cloudinary-image";
 import { getArtworkBySlug } from "@/lib/queries";
 
 export const revalidate = 60;
@@ -26,7 +26,7 @@ export default async function ArtworkDetailPage({
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-6 py-16">
       <div className="flex flex-col gap-6">
         {artwork.images?.map((image: { publicId: string; alt?: string; width: number; height: number }) => (
-          <CldImage
+          <ProtectedImage
             key={image.publicId}
             src={image.publicId}
             alt={image.alt || artwork.title}

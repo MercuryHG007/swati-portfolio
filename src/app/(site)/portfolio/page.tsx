@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CldImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/cloudinary-image";
 import {
   getPublishedSeries,
   getStandaloneArtworks,
@@ -57,7 +57,7 @@ export default async function PortfolioPage() {
               <Link key={s.slug} href={`/portfolio/series/${s.slug}`} className="group block">
                 <div className="relative aspect-[16/10] overflow-hidden rounded-md bg-surface">
                   {s.coverImage ? (
-                    <CldImage
+                    <ProtectedImage
                       src={s.coverImage.publicId}
                       alt={s.coverImage.alt || s.title}
                       fill

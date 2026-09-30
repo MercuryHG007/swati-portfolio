@@ -1,4 +1,4 @@
-import { CldImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/cloudinary-image";
 import { getAbout } from "@/lib/queries";
 
 export const revalidate = 60;
@@ -20,7 +20,7 @@ export default async function AboutPage() {
       <header className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
         {about.photo ? (
           <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-full bg-surface">
-            <CldImage
+            <ProtectedImage
               src={about.photo.publicId}
               alt={about.photo.alt || "Swati Garg"}
               fill

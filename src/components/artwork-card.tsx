@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CldImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/cloudinary-image";
 
 type ArtworkCardImage = {
   publicId: string;
@@ -18,7 +18,7 @@ export function ArtworkCard({ slug, title, year, image }: ArtworkCardProps) {
     <Link href={`/artwork/${slug}`} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden rounded-md bg-surface">
         {image ? (
-          <CldImage
+          <ProtectedImage
             src={image.publicId}
             alt={image.alt || title}
             fill
