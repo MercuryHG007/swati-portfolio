@@ -7,6 +7,8 @@ import { AdminUser } from "@/models";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/admin/login" },
+  // Vercel preview URLs vary per deployment; trust the request host instead of requiring NEXTAUTH_URL.
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {

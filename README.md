@@ -34,7 +34,7 @@ Open [http://localhost:3000](http://localhost:3000) for the public site, and
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | yes | Server-side Cloudinary SDK config |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes | Same cloud name, exposed client-side for `CldImage` |
 | `NEXTAUTH_SECRET` | yes | `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | yes | `http://localhost:3000` in dev |
+| `NEXTAUTH_URL` | yes in dev | `http://localhost:3000` locally; not required on Vercel since `trustHost: true` trusts the request host |
 | `RESEND_API_KEY` / `CONTACT_TO_EMAIL` | optional | Contact form still saves to Mongo without these; email notification is just skipped |
 | `RESEND_FROM_EMAIL` | optional | Defaults to Resend's sandbox sender until a custom domain is verified |
 
