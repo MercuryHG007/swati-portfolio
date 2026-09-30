@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { UploadApiResponse } from "cloudinary";
+import { auth } from "@/auth";
 import { cloudinary } from "@/lib/cloudinary";
 
 export const runtime = "nodejs"; // Cloudinary SDK requires Node APIs, not Edge
@@ -8,7 +9,11 @@ const MAX_FILE_BYTES = 15 * 1024 * 1024; // 15MB
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 
 export async function POST(request: NextRequest) {
-  // TODO(auth): gate this route behind the NextAuth admin session once wired up (todo item 4).
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get("file");
