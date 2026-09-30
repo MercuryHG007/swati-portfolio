@@ -41,3 +41,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .playwright-mcp/
+
+# personal documents (resume, etc.) — never commit to this public repo
+*.docx
+*.doc
+*.pdf
+
+# hardcodes real personal data extracted from the resume — DB is the source of
+# truth going forward, this is a local-only one-time migration convenience
+scripts/seed-resume-content.mjs

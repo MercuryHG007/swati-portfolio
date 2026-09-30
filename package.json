@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "create-admin": "node --env-file=.env.local scripts/create-admin.mjs"
+    "create-admin": "node --env-file=.env.local scripts/create-admin.mjs",
+    "seed-demo": "node --env-file=.env.local scripts/seed-demo.mjs",
+    "seed-resume-content": "node --env-file=.env.local scripts/seed-resume-content.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
