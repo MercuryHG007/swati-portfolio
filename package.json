@@ -12,6 +12,7 @@
     "seed-resume-content": "node --env-file=.env.local scripts/seed-resume-content.mjs"
   },
   "dependencies": {
+    "@vercel/speed-insights": "^2.0.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.11.0",
     "mongoose": "^9.10.3",

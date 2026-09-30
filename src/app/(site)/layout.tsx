@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { sans, mono } from "@/lib/fonts";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import "../globals.css";
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>
         <SiteFooter />
+        <SpeedInsights />
       </body>
     </html>
   );
