@@ -1,20 +1,8 @@
 import type { Metadata } from "next";
-import { Inter, Space_Mono } from "next/font/google";
+import { sans, mono } from "@/lib/fonts";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import "./globals.css";
-
-// Free Google Fonts standing in for the (paid) Aperçu Pro / Aperçu Pro Mono reference pairing.
-const sans = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
-
-const mono = Space_Mono({
-  variable: "--font-mono",
-  weight: ["400", "700"],
-  subsets: ["latin"],
-});
+import "../globals.css";
 
 export const metadata: Metadata = {
   title: "Swati Garg — Watercolor Artist",

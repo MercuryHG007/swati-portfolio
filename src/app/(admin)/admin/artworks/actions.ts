@@ -1,0 +1,81 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { requireAdminSession } from "@/lib/require-admin";
+import { connectToDatabase } from "@/lib/mongodb";
+import { Artwork } from "@/models";
+import { slugify } from "@/lib/slugify";
+
+function refresh(slug?: string) {
+  revalidatePath("/");
+  revalidatePath("/portfolio");
+  if (slug) revalidatePath(`/artwork/${slug}`);
+}
+
+function readImages(formData: FormData) {
+  const raw = String(formData.get("images") ?? "[]");
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function readFields(formData: FormData) {
+  const title = String(formData.get("title") ?? "").trim();
+  const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(title);
+  const year = formData.get("year") ? Number(formData.get("year")) : undefined;
+  const medium = String(formData.get("medium") ?? "") || null;
+  const subjects = formData.getAll("subjects").map(String).filter(Boolean);
+  const seriesRaw = String(formData.get("series") ?? "");
+  const series = seriesRaw || null;
+  const description = String(formData.get("description") ?? "").trim();
+  const order = Number(formData.get("order") ?? 0) || 0;
+  const status = formData.get("status") === "published" ? "published" : "hidden";
+  const images = readImages(formData);
+  const dimensions = {
+    height: formData.get("height") ? Number(formData.get("height")) : undefined,
+    width: formData.get("width") ? Number(formData.get("width")) : undefined,
+    depth: formData.get("depth") ? Number(formData.get("depth")) : undefined,
+    unit: formData.get("unit") === "in" ? "in" : "cm",
+  };
+  return { title, slug, year, medium, subjects, series, description, order, status, images, dimensions };
+}
+
+export async function createArtwork(formData: FormData) {
+  await requireAdminSession();
+  const fields = readFields(formData);
+  if (!fields.title || !fields.slug || !fields.medium) redirect("/admin/artworks/new?error=invalid");
+
+  await connectToDatabase();
+  await Artwork.create(fields);
+  refresh(fields.slug);
+  redirect("/admin/artworks");
+}
+
+export async function updateArtwork(formData: FormData) {
+  await requireAdminSession();
+  const id = String(formData.get("id") ?? "");
+  const fields = readFields(formData);
+  if (!id || !fields.title || !fields.slug || !fields.medium) {
+    redirect(`/admin/artworks/${id}?error=invalid`);
+  }
+
+  await connectToDatabase();
+  await Artwork.findByIdAndUpdate(id, fields);
+  refresh(fields.slug);
+  redirect("/admin/artworks");
+}
+
+export async function deleteArtwork(formData: FormData) {
+  await requireAdminSession();
+  const id = String(formData.get("id") ?? "");
+  if (!id) redirect("/admin/artworks");
+
+  await connectToDatabase();
+  await Artwork.findByIdAndDelete(id);
+  refresh();
+  redirect("/admin/artworks");
+}

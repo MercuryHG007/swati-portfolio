@@ -7,6 +7,9 @@ export const revalidate = 60;
 
 export default async function ExhibitionsPage() {
   const exhibitions = await getPublishedExhibitions();
+  // Wall-clock split is intentional here: the page revalidates every 60s (ISR),
+  // so this bucketing is recomputed on each revalidation, not frozen at build time.
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const current = exhibitions.filter((e) => !e.endDate || new Date(e.endDate).getTime() >= now);
   const past = exhibitions.filter((e) => e.endDate && new Date(e.endDate).getTime() < now);
