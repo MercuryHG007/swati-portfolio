@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { connectToDatabase } from "@/lib/mongodb";
 import { ContactMessage } from "@/models";
+import { sendContactNotification } from "@/lib/email";
 
 export const revalidate = 60;
 
@@ -34,6 +35,7 @@ async function submitMessage(formData: FormData) {
   }
 
   await ContactMessage.create({ name, email, message });
+  await sendContactNotification({ name, email, message });
 
   redirect("/contact?sent=1");
 }
