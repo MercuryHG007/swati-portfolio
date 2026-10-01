@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Artwork } from "@/models";
+import { Artwork, Exhibition } from "@/models";
 import { slugify } from "@/lib/slugify";
 
 function refresh(slug?: string) {
@@ -76,6 +76,7 @@ export async function deleteArtwork(formData: FormData) {
   if (!id) redirect("/admin/artworks");
 
   await connectToDatabase();
+  await Exhibition.updateMany({ artworks: id }, { $pull: { artworks: id } });
   await Artwork.findByIdAndDelete(id);
   refresh();
   redirect("/admin/artworks");

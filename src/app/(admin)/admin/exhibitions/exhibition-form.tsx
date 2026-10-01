@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ImageUploader } from "@/components/admin/image-uploader";
+import { ArtworkMultiSelect } from "@/components/admin/artwork-multi-select";
 import { Field, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
+import { getAllArtworks } from "@/lib/admin-queries";
 
 function toDateInputValue(date?: Date | string) {
   if (!date) return "";
@@ -8,7 +10,7 @@ function toDateInputValue(date?: Date | string) {
   return value.toISOString().slice(0, 10);
 }
 
-export function ExhibitionForm({
+export async function ExhibitionForm({
   exhibition,
   action,
 }: {
@@ -25,9 +27,18 @@ export function ExhibitionForm({
     description: string;
     images: { publicId: string; width: number; height: number; alt: string }[];
     status: string;
+    artworks?: unknown[];
   };
   action: (formData: FormData) => void;
 }) {
+  const allArtworks = await getAllArtworks();
+  const artworkOptions = allArtworks.map((artwork) => ({
+    id: String(artwork._id),
+    title: artwork.title,
+    year: artwork.year,
+  }));
+  const initialSelectedIds = (exhibition?.artworks ?? []).map(String);
+
   return (
     <form action={action} className="flex flex-col gap-4">
       {exhibition ? <input type="hidden" name="id" value={String(exhibition._id)} /> : null}
@@ -84,6 +95,9 @@ export function ExhibitionForm({
           initial={exhibition?.images ?? []}
           multiple
         />
+      </Field>
+      <Field label="Artworks shown at this exhibition">
+        <ArtworkMultiSelect name="artworks" options={artworkOptions} initialSelectedIds={initialSelectedIds} />
       </Field>
       <Field label="Status">
         <select name="status" defaultValue={exhibition?.status ?? "hidden"} className={inputClass}>

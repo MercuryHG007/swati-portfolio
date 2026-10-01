@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProtectedImage } from "@/components/cloudinary-image";
-import { getArtworkBySlug, getArtworksBySeriesId, getStandaloneArtworks } from "@/lib/queries";
+import {
+  getArtworkBySlug,
+  getArtworksBySeriesId,
+  getStandaloneArtworks,
+  getExhibitionsForArtwork,
+} from "@/lib/queries";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/breadcrumbs";
 import { PrevNextNav } from "@/components/prev-next-nav";
 import { getPrevNext } from "@/lib/prev-next";
+import { formatDateRange } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -35,6 +41,8 @@ export default async function ArtworkDetailPage({
     : await getStandaloneArtworks();
   const currentIndex = siblingArtworks.findIndex((a) => a.slug === slug);
   const siblings = getPrevNext(siblingArtworks, currentIndex);
+
+  const exhibitions = await getExhibitionsForArtwork(artwork._id);
 
   const breadcrumbItems: BreadcrumbItem[] = [{ label: "Portfolio", href: "/portfolio" }];
   if (artwork.series) {
@@ -110,6 +118,24 @@ export default async function ArtworkDetailPage({
             )}{" "}
             series.
           </p>
+        ) : null}
+
+        {exhibitions.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-foreground">Exhibited in {exhibitions.length} exhibition{exhibitions.length === 1 ? "" : "s"}:</p>
+            <ul className="flex flex-col gap-1 text-sm">
+              {exhibitions.map((exhibition) => (
+                <li key={exhibition.slug}>
+                  <Link href={`/exhibitions/${exhibition.slug}`} className="text-accent hover:underline">
+                    {exhibition.title}
+                  </Link>{" "}
+                  <span className="text-muted">
+                    ({formatDateRange(exhibition.startDate, exhibition.endDate)})
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
       </div>
 

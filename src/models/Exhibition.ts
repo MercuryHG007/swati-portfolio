@@ -14,6 +14,7 @@ const exhibitionSchema = new Schema(
     description: { type: String, default: "" },
     images: { type: [cloudinaryImageSchema], default: [] },
     status: { type: String, enum: PUBLICATION_STATUS, default: "hidden" },
+    artworks: [{ type: Schema.Types.ObjectId, ref: "Artwork" }],
   },
   { timestamps: true }
 );

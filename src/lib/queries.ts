@@ -90,7 +90,17 @@ export async function getPublishedExhibitions() {
 
 export async function getExhibitionBySlug(slug: string) {
   await connectToDatabase();
-  return Exhibition.findOne({ slug, status: "published" }).lean();
+  const exhibition = await Exhibition.findOne({ slug, status: "published" })
+    .populate({ path: "artworks", match: { status: "published" } })
+    .lean();
+  if (!exhibition) return null;
+  // populate `match` leaves a null in place of any non-matching (hidden) artwork.
+  return { ...exhibition, artworks: (exhibition.artworks ?? []).filter(Boolean) };
+}
+
+export async function getExhibitionsForArtwork(artworkId: unknown) {
+  await connectToDatabase();
+  return Exhibition.find({ status: "published", artworks: artworkId }).sort({ startDate: -1 }).lean();
 }
 
 export async function getAbout() {

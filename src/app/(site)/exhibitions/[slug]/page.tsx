@@ -5,6 +5,7 @@ import { formatDateRange } from "@/lib/format";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { PrevNextNav } from "@/components/prev-next-nav";
 import { getPrevNext } from "@/lib/prev-next";
+import { ArtworkCard } from "@/components/artwork-card";
 
 export const revalidate = 60;
 
@@ -54,6 +55,27 @@ export default async function ExhibitionDetailPage({
             />
           ))}
         </div>
+      ) : null}
+
+      {exhibition.artworks?.length > 0 ? (
+        <section className="flex flex-col gap-4">
+          <h2 className="text-lg font-semibold text-foreground">
+            Artworks in this exhibition ({exhibition.artworks.length})
+          </h2>
+          <div className="grid grid-cols-6 gap-4">
+            {exhibition.artworks.map(
+              (artwork: { slug: string; title: string; year?: number; images?: { publicId: string; alt?: string }[] }) => (
+                <ArtworkCard
+                  key={artwork.slug}
+                  slug={artwork.slug}
+                  title={artwork.title}
+                  year={artwork.year}
+                  image={artwork.images?.[0]}
+                />
+              )
+            )}
+          </div>
+        </section>
       ) : null}
 
       <PrevNextNav

@@ -36,7 +36,8 @@ function readFields(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const status = formData.get("status") === "published" ? "published" : "hidden";
   const images = readImages(formData);
-  return { title, slug, venue, city, country, type, startDate, endDate, description, status, images };
+  const artworks = formData.getAll("artworks").map(String).filter(Boolean);
+  return { title, slug, venue, city, country, type, startDate, endDate, description, status, images, artworks };
 }
 
 export async function createExhibition(formData: FormData) {
