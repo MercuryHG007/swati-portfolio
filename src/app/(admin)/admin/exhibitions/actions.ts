@@ -7,6 +7,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Exhibition } from "@/models";
 import { slugify } from "@/lib/slugify";
 import { withAltFallback } from "@/lib/image-alt";
+import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 
 function refresh(slug?: string) {
   revalidatePath("/exhibitions");
@@ -63,7 +64,8 @@ export async function updateExhibition(formData: FormData) {
   }
 
   await connectToDatabase();
-  await Exhibition.findByIdAndUpdate(id, fields);
+  const previous = await Exhibition.findByIdAndUpdate(id, fields).lean<{ images?: { publicId: string }[] }>();
+  await destroyCloudinaryAssets(removedPublicIds(previous?.images ?? [], fields.images));
   refresh(fields.slug);
   redirect("/admin/exhibitions");
 }
@@ -74,7 +76,8 @@ export async function deleteExhibition(formData: FormData) {
   if (!id) redirect("/admin/exhibitions");
 
   await connectToDatabase();
-  await Exhibition.findByIdAndDelete(id);
+  const deleted = await Exhibition.findByIdAndDelete(id).lean<{ images?: { publicId: string }[] }>();
+  await destroyCloudinaryAssets((deleted?.images ?? []).map((img) => img.publicId));
   refresh();
   redirect("/admin/exhibitions");
 }

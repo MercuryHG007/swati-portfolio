@@ -17,14 +17,19 @@ export function SiteHeader() {
         </Link>
         <nav className="hidden flex-wrap gap-6 text-sm text-foreground md:flex">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-accent">
+            <Link key={link.href} href={link.href} prefetch={false} className="hover:text-accent">
               {link.label}
             </Link>
           ))}
         </nav>
         <MobileNavDrawer>
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="text-lg text-foreground hover:text-accent">
+            <Link
+              key={link.href}
+              href={link.href}
+              prefetch={false}
+              className="text-lg text-foreground hover:text-accent"
+            >
               {link.label}
             </Link>
           ))}

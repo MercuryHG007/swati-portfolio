@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Toaster } from "sonner";
 import { sans, mono } from "@/lib/fonts";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -16,6 +17,7 @@ export default function AdminRootLayout({ children }: { children: React.ReactNod
         <AdminNav />
         <div className="flex flex-1 flex-col">{children}</div>
         <SpeedInsights />
+        <Toaster richColors position="top-center" />
       </body>
     </html>
   );

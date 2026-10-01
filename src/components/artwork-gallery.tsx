@@ -52,6 +52,9 @@ export function ArtworkGallery({ images, title }: { images: GalleryImage[]; titl
             height={image.height}
             sizes="(min-width: 768px) 768px, 100vw"
             className="h-auto w-full rounded-md"
+            // First image is the above-the-fold LCP element on this page; Next 16 recommends
+            // `loading="eager"` here instead of the deprecated `priority` prop.
+            loading={index === 0 ? "eager" : "lazy"}
           />
         </button>
       ))}

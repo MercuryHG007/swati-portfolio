@@ -30,14 +30,14 @@ export async function AdminNav() {
         </Link>
         <nav className="hidden flex-wrap gap-5 text-sm text-foreground md:flex">
           {ADMIN_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-accent">
+            <Link key={link.href} href={link.href} prefetch={false} className="hover:text-accent">
               {link.label}
             </Link>
           ))}
         </nav>
         <div className="hidden items-center gap-4 text-sm text-muted md:flex">
           <span>{session.user.email}</span>
-          <Link href="/admin/account" className="hover:text-accent">
+          <Link href="/admin/account" prefetch={false} className="hover:text-accent">
             Account
           </Link>
           <form action={signOutAction}>
@@ -48,13 +48,18 @@ export async function AdminNav() {
         </div>
         <MobileNavDrawer>
           {ADMIN_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="text-lg text-foreground hover:text-accent">
+            <Link
+              key={link.href}
+              href={link.href}
+              prefetch={false}
+              className="text-lg text-foreground hover:text-accent"
+            >
               {link.label}
             </Link>
           ))}
           <div className="mt-auto flex flex-col gap-3 border-t border-border pt-6 text-sm text-muted">
             <span>{session.user.email}</span>
-            <Link href="/admin/account" className="text-foreground hover:text-accent">
+            <Link href="/admin/account" prefetch={false} className="text-foreground hover:text-accent">
               Account
             </Link>
             <form action={signOutAction}>

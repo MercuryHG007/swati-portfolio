@@ -7,6 +7,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Artwork, Exhibition } from "@/models";
 import { slugify } from "@/lib/slugify";
 import { withAltFallback } from "@/lib/image-alt";
+import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 
 function refresh(slug?: string) {
   revalidatePath("/");
@@ -67,13 +68,14 @@ export async function updateArtwork(formData: FormData) {
   }
 
   await connectToDatabase();
-  const existing = await Artwork.findById(id).lean<{ series?: unknown }>();
+  const existing = await Artwork.findById(id).lean<{ series?: unknown; images?: { publicId: string }[] }>();
   // Moved into a different series (or into one for the first time) — append to the end of that series' order.
   const seriesOrder =
     fields.series && String(existing?.series ?? "") !== fields.series
       ? await Artwork.countDocuments({ series: fields.series })
       : undefined;
   await Artwork.findByIdAndUpdate(id, seriesOrder === undefined ? fields : { ...fields, seriesOrder });
+  await destroyCloudinaryAssets(removedPublicIds(existing?.images ?? [], fields.images));
   refresh(fields.slug);
   redirect("/admin/artworks");
 }
@@ -85,7 +87,8 @@ export async function deleteArtwork(formData: FormData) {
 
   await connectToDatabase();
   await Exhibition.updateMany({ artworks: id }, { $pull: { artworks: id } });
-  await Artwork.findByIdAndDelete(id);
+  const deleted = await Artwork.findByIdAndDelete(id).lean<{ images?: { publicId: string }[] }>();
+  await destroyCloudinaryAssets((deleted?.images ?? []).map((img) => img.publicId));
   refresh();
   redirect("/admin/artworks");
 }

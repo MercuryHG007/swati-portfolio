@@ -7,6 +7,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Series, Artwork } from "@/models";
 import { slugify } from "@/lib/slugify";
 import { withAltFallback } from "@/lib/image-alt";
+import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 
 function refresh(slug?: string) {
   revalidatePath("/admin/series");
@@ -52,7 +53,10 @@ export async function updateSeries(formData: FormData) {
   if (!id || !fields.title || !fields.slug) redirect(`/admin/series/${id}?error=invalid`);
 
   await connectToDatabase();
-  await Series.findByIdAndUpdate(id, fields);
+  const previous = await Series.findByIdAndUpdate(id, fields).lean<{ coverImage?: { publicId: string } }>();
+  await destroyCloudinaryAssets(
+    removedPublicIds(previous?.coverImage ? [previous.coverImage] : [], fields.coverImage ? [fields.coverImage] : [])
+  );
   refresh(fields.slug);
   redirect("/admin/series");
 }
@@ -65,7 +69,8 @@ export async function deleteSeries(formData: FormData) {
   await connectToDatabase();
   // A series is an optional grouping — unlink its artworks (make them standalone) instead of blocking.
   await Artwork.updateMany({ series: id }, { series: null });
-  await Series.findByIdAndDelete(id);
+  const deleted = await Series.findByIdAndDelete(id).lean<{ coverImage?: { publicId: string } }>();
+  await destroyCloudinaryAssets(deleted?.coverImage ? [deleted.coverImage.publicId] : []);
   refresh();
   redirect("/admin/series");
 }

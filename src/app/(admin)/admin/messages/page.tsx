@@ -22,9 +22,9 @@ export default async function AdminMessagesPage() {
       <div className="flex flex-col gap-3">
         {messages.map((message) => (
           <div key={String(message._id)} className={`${cardClass} flex flex-col gap-2`}>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="break-words text-foreground">
                   {message.name} <span className="text-muted">&lt;{message.email}&gt;</span>
                 </p>
                 <p className="text-xs text-muted">
