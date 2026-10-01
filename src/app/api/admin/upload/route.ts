@@ -6,7 +6,7 @@ import { cloudinary } from "@/lib/cloudinary";
 export const runtime = "nodejs"; // Cloudinary SDK requires Node APIs, not Edge
 
 const MAX_FILE_BYTES = 15 * 1024 * 1024; // 15MB
-const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"]);
 
 export async function POST(request: NextRequest) {
   const session = await auth();

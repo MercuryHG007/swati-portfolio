@@ -176,7 +176,9 @@ export function ImageUploader({ name, folder, initial = [], multiple = false }: 
       <input
         id={inputId}
         type="file"
-        accept="image/*"
+        // No `accept` filter — some mobile browsers (notably Android) force a restrictive
+        // picker (e.g. Google Photos only) even with "image/*"; the server still enforces
+        // ALLOWED_TYPES regardless of what's selected here.
         multiple={multiple}
         onChange={(event) => handleFiles(event.target.files)}
         disabled={uploading}
