@@ -18,7 +18,6 @@ export async function ArtworkForm({
     series: unknown;
     dimensions?: { height?: number; width?: number; depth?: number; unit?: string };
     description: string;
-    order: number;
     status: string;
     featured: boolean;
   };
@@ -105,9 +104,6 @@ export async function ArtworkForm({
 
       <Field label="Description">
         <textarea name="description" defaultValue={artwork?.description} rows={4} className={inputClass} />
-      </Field>
-      <Field label="Order (lower shows first)">
-        <input name="order" type="number" defaultValue={artwork?.order ?? 0} className={inputClass} />
       </Field>
       <Field label="Status">
         <Select name="status" defaultValue={artwork?.status ?? "hidden"}>

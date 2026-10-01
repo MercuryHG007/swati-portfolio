@@ -51,7 +51,7 @@ export async function getStandaloneArtworks() {
 
 export async function getArtworksBySeriesId(seriesId: unknown) {
   await connectToDatabase();
-  return Artwork.find({ status: "published", series: seriesId }).sort({ order: 1, createdAt: -1 }).lean();
+  return Artwork.find({ status: "published", series: seriesId }).sort({ seriesOrder: 1, createdAt: -1 }).lean();
 }
 
 export async function getArtworksByMediumSlug(slug: string) {

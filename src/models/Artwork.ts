@@ -24,6 +24,8 @@ const artworkSchema = new Schema(
     dimensions: dimensionsSchema,
     description: { type: String, default: "" },
     order: { type: Number, default: 0 },
+    // Position within its series' artwork list, independent of the site-wide `order`.
+    seriesOrder: { type: Number, default: 0 },
     status: { type: String, enum: PUBLICATION_STATUS, default: "hidden" },
     // Curated by the admin for the homepage "Featured work" section — not every artwork should show there.
     featured: { type: Boolean, default: false },

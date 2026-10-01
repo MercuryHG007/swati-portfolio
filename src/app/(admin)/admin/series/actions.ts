@@ -26,10 +26,9 @@ function readFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(title);
   const description = String(formData.get("description") ?? "").trim();
-  const order = Number(formData.get("order") ?? 0) || 0;
   const status = formData.get("status") === "published" ? "published" : "hidden";
   const coverImage = readImage(formData);
-  return { title, slug, description, order, status, coverImage };
+  return { title, slug, description, status, coverImage };
 }
 
 export async function createSeries(formData: FormData) {
@@ -38,7 +37,8 @@ export async function createSeries(formData: FormData) {
   if (!fields.title || !fields.slug) redirect("/admin/series/new?error=invalid");
 
   await connectToDatabase();
-  await Series.create(fields);
+  const order = await Series.countDocuments();
+  await Series.create({ ...fields, order });
   refresh(fields.slug);
   redirect("/admin/series");
 }
@@ -67,3 +67,11 @@ export async function deleteSeries(formData: FormData) {
   refresh();
   redirect("/admin/series");
 }
+
+export async function reorderSeries(orderedIds: string[]) {
+  await requireAdminSession();
+  await connectToDatabase();
+  await Promise.all(orderedIds.map((id, index) => Series.updateOne({ _id: id }, { order: index })));
+  refresh();
+}
+

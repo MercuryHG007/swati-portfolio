@@ -12,7 +12,6 @@ export function SeriesForm({
     slug: string;
     description: string;
     coverImage: { publicId: string; width: number; height: number; alt: string } | null;
-    order: number;
     status: string;
   };
   action: (formData: FormData) => void;
@@ -34,9 +33,6 @@ export function SeriesForm({
           folder="swati-portfolio/series"
           initial={series?.coverImage ? [series.coverImage] : []}
         />
-      </Field>
-      <Field label="Order (lower shows first)">
-        <input name="order" type="number" defaultValue={series?.order ?? 0} className={inputClass} />
       </Field>
       <Field label="Status">
         <Select name="status" defaultValue={series?.status ?? "hidden"}>

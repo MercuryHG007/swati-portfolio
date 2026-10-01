@@ -32,7 +32,6 @@ function readFields(formData: FormData) {
   const seriesRaw = String(formData.get("series") ?? "");
   const series = seriesRaw || null;
   const description = String(formData.get("description") ?? "").trim();
-  const order = Number(formData.get("order") ?? 0) || 0;
   const status = formData.get("status") === "published" ? "published" : "hidden";
   const featured = formData.get("featured") === "on";
   const images = readImages(formData);
@@ -42,7 +41,7 @@ function readFields(formData: FormData) {
     depth: formData.get("depth") ? Number(formData.get("depth")) : undefined,
     unit: formData.get("unit") === "in" ? "in" : "cm",
   };
-  return { title, slug, year, medium, subjects, series, description, order, status, featured, images, dimensions };
+  return { title, slug, year, medium, subjects, series, description, status, featured, images, dimensions };
 }
 
 export async function createArtwork(formData: FormData) {
@@ -51,7 +50,9 @@ export async function createArtwork(formData: FormData) {
   if (!fields.title || !fields.slug || !fields.medium) redirect("/admin/artworks/new?error=invalid");
 
   await connectToDatabase();
-  await Artwork.create(fields);
+  const order = await Artwork.countDocuments();
+  const seriesOrder = fields.series ? await Artwork.countDocuments({ series: fields.series }) : 0;
+  await Artwork.create({ ...fields, order, seriesOrder });
   refresh(fields.slug);
   redirect("/admin/artworks");
 }
@@ -65,7 +66,13 @@ export async function updateArtwork(formData: FormData) {
   }
 
   await connectToDatabase();
-  await Artwork.findByIdAndUpdate(id, fields);
+  const existing = await Artwork.findById(id).lean<{ series?: unknown }>();
+  // Moved into a different series (or into one for the first time) — append to the end of that series' order.
+  const seriesOrder =
+    fields.series && String(existing?.series ?? "") !== fields.series
+      ? await Artwork.countDocuments({ series: fields.series })
+      : undefined;
+  await Artwork.findByIdAndUpdate(id, seriesOrder === undefined ? fields : { ...fields, seriesOrder });
   refresh(fields.slug);
   redirect("/admin/artworks");
 }
@@ -81,3 +88,16 @@ export async function deleteArtwork(formData: FormData) {
   refresh();
   redirect("/admin/artworks");
 }
+
+export async function reorderArtworksInSeries(seriesId: string, orderedIds: string[]) {
+  await requireAdminSession();
+  await connectToDatabase();
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      Artwork.updateOne({ _id: id, series: seriesId }, { seriesOrder: index })
+    )
+  );
+  revalidatePath(`/admin/series/${seriesId}`);
+  revalidatePath("/portfolio");
+}
+
