@@ -44,7 +44,7 @@ export default async function ExhibitionDetailPage({
 
       {exhibition.images?.length > 0 ? (
         <div className="flex flex-col gap-6">
-          {exhibition.images.map((image: { publicId: string; alt?: string; width: number; height: number }) => (
+          {exhibition.images.map((image: { publicId: string; alt?: string; width: number; height: number }, index: number) => (
             <ProtectedImage
               key={image.publicId}
               src={image.publicId}
@@ -53,6 +53,7 @@ export default async function ExhibitionDetailPage({
               height={image.height}
               sizes="(min-width: 768px) 768px, 100vw"
               className="h-auto w-full rounded-md"
+              loading={index === 0 ? "eager" : "lazy"}
             />
           ))}
         </div>
@@ -65,13 +66,14 @@ export default async function ExhibitionDetailPage({
           </h2>
           <div className="grid grid-cols-6 gap-4">
             {exhibition.artworks.map(
-              (artwork: { slug: string; title: string; dateMade?: Date | string; images?: { publicId: string; alt?: string }[] }) => (
+              (artwork: { slug: string; title: string; dateMade?: Date | string; images?: { publicId: string; alt?: string }[] }, index: number) => (
                 <ArtworkCard
                   key={artwork.slug}
                   slug={artwork.slug}
                   title={artwork.title}
                   year={getYear(artwork.dateMade)}
                   image={artwork.images?.[0]}
+                  priority={index === 0 && !(exhibition.images?.length > 0)}
                 />
               )
             )}

@@ -31,13 +31,14 @@ export default async function SeriesDetailPage({
 
       {artworks.length > 0 ? (
         <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
-          {artworks.map((artwork) => (
+          {artworks.map((artwork, index) => (
             <ArtworkCard
               key={artwork.slug}
               slug={artwork.slug}
               title={artwork.title}
               year={getYear(artwork.dateMade)}
               image={artwork.images?.[0]}
+              priority={index === 0}
             />
           ))}
         </div>

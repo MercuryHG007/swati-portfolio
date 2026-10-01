@@ -38,6 +38,9 @@ export default async function Home() {
                 title={artwork.title}
                 year={getYear(artwork.dateMade)}
                 image={artwork.images?.[0]}
+                // Small, fixed-size (getFeaturedArtworks(4)) grid -- every card renders above
+                // the fold at once, so any of them can end up the reported LCP candidate.
+                priority
               />
             ))}
           </div>
