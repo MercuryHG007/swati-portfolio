@@ -1,5 +1,6 @@
 import { ProtectedImage } from "@/components/cloudinary-image";
 import { getAbout } from "@/lib/queries";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export const revalidate = 60;
 
@@ -9,6 +10,7 @@ export default async function AboutPage() {
   if (!about) {
     return (
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-16">
+        <Breadcrumbs items={[{ label: "About" }]} />
         <h1 className="text-3xl font-semibold text-foreground">About</h1>
         <p className="text-muted">More about the artist coming soon.</p>
       </main>
@@ -17,6 +19,7 @@ export default async function AboutPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-6 py-16">
+      <Breadcrumbs items={[{ label: "About" }]} />
       <header className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
         {about.photo ? (
           <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-full bg-surface">

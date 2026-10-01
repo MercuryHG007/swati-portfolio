@@ -7,6 +7,7 @@ import {
   getSubjects,
 } from "@/lib/queries";
 import { ArtworkCard } from "@/components/artwork-card";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export const revalidate = 60;
 
@@ -20,6 +21,7 @@ export default async function PortfolioPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-16 px-6 py-16">
+      <Breadcrumbs items={[{ label: "Portfolio" }]} />
       <header className="flex flex-col gap-3">
         <h1 className="text-3xl font-semibold text-foreground">Portfolio</h1>
         <p className="max-w-2xl text-muted">

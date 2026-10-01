@@ -2,13 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProtectedImage } from "@/components/cloudinary-image";
 import { getArtworkBySlug } from "@/lib/queries";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/breadcrumbs";
 
 export const revalidate = 60;
 
 function formatDimensions(dimensions?: { height?: number; width?: number; depth?: number; unit?: string } | null) {
   if (!dimensions?.height || !dimensions?.width) return null;
   const { height, width, depth, unit = "cm" } = dimensions;
-  return depth ? `${height} × ${width} × ${depth} ${unit}` : `${height} × ${width} ${unit}`;
+  const unitLabel = unit === "in" ? "inch" : unit;
+  return depth ? `${height} × ${width} × ${depth} ${unitLabel}` : `${height} × ${width} ${unitLabel}`;
 }
 
 export default async function ArtworkDetailPage({
@@ -21,9 +23,21 @@ export default async function ArtworkDetailPage({
   if (!artwork) notFound();
 
   const dimensions = formatDimensions(artwork.dimensions);
+  // A series only has a public page while it's published — don't link to a 404.
+  const seriesIsLinkable = artwork.series?.status === "published";
+
+  const breadcrumbItems: BreadcrumbItem[] = [{ label: "Portfolio", href: "/portfolio" }];
+  if (artwork.series) {
+    breadcrumbItems.push({
+      label: artwork.series.title,
+      href: seriesIsLinkable ? `/portfolio/series/${artwork.series.slug}` : undefined,
+    });
+  }
+  breadcrumbItems.push({ label: artwork.title });
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-6 py-16">
+      <Breadcrumbs items={breadcrumbItems} />
       <div className="flex flex-col gap-6">
         {artwork.images?.map((image: { publicId: string; alt?: string; width: number; height: number }) => (
           <ProtectedImage
@@ -77,9 +91,13 @@ export default async function ArtworkDetailPage({
         {artwork.series ? (
           <p className="text-sm text-muted">
             Part of the{" "}
-            <Link href={`/portfolio/series/${artwork.series.slug}`} className="text-accent hover:underline">
-              {artwork.series.title}
-            </Link>{" "}
+            {seriesIsLinkable ? (
+              <Link href={`/portfolio/series/${artwork.series.slug}`} className="text-accent hover:underline">
+                {artwork.series.title}
+              </Link>
+            ) : (
+              <span className="text-foreground">{artwork.series.title}</span>
+            )}{" "}
             series.
           </p>
         ) : null}

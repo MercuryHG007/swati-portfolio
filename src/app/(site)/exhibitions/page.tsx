@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ProtectedImage } from "@/components/cloudinary-image";
 import { getPublishedExhibitions } from "@/lib/queries";
 import { formatDateRange } from "@/lib/format";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export const revalidate = 60;
 
@@ -16,6 +17,7 @@ export default async function ExhibitionsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-16 px-6 py-16">
+      <Breadcrumbs items={[{ label: "Exhibitions" }]} />
       <header className="flex flex-col gap-3">
         <h1 className="text-3xl font-semibold text-foreground">Exhibitions</h1>
         <p className="max-w-2xl text-muted">Solo and group shows, past and upcoming.</p>

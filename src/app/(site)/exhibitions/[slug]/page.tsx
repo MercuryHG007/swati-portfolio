@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { ProtectedImage } from "@/components/cloudinary-image";
 import { getExhibitionBySlug } from "@/lib/queries";
 import { formatDateRange } from "@/lib/format";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export const revalidate = 60;
 
@@ -18,6 +19,7 @@ export default async function ExhibitionDetailPage({
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-6 py-16">
+      <Breadcrumbs items={[{ label: "Exhibitions", href: "/exhibitions" }, { label: exhibition.title }]} />
       <header className="flex flex-col gap-3">
         <p className="font-mono text-xs uppercase tracking-wide text-accent">
           {exhibition.type === "solo" ? "Solo exhibition" : "Group exhibition"}
