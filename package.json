@@ -22,7 +22,8 @@
     "next-cloudinary": "^6.19.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "resend": "^6.31.0"
+    "resend": "^6.31.0",
+    "yet-another-react-lightbox": "^3.32.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ProtectedImage } from "@/components/cloudinary-image";
 import {
   getArtworkBySlug,
   getArtworksBySeriesId,
@@ -9,6 +8,7 @@ import {
 } from "@/lib/queries";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/breadcrumbs";
 import { PrevNextNav } from "@/components/prev-next-nav";
+import { ArtworkGallery } from "@/components/artwork-gallery";
 import { getPrevNext } from "@/lib/prev-next";
 import { formatDateRange } from "@/lib/format";
 
@@ -56,19 +56,7 @@ export default async function ArtworkDetailPage({
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-6 py-16">
       <Breadcrumbs items={breadcrumbItems} />
-      <div className="flex flex-col gap-6">
-        {artwork.images?.map((image: { publicId: string; alt?: string; width: number; height: number }) => (
-          <ProtectedImage
-            key={image.publicId}
-            src={image.publicId}
-            alt={image.alt || artwork.title}
-            width={image.width}
-            height={image.height}
-            sizes="(min-width: 768px) 768px, 100vw"
-            className="h-auto w-full rounded-md"
-          />
-        ))}
-      </div>
+      <ArtworkGallery images={artwork.images ?? []} title={artwork.title} />
 
       <div className="flex flex-col gap-3">
         <h1 className="text-2xl font-semibold text-foreground">{artwork.title}</h1>
