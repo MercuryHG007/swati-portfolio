@@ -6,6 +6,7 @@ import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Artwork, Exhibition } from "@/models";
 import { slugify } from "@/lib/slugify";
+import { withAltFallback } from "@/lib/image-alt";
 
 function refresh(slug?: string) {
   revalidatePath("/");
@@ -35,7 +36,7 @@ function readFields(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const status = formData.get("status") === "published" ? "published" : "hidden";
   const featured = formData.get("featured") === "on";
-  const images = readImages(formData);
+  const images = withAltFallback(readImages(formData), title);
   const dimensions = {
     height: formData.get("height") ? Number(formData.get("height")) : undefined,
     width: formData.get("width") ? Number(formData.get("width")) : undefined,

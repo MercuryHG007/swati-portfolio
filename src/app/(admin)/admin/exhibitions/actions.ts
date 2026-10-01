@@ -6,6 +6,7 @@ import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Exhibition } from "@/models";
 import { slugify } from "@/lib/slugify";
+import { withAltFallback } from "@/lib/image-alt";
 
 function refresh(slug?: string) {
   revalidatePath("/exhibitions");
@@ -35,7 +36,7 @@ function readFields(formData: FormData) {
   const endDate = endDateRaw ? new Date(endDateRaw) : undefined;
   const description = String(formData.get("description") ?? "").trim();
   const status = formData.get("status") === "published" ? "published" : "hidden";
-  const images = readImages(formData);
+  const images = withAltFallback(readImages(formData), title);
   const artworks = formData.getAll("artworks").map(String).filter(Boolean);
   return { title, slug, venue, city, country, type, startDate, endDate, description, status, images, artworks };
 }

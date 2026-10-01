@@ -6,6 +6,7 @@ import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Series, Artwork } from "@/models";
 import { slugify } from "@/lib/slugify";
+import { withAltFallback } from "@/lib/image-alt";
 
 function refresh(slug?: string) {
   revalidatePath("/admin/series");
@@ -27,7 +28,8 @@ function readFields(formData: FormData) {
   const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(title);
   const description = String(formData.get("description") ?? "").trim();
   const status = formData.get("status") === "published" ? "published" : "hidden";
-  const coverImage = readImage(formData);
+  const coverImageRaw = readImage(formData);
+  const coverImage = coverImageRaw ? withAltFallback([coverImageRaw], title)[0] : null;
   return { title, slug, description, status, coverImage };
 }
 

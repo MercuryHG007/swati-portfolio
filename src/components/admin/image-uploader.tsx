@@ -176,7 +176,7 @@ export function ImageUploader({ name, folder, initial = [], multiple = false }: 
       <input
         id={inputId}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif"
+        accept="image/*"
         multiple={multiple}
         onChange={(event) => handleFiles(event.target.files)}
         disabled={uploading}

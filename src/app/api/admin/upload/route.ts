@@ -36,7 +36,16 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const result = await new Promise<UploadApiResponse>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: safeFolder, resource_type: "image" },
+        {
+          folder: safeFolder,
+          resource_type: "image",
+          // Compress + cap oversized originals on the way in; delivery-time format/quality
+          // negotiation (f_auto/q_auto per requesting browser) is handled separately by CldImage.
+          quality: "auto",
+          width: 2500,
+          height: 2500,
+          crop: "limit",
+        },
         (error, uploadResult) => {
           if (error || !uploadResult) {
             reject(error ?? new Error("Cloudinary upload failed"));
