@@ -20,6 +20,7 @@ export async function ArtworkForm({
     description: string;
     order: number;
     status: string;
+    featured: boolean;
   };
   action: (formData: FormData) => void;
 }) {
@@ -116,6 +117,10 @@ export async function ArtworkForm({
           <option value="published">Published</option>
         </select>
       </Field>
+      <label className="flex items-center gap-2 text-sm text-foreground">
+        <input type="checkbox" name="featured" defaultChecked={artwork?.featured ?? false} />
+        Featured on homepage
+      </label>
 
       <div className="flex gap-3">
         <button type="submit" className={buttonClass}>

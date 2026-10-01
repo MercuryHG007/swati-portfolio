@@ -31,9 +31,17 @@ export async function getSubjectBySlug(slug: string) {
   return Subject.findOne({ slug }).lean();
 }
 
-export async function getFeaturedArtworks(limit = 6) {
+export async function getFeaturedArtworks(limit = 4) {
   await connectToDatabase();
-  return Artwork.find({ status: "published" }).sort({ order: 1, createdAt: -1 }).limit(limit).lean();
+  const featured = await Artwork.find({ status: "published", featured: true })
+    .sort({ order: 1, createdAt: -1 })
+    .limit(limit)
+    .lean();
+  if (featured.length > 0) return featured;
+
+  // Nothing explicitly featured yet — fall back to the work made most recently
+  // (by `year`, not upload date — an artist may upload an older piece later).
+  return Artwork.find({ status: "published" }).sort({ year: -1, createdAt: -1 }).limit(limit).lean();
 }
 
 export async function getStandaloneArtworks() {

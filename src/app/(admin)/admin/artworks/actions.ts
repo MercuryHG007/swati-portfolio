@@ -34,6 +34,7 @@ function readFields(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const order = Number(formData.get("order") ?? 0) || 0;
   const status = formData.get("status") === "published" ? "published" : "hidden";
+  const featured = formData.get("featured") === "on";
   const images = readImages(formData);
   const dimensions = {
     height: formData.get("height") ? Number(formData.get("height")) : undefined,
@@ -41,7 +42,7 @@ function readFields(formData: FormData) {
     depth: formData.get("depth") ? Number(formData.get("depth")) : undefined,
     unit: formData.get("unit") === "in" ? "in" : "cm",
   };
-  return { title, slug, year, medium, subjects, series, description, order, status, images, dimensions };
+  return { title, slug, year, medium, subjects, series, description, order, status, featured, images, dimensions };
 }
 
 export async function createArtwork(formData: FormData) {

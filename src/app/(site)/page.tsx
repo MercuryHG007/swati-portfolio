@@ -5,7 +5,7 @@ import { ArtworkCard } from "@/components/artwork-card";
 export const revalidate = 60;
 
 export default async function Home() {
-  const artworks = await getFeaturedArtworks(6);
+  const artworks = await getFeaturedArtworks(4);
 
   return (
     <main className="flex flex-1 flex-col gap-16 px-6 py-16">
