@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { ProtectedImage } from "@/components/cloudinary-image";
-import { getExhibitionBySlug } from "@/lib/queries";
+import { getExhibitionBySlug, getPublishedExhibitions } from "@/lib/queries";
 import { formatDateRange } from "@/lib/format";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { PrevNextNav } from "@/components/prev-next-nav";
+import { getPrevNext } from "@/lib/prev-next";
 
 export const revalidate = 60;
 
@@ -14,6 +16,10 @@ export default async function ExhibitionDetailPage({
   const { slug } = await params;
   const exhibition = await getExhibitionBySlug(slug);
   if (!exhibition) notFound();
+
+  const allExhibitions = await getPublishedExhibitions();
+  const currentIndex = allExhibitions.findIndex((e) => e.slug === slug);
+  const siblings = getPrevNext(allExhibitions, currentIndex);
 
   const location = [exhibition.city, exhibition.country].filter(Boolean).join(", ");
 
@@ -49,6 +55,11 @@ export default async function ExhibitionDetailPage({
           ))}
         </div>
       ) : null}
+
+      <PrevNextNav
+        prev={siblings?.prev ? { href: `/exhibitions/${siblings.prev.slug}`, label: siblings.prev.title } : null}
+        next={siblings?.next ? { href: `/exhibitions/${siblings.next.slug}`, label: siblings.next.title } : null}
+      />
     </main>
   );
 }

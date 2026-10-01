@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProtectedImage } from "@/components/cloudinary-image";
-import { getArtworkBySlug } from "@/lib/queries";
+import { getArtworkBySlug, getArtworksBySeriesId, getStandaloneArtworks } from "@/lib/queries";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/breadcrumbs";
+import { PrevNextNav } from "@/components/prev-next-nav";
+import { getPrevNext } from "@/lib/prev-next";
 
 export const revalidate = 60;
 
@@ -25,6 +27,14 @@ export default async function ArtworkDetailPage({
   const dimensions = formatDimensions(artwork.dimensions);
   // A series only has a public page while it's published — don't link to a 404.
   const seriesIsLinkable = artwork.series?.status === "published";
+
+  // Prev/Next cycles within the artwork's own series when it has one, otherwise
+  // across the site-wide standalone list — same scoping as how the artwork is browsed.
+  const siblingArtworks = artwork.series
+    ? await getArtworksBySeriesId(artwork.series._id)
+    : await getStandaloneArtworks();
+  const currentIndex = siblingArtworks.findIndex((a) => a.slug === slug);
+  const siblings = getPrevNext(siblingArtworks, currentIndex);
 
   const breadcrumbItems: BreadcrumbItem[] = [{ label: "Portfolio", href: "/portfolio" }];
   if (artwork.series) {
@@ -102,6 +112,11 @@ export default async function ArtworkDetailPage({
           </p>
         ) : null}
       </div>
+
+      <PrevNextNav
+        prev={siblings?.prev ? { href: `/artwork/${siblings.prev.slug}`, label: siblings.prev.title } : null}
+        next={siblings?.next ? { href: `/artwork/${siblings.next.slug}`, label: siblings.next.title } : null}
+      />
     </main>
   );
 }
