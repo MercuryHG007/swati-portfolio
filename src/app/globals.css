@@ -20,6 +20,9 @@
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
   --radius-lg: 1rem;
+
+  /* Fixed top-bar height — mobile nav drawers anchor to this (see mobile-nav-drawer.tsx) */
+  --header-height: 73px;
 }
 
 @theme inline {
