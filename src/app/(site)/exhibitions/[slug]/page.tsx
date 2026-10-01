@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { PrevNextNav } from "@/components/prev-next-nav";
 import { getPrevNext } from "@/lib/prev-next";
 import { ArtworkCard } from "@/components/artwork-card";
+import { getYear } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -64,12 +65,12 @@ export default async function ExhibitionDetailPage({
           </h2>
           <div className="grid grid-cols-6 gap-4">
             {exhibition.artworks.map(
-              (artwork: { slug: string; title: string; year?: number; images?: { publicId: string; alt?: string }[] }) => (
+              (artwork: { slug: string; title: string; dateMade?: Date | string; images?: { publicId: string; alt?: string }[] }) => (
                 <ArtworkCard
                   key={artwork.slug}
                   slug={artwork.slug}
                   title={artwork.title}
-                  year={artwork.year}
+                  year={getYear(artwork.dateMade)}
                   image={artwork.images?.[0]}
                 />
               )

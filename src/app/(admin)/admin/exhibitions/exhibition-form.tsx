@@ -3,6 +3,7 @@ import { ImageUploader } from "@/components/admin/image-uploader";
 import { ArtworkMultiSelect } from "@/components/admin/artwork-multi-select";
 import { Field, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
 import { getAllArtworks } from "@/lib/admin-queries";
+import { getYear } from "@/lib/format";
 
 function toDateInputValue(date?: Date | string) {
   if (!date) return "";
@@ -35,7 +36,7 @@ export async function ExhibitionForm({
   const artworkOptions = allArtworks.map((artwork) => ({
     id: String(artwork._id),
     title: artwork.title,
-    year: artwork.year,
+    year: getYear(artwork.dateMade),
   }));
   const initialSelectedIds = (exhibition?.artworks ?? []).map(String);
 

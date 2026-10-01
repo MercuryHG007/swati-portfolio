@@ -4,6 +4,7 @@ import { ArtworkCard } from "@/components/artwork-card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { PrevNextNav } from "@/components/prev-next-nav";
 import { getPrevNext } from "@/lib/prev-next";
+import { getYear } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -35,7 +36,7 @@ export default async function SeriesDetailPage({
               key={artwork.slug}
               slug={artwork.slug}
               title={artwork.title}
-              year={artwork.year}
+              year={getYear(artwork.dateMade)}
               image={artwork.images?.[0]}
             />
           ))}

@@ -26,7 +26,8 @@ function readImages(formData: FormData) {
 function readFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(title);
-  const year = formData.get("year") ? Number(formData.get("year")) : undefined;
+  const dateMadeRaw = String(formData.get("dateMade") ?? "");
+  const dateMade = dateMadeRaw ? new Date(dateMadeRaw) : undefined;
   const medium = String(formData.get("medium") ?? "") || null;
   const subjects = formData.getAll("subjects").map(String).filter(Boolean);
   const seriesRaw = String(formData.get("series") ?? "");
@@ -38,10 +39,9 @@ function readFields(formData: FormData) {
   const dimensions = {
     height: formData.get("height") ? Number(formData.get("height")) : undefined,
     width: formData.get("width") ? Number(formData.get("width")) : undefined,
-    depth: formData.get("depth") ? Number(formData.get("depth")) : undefined,
     unit: formData.get("unit") === "in" ? "in" : "cm",
   };
-  return { title, slug, year, medium, subjects, series, description, status, featured, images, dimensions };
+  return { title, slug, dateMade, medium, subjects, series, description, status, featured, images, dimensions };
 }
 
 export async function createArtwork(formData: FormData) {

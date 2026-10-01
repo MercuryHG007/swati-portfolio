@@ -10,15 +10,15 @@ import { Breadcrumbs, type BreadcrumbItem } from "@/components/breadcrumbs";
 import { PrevNextNav } from "@/components/prev-next-nav";
 import { ArtworkGallery } from "@/components/artwork-gallery";
 import { getPrevNext } from "@/lib/prev-next";
-import { formatDateRange } from "@/lib/format";
+import { formatDateRange, getYear } from "@/lib/format";
 
 export const revalidate = 60;
 
-function formatDimensions(dimensions?: { height?: number; width?: number; depth?: number; unit?: string } | null) {
+function formatDimensions(dimensions?: { height?: number; width?: number; unit?: string } | null) {
   if (!dimensions?.height || !dimensions?.width) return null;
-  const { height, width, depth, unit = "cm" } = dimensions;
+  const { height, width, unit = "cm" } = dimensions;
   const unitLabel = unit === "in" ? "inch" : unit;
-  return depth ? `${height} × ${width} × ${depth} ${unitLabel}` : `${height} × ${width} ${unitLabel}`;
+  return `${height} × ${width} ${unitLabel}`;
 }
 
 export default async function ArtworkDetailPage({
@@ -61,7 +61,7 @@ export default async function ArtworkDetailPage({
       <div className="flex flex-col gap-3">
         <h1 className="text-2xl font-semibold text-foreground">{artwork.title}</h1>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-          {artwork.year ? <span>{artwork.year}</span> : null}
+          {getYear(artwork.dateMade) ? <span>{getYear(artwork.dateMade)}</span> : null}
           {artwork.medium ? (
             <>
               <span aria-hidden>·</span>

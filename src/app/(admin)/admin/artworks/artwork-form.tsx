@@ -3,6 +3,12 @@ import { getAllMediums, getAllSubjects, getAllSeries } from "@/lib/admin-queries
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { Field, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
 
+function toDateInputValue(date?: Date | string) {
+  if (!date) return "";
+  const value = typeof date === "string" ? new Date(date) : date;
+  return value.toISOString().slice(0, 10);
+}
+
 export async function ArtworkForm({
   artwork,
   action,
@@ -12,11 +18,11 @@ export async function ArtworkForm({
     title: string;
     slug: string;
     images: { publicId: string; width: number; height: number; alt: string }[];
-    year?: number;
+    dateMade?: Date | string;
     medium: unknown;
     subjects: unknown[];
     series: unknown;
-    dimensions?: { height?: number; width?: number; depth?: number; unit?: string };
+    dimensions?: { height?: number; width?: number; unit?: string };
     description: string;
     status: string;
     featured: boolean;
@@ -45,8 +51,13 @@ export async function ArtworkForm({
           multiple
         />
       </Field>
-      <Field label="Year">
-        <input name="year" type="number" defaultValue={artwork?.year} className={inputClass} />
+      <Field label="Date made">
+        <input
+          name="dateMade"
+          type="date"
+          defaultValue={toDateInputValue(artwork?.dateMade)}
+          className={inputClass}
+        />
       </Field>
       <Field label="Medium">
         <Select name="medium" defaultValue={selectedMediumId} required>
@@ -84,15 +95,12 @@ export async function ArtworkForm({
         </Select>
       </Field>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <Field label="Height">
           <input name="height" type="number" step="0.1" defaultValue={artwork?.dimensions?.height} className={inputClass} />
         </Field>
         <Field label="Width">
           <input name="width" type="number" step="0.1" defaultValue={artwork?.dimensions?.width} className={inputClass} />
-        </Field>
-        <Field label="Depth">
-          <input name="depth" type="number" step="0.1" defaultValue={artwork?.dimensions?.depth} className={inputClass} />
         </Field>
         <Field label="Unit">
           <Select name="unit" defaultValue={artwork?.dimensions?.unit ?? "cm"}>

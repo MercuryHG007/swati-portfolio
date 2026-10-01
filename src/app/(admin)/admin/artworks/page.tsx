@@ -4,6 +4,7 @@ import { getAllArtworks } from "@/lib/admin-queries";
 import { deleteArtwork } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { ActionIcon, buttonClass, cardClass } from "@/components/admin/ui";
+import { getYear } from "@/lib/format";
 
 export default async function AdminArtworksListPage() {
   const artworks = await getAllArtworks();
@@ -22,7 +23,7 @@ export default async function AdminArtworksListPage() {
           <div key={String(artwork._id)} className={`${cardClass} flex items-center justify-between gap-3`}>
             <div>
               <p className="text-foreground">
-                {artwork.title} {artwork.year ? `(${artwork.year})` : ""}
+                {artwork.title} {getYear(artwork.dateMade) ? `(${getYear(artwork.dateMade)})` : ""}
               </p>
               <p className="text-xs text-muted">
                 {artwork.status} · {artwork.medium?.name ?? "no medium"}

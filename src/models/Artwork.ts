@@ -5,7 +5,6 @@ const dimensionsSchema = new Schema(
   {
     height: Number,
     width: Number,
-    depth: Number,
     unit: { type: String, enum: ["cm", "in"], default: "cm" },
   },
   { _id: false }
@@ -16,7 +15,7 @@ const artworkSchema = new Schema(
     title: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     images: { type: [cloudinaryImageSchema], default: [] },
-    year: { type: Number },
+    dateMade: { type: Date },
     medium: { type: Schema.Types.ObjectId, ref: "Medium", required: true },
     subjects: [{ type: Schema.Types.ObjectId, ref: "Subject" }],
     // null = standalone artwork, not part of any series

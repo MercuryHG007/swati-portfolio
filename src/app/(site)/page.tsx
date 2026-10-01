@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getFeaturedArtworks } from "@/lib/queries";
 import { ArtworkCard } from "@/components/artwork-card";
+import { getYear } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -35,7 +36,7 @@ export default async function Home() {
                 key={artwork.slug}
                 slug={artwork.slug}
                 title={artwork.title}
-                year={artwork.year}
+                year={getYear(artwork.dateMade)}
                 image={artwork.images?.[0]}
               />
             ))}
