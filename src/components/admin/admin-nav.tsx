@@ -37,6 +37,9 @@ export async function AdminNav() {
         </nav>
         <div className="hidden items-center gap-4 text-sm text-muted md:flex">
           <span>{session.user.email}</span>
+          <Link href="/admin/account" className="hover:text-accent">
+            Account
+          </Link>
           <form action={signOutAction}>
             <button type="submit" className="hover:text-accent">
               Sign out
@@ -51,6 +54,9 @@ export async function AdminNav() {
           ))}
           <div className="mt-auto flex flex-col gap-3 border-t border-border pt-6 text-sm text-muted">
             <span>{session.user.email}</span>
+            <Link href="/admin/account" className="text-foreground hover:text-accent">
+              Account
+            </Link>
             <form action={signOutAction}>
               <button type="submit" className="text-foreground hover:text-accent">
                 Sign out
