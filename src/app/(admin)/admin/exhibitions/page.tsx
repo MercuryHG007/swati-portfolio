@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { Pencil, Trash2 } from "lucide-react";
 import { getAllExhibitions } from "@/lib/admin-queries";
 import { formatDateRange } from "@/lib/format";
 import { deleteExhibition } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { buttonClass, dangerButtonClass, secondaryButtonClass, cardClass } from "@/components/admin/ui";
+import { ActionIcon, buttonClass, cardClass } from "@/components/admin/ui";
 
 export default async function AdminExhibitionsListPage() {
   const exhibitions = await getAllExhibitions();
@@ -31,16 +32,16 @@ export default async function AdminExhibitionsListPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Link href={`/admin/exhibitions/${exhibition._id}`} className={secondaryButtonClass}>
-                Edit
+              <Link href={`/admin/exhibitions/${exhibition._id}`} aria-label={`Edit ${exhibition.title}`}>
+                <ActionIcon icon={Pencil} />
               </Link>
               <form action={deleteExhibition}>
                 <input type="hidden" name="id" value={String(exhibition._id)} />
                 <ConfirmButton
                   confirmText={`Delete exhibition "${exhibition.title}"?`}
-                  className={dangerButtonClass}
+                  aria-label={`Delete ${exhibition.title}`}
                 >
-                  Delete
+                  <ActionIcon icon={Trash2} variant="danger" />
                 </ConfirmButton>
               </form>
             </div>

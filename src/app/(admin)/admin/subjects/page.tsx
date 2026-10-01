@@ -1,7 +1,8 @@
+import { Save, Trash2 } from "lucide-react";
 import { getAllSubjects } from "@/lib/admin-queries";
 import { createSubject, updateSubject, deleteSubject } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { inputClass, buttonClass, dangerButtonClass, cardClass } from "@/components/admin/ui";
+import { ActionIcon, inputClass, buttonClass, cardClass } from "@/components/admin/ui";
 
 export default async function AdminSubjectsPage({
   searchParams,
@@ -26,15 +27,15 @@ export default async function AdminSubjectsPage({
           >
             <input type="hidden" name="id" value={String(subject._id)} />
             <input name="name" defaultValue={subject.name} className={`${inputClass} flex-1`} />
-            <button type="submit" className={buttonClass}>
-              Save
+            <button type="submit" aria-label={`Save ${subject.name}`}>
+              <ActionIcon icon={Save} variant="primary" />
             </button>
             <ConfirmButton
               confirmText={`Delete subject "${subject.name}"?`}
-              className={dangerButtonClass}
               formAction={deleteSubject}
+              aria-label={`Delete ${subject.name}`}
             >
-              Delete
+              <ActionIcon icon={Trash2} variant="danger" />
             </ConfirmButton>
           </form>
         ))}

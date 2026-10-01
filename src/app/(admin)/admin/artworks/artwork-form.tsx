@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getAllMediums, getAllSubjects, getAllSeries } from "@/lib/admin-queries";
 import { ImageUploader } from "@/components/admin/image-uploader";
-import { Field, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
+import { Field, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
 
 export async function ArtworkForm({
   artwork,
@@ -37,9 +37,7 @@ export async function ArtworkForm({
       <Field label="Title">
         <input name="title" defaultValue={artwork?.title} required className={inputClass} />
       </Field>
-      <Field label="Slug (leave blank to auto-generate from title)">
-        <input name="slug" defaultValue={artwork?.slug} className={inputClass} />
-      </Field>
+      <input type="hidden" name="slug" defaultValue={artwork?.slug} />
       <Field label="Images">
         <ImageUploader
           name="images"
@@ -52,14 +50,14 @@ export async function ArtworkForm({
         <input name="year" type="number" defaultValue={artwork?.year} className={inputClass} />
       </Field>
       <Field label="Medium">
-        <select name="medium" defaultValue={selectedMediumId} required className={inputClass}>
+        <Select name="medium" defaultValue={selectedMediumId} required>
           <option value="">Select a medium</option>
           {mediums.map((medium) => (
             <option key={String(medium._id)} value={String(medium._id)}>
               {medium.name}
             </option>
           ))}
-        </select>
+        </Select>
       </Field>
       <Field label="Subjects">
         <div className="flex flex-wrap gap-3">
@@ -77,14 +75,14 @@ export async function ArtworkForm({
         </div>
       </Field>
       <Field label="Series (leave blank for standalone)">
-        <select name="series" defaultValue={selectedSeriesId} className={inputClass}>
+        <Select name="series" defaultValue={selectedSeriesId}>
           <option value="">Standalone</option>
           {series.map((item) => (
             <option key={String(item._id)} value={String(item._id)}>
               {item.title}
             </option>
           ))}
-        </select>
+        </Select>
       </Field>
 
       <div className="grid grid-cols-4 gap-3">
@@ -98,10 +96,10 @@ export async function ArtworkForm({
           <input name="depth" type="number" step="0.1" defaultValue={artwork?.dimensions?.depth} className={inputClass} />
         </Field>
         <Field label="Unit">
-          <select name="unit" defaultValue={artwork?.dimensions?.unit ?? "cm"} className={inputClass}>
+          <Select name="unit" defaultValue={artwork?.dimensions?.unit ?? "cm"}>
             <option value="cm">cm</option>
             <option value="in">in</option>
-          </select>
+          </Select>
         </Field>
       </div>
 
@@ -112,10 +110,10 @@ export async function ArtworkForm({
         <input name="order" type="number" defaultValue={artwork?.order ?? 0} className={inputClass} />
       </Field>
       <Field label="Status">
-        <select name="status" defaultValue={artwork?.status ?? "hidden"} className={inputClass}>
+        <Select name="status" defaultValue={artwork?.status ?? "hidden"}>
           <option value="hidden">Hidden</option>
           <option value="published">Published</option>
-        </select>
+        </Select>
       </Field>
       <label className="flex items-center gap-2 text-sm text-foreground">
         <input type="checkbox" name="featured" defaultChecked={artwork?.featured ?? false} />

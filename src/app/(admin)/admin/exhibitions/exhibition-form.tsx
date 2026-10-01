@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { ArtworkMultiSelect } from "@/components/admin/artwork-multi-select";
-import { Field, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
+import { Field, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
 import { getAllArtworks } from "@/lib/admin-queries";
 
 function toDateInputValue(date?: Date | string) {
@@ -46,9 +46,7 @@ export async function ExhibitionForm({
       <Field label="Title">
         <input name="title" defaultValue={exhibition?.title} required className={inputClass} />
       </Field>
-      <Field label="Slug (leave blank to auto-generate from title)">
-        <input name="slug" defaultValue={exhibition?.slug} className={inputClass} />
-      </Field>
+      <input type="hidden" name="slug" defaultValue={exhibition?.slug} />
       <Field label="Venue">
         <input name="venue" defaultValue={exhibition?.venue} required className={inputClass} />
       </Field>
@@ -61,10 +59,10 @@ export async function ExhibitionForm({
         </Field>
       </div>
       <Field label="Type">
-        <select name="type" defaultValue={exhibition?.type ?? "group"} className={inputClass}>
+        <Select name="type" defaultValue={exhibition?.type ?? "group"}>
           <option value="group">Group</option>
           <option value="solo">Solo</option>
-        </select>
+        </Select>
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Start date">
@@ -100,10 +98,10 @@ export async function ExhibitionForm({
         <ArtworkMultiSelect name="artworks" options={artworkOptions} initialSelectedIds={initialSelectedIds} />
       </Field>
       <Field label="Status">
-        <select name="status" defaultValue={exhibition?.status ?? "hidden"} className={inputClass}>
+        <Select name="status" defaultValue={exhibition?.status ?? "hidden"}>
           <option value="hidden">Hidden</option>
           <option value="published">Published</option>
-        </select>
+        </Select>
       </Field>
 
       <div className="flex gap-3">

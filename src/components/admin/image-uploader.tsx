@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
 export type CloudinaryImageValue = {
   publicId: string;
@@ -23,6 +23,7 @@ function thumbUrl(publicId: string) {
 }
 
 export function ImageUploader({ name, folder, initial = [], multiple = false }: ImageUploaderProps) {
+  const inputId = useId();
   const [images, setImages] = useState<CloudinaryImageValue[]>(initial);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -96,13 +97,20 @@ export function ImageUploader({ name, folder, initial = [], multiple = false }: 
         </div>
       ) : null}
       <input
+        id={inputId}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/avif"
         multiple={multiple}
         onChange={(event) => handleFiles(event.target.files)}
         disabled={uploading}
-        className="text-sm text-foreground"
+        className="sr-only"
       />
+      <label
+        htmlFor={inputId}
+        className={`w-fit text-sm text-accent underline ${uploading ? "pointer-events-none opacity-50" : "cursor-pointer hover:text-accent/80"}`}
+      >
+        Upload image{multiple ? "s" : ""}
+      </label>
       {uploading ? <p className="text-xs text-muted">Uploading…</p> : null}
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
     </div>

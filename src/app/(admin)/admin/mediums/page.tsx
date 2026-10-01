@@ -1,7 +1,8 @@
+import { Save, Trash2 } from "lucide-react";
 import { getAllMediums } from "@/lib/admin-queries";
 import { createMedium, updateMedium, deleteMedium } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { inputClass, buttonClass, dangerButtonClass, cardClass } from "@/components/admin/ui";
+import { ActionIcon, inputClass, buttonClass, cardClass } from "@/components/admin/ui";
 
 export default async function AdminMediumsPage({
   searchParams,
@@ -29,15 +30,15 @@ export default async function AdminMediumsPage({
           >
             <input type="hidden" name="id" value={String(medium._id)} />
             <input name="name" defaultValue={medium.name} className={`${inputClass} flex-1`} />
-            <button type="submit" className={buttonClass}>
-              Save
+            <button type="submit" aria-label={`Save ${medium.name}`}>
+              <ActionIcon icon={Save} variant="primary" />
             </button>
             <ConfirmButton
               confirmText={`Delete medium "${medium.name}"?`}
-              className={dangerButtonClass}
               formAction={deleteMedium}
+              aria-label={`Delete ${medium.name}`}
             >
-              Delete
+              <ActionIcon icon={Trash2} variant="danger" />
             </ConfirmButton>
           </form>
         ))}

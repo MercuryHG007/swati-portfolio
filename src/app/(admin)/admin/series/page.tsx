@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { Pencil, Trash2 } from "lucide-react";
 import { getAllSeries } from "@/lib/admin-queries";
 import { deleteSeries } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { buttonClass, dangerButtonClass, secondaryButtonClass, cardClass } from "@/components/admin/ui";
+import { ActionIcon, buttonClass, cardClass } from "@/components/admin/ui";
 
 export default async function AdminSeriesListPage() {
   const series = await getAllSeries();
@@ -26,16 +27,16 @@ export default async function AdminSeriesListPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Link href={`/admin/series/${item._id}`} className={secondaryButtonClass}>
-                Edit
+              <Link href={`/admin/series/${item._id}`} aria-label={`Edit ${item.title}`}>
+                <ActionIcon icon={Pencil} />
               </Link>
               <form action={deleteSeries}>
                 <input type="hidden" name="id" value={String(item._id)} />
                 <ConfirmButton
                   confirmText={`Delete series "${item.title}"? Its artworks will become standalone.`}
-                  className={dangerButtonClass}
+                  aria-label={`Delete ${item.title}`}
                 >
-                  Delete
+                  <ActionIcon icon={Trash2} variant="danger" />
                 </ConfirmButton>
               </form>
             </div>
