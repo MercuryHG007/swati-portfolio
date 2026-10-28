@@ -64,7 +64,7 @@ export default async function ExhibitionDetailPage({
           <h2 className="text-lg font-semibold text-foreground">
             Artworks in this exhibition ({exhibition.artworks.length})
           </h2>
-          <div className="grid grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {exhibition.artworks.map(
               (artwork: { slug: string; title: string; dateMade?: Date | string; images?: { publicId: string; alt?: string }[] }, index: number) => (
                 <ArtworkCard

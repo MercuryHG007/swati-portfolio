@@ -16,6 +16,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${sans.variable} ${mono.variable} h-full antialiased`}
     >
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>
