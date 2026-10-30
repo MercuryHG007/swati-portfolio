@@ -1,14 +1,9 @@
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
+import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
-export default async function AdminLoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { error } = await searchParams;
-
+export default function AdminLoginPage() {
   async function authenticate(formData: FormData) {
     "use server";
     try {
@@ -27,8 +22,8 @@ export default async function AdminLoginPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
+      <ToastOnLoad configs={[{ param: "error", type: "error", message: "Invalid email or password." }]} />
       <h1 className="text-2xl font-semibold text-foreground">Admin sign in</h1>
-      {error && <p className="text-sm text-red-600">Invalid email or password.</p>}
       <form action={authenticate} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm text-foreground">
           Email

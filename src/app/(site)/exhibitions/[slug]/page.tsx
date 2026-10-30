@@ -1,7 +1,12 @@
 import { notFound } from "next/navigation";
 import { ProtectedImage } from "@/components/cloudinary-image";
-import { getExhibitionBySlug } from "@/lib/queries";
+import { getExhibitionBySlug, getPublishedExhibitions } from "@/lib/queries";
 import { formatDateRange } from "@/lib/format";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { PrevNextNav } from "@/components/prev-next-nav";
+import { getPrevNext } from "@/lib/prev-next";
+import { ArtworkCard } from "@/components/artwork-card";
+import { getYear } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -14,10 +19,15 @@ export default async function ExhibitionDetailPage({
   const exhibition = await getExhibitionBySlug(slug);
   if (!exhibition) notFound();
 
+  const allExhibitions = await getPublishedExhibitions();
+  const currentIndex = allExhibitions.findIndex((e) => e.slug === slug);
+  const siblings = getPrevNext(allExhibitions, currentIndex);
+
   const location = [exhibition.city, exhibition.country].filter(Boolean).join(", ");
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-6 py-16">
+      <Breadcrumbs items={[{ label: "Exhibitions", href: "/exhibitions" }, { label: exhibition.title }]} />
       <header className="flex flex-col gap-3">
         <p className="font-mono text-xs uppercase tracking-wide text-accent">
           {exhibition.type === "solo" ? "Solo exhibition" : "Group exhibition"}
@@ -34,7 +44,7 @@ export default async function ExhibitionDetailPage({
 
       {exhibition.images?.length > 0 ? (
         <div className="flex flex-col gap-6">
-          {exhibition.images.map((image: { publicId: string; alt?: string; width: number; height: number }) => (
+          {exhibition.images.map((image: { publicId: string; alt?: string; width: number; height: number }, index: number) => (
             <ProtectedImage
               key={image.publicId}
               src={image.publicId}
@@ -43,10 +53,38 @@ export default async function ExhibitionDetailPage({
               height={image.height}
               sizes="(min-width: 768px) 768px, 100vw"
               className="h-auto w-full rounded-md"
+              loading={index === 0 ? "eager" : "lazy"}
             />
           ))}
         </div>
       ) : null}
+
+      {exhibition.artworks?.length > 0 ? (
+        <section className="flex flex-col gap-4">
+          <h2 className="text-lg font-semibold text-foreground">
+            Artworks in this exhibition ({exhibition.artworks.length})
+          </h2>
+          <div className="grid grid-cols-6 gap-4">
+            {exhibition.artworks.map(
+              (artwork: { slug: string; title: string; dateMade?: Date | string; images?: { publicId: string; alt?: string }[] }, index: number) => (
+                <ArtworkCard
+                  key={artwork.slug}
+                  slug={artwork.slug}
+                  title={artwork.title}
+                  year={getYear(artwork.dateMade)}
+                  image={artwork.images?.[0]}
+                  priority={index === 0 && !(exhibition.images?.length > 0)}
+                />
+              )
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      <PrevNextNav
+        prev={siblings?.prev ? { href: `/exhibitions/${siblings.prev.slug}`, label: siblings.prev.title } : null}
+        next={siblings?.next ? { href: `/exhibitions/${siblings.next.slug}`, label: siblings.next.title } : null}
+      />
     </main>
   );
 }

@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Artwork } from "@/models";
+import { Artwork, Exhibition } from "@/models";
 import { slugify } from "@/lib/slugify";
+import { withAltFallback } from "@/lib/image-alt";
+import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 
 function refresh(slug?: string) {
   revalidatePath("/");
@@ -26,22 +28,22 @@ function readImages(formData: FormData) {
 function readFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(title);
-  const year = formData.get("year") ? Number(formData.get("year")) : undefined;
+  const dateMadeRaw = String(formData.get("dateMade") ?? "");
+  const dateMade = dateMadeRaw ? new Date(dateMadeRaw) : undefined;
   const medium = String(formData.get("medium") ?? "") || null;
   const subjects = formData.getAll("subjects").map(String).filter(Boolean);
   const seriesRaw = String(formData.get("series") ?? "");
   const series = seriesRaw || null;
   const description = String(formData.get("description") ?? "").trim();
-  const order = Number(formData.get("order") ?? 0) || 0;
   const status = formData.get("status") === "published" ? "published" : "hidden";
-  const images = readImages(formData);
+  const featured = formData.get("featured") === "on";
+  const images = withAltFallback(readImages(formData), title);
   const dimensions = {
     height: formData.get("height") ? Number(formData.get("height")) : undefined,
     width: formData.get("width") ? Number(formData.get("width")) : undefined,
-    depth: formData.get("depth") ? Number(formData.get("depth")) : undefined,
     unit: formData.get("unit") === "in" ? "in" : "cm",
   };
-  return { title, slug, year, medium, subjects, series, description, order, status, images, dimensions };
+  return { title, slug, dateMade, medium, subjects, series, description, status, featured, images, dimensions };
 }
 
 export async function createArtwork(formData: FormData) {
@@ -50,7 +52,9 @@ export async function createArtwork(formData: FormData) {
   if (!fields.title || !fields.slug || !fields.medium) redirect("/admin/artworks/new?error=invalid");
 
   await connectToDatabase();
-  await Artwork.create(fields);
+  const order = await Artwork.countDocuments();
+  const seriesOrder = fields.series ? await Artwork.countDocuments({ series: fields.series }) : 0;
+  await Artwork.create({ ...fields, order, seriesOrder });
   refresh(fields.slug);
   redirect("/admin/artworks");
 }
@@ -64,7 +68,14 @@ export async function updateArtwork(formData: FormData) {
   }
 
   await connectToDatabase();
-  await Artwork.findByIdAndUpdate(id, fields);
+  const existing = await Artwork.findById(id).lean<{ series?: unknown; images?: { publicId: string }[] }>();
+  // Moved into a different series (or into one for the first time) — append to the end of that series' order.
+  const seriesOrder =
+    fields.series && String(existing?.series ?? "") !== fields.series
+      ? await Artwork.countDocuments({ series: fields.series })
+      : undefined;
+  await Artwork.findByIdAndUpdate(id, seriesOrder === undefined ? fields : { ...fields, seriesOrder });
+  await destroyCloudinaryAssets(removedPublicIds(existing?.images ?? [], fields.images));
   refresh(fields.slug);
   redirect("/admin/artworks");
 }
@@ -75,7 +86,22 @@ export async function deleteArtwork(formData: FormData) {
   if (!id) redirect("/admin/artworks");
 
   await connectToDatabase();
-  await Artwork.findByIdAndDelete(id);
+  await Exhibition.updateMany({ artworks: id }, { $pull: { artworks: id } });
+  const deleted = await Artwork.findByIdAndDelete(id).lean<{ images?: { publicId: string }[] }>();
+  await destroyCloudinaryAssets((deleted?.images ?? []).map((img) => img.publicId));
   refresh();
   redirect("/admin/artworks");
 }
+
+export async function reorderArtworksInSeries(seriesId: string, orderedIds: string[]) {
+  await requireAdminSession();
+  await connectToDatabase();
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      Artwork.updateOne({ _id: id, series: seriesId }, { seriesOrder: index })
+    )
+  );
+  revalidatePath(`/admin/series/${seriesId}`);
+  revalidatePath("/portfolio");
+}
+

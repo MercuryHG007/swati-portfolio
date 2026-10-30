@@ -1,7 +1,8 @@
+import { Trash2 } from "lucide-react";
 import { getAllMessages } from "@/lib/admin-queries";
 import { markMessageRead, deleteMessage } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { buttonClass, dangerButtonClass, cardClass } from "@/components/admin/ui";
+import { ActionIcon, buttonClass, cardClass } from "@/components/admin/ui";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -21,9 +22,9 @@ export default async function AdminMessagesPage() {
       <div className="flex flex-col gap-3">
         {messages.map((message) => (
           <div key={String(message._id)} className={`${cardClass} flex flex-col gap-2`}>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="break-words text-foreground">
                   {message.name} <span className="text-muted">&lt;{message.email}&gt;</span>
                 </p>
                 <p className="text-xs text-muted">
@@ -42,8 +43,11 @@ export default async function AdminMessagesPage() {
                 ) : null}
                 <form action={deleteMessage}>
                   <input type="hidden" name="id" value={String(message._id)} />
-                  <ConfirmButton confirmText="Delete this message?" className={dangerButtonClass}>
-                    Delete
+                  <ConfirmButton
+                    confirmText="Delete this message?"
+                    aria-label="Delete message"
+                  >
+                    <ActionIcon icon={Trash2} variant="danger" />
                   </ConfirmButton>
                 </form>
               </div>

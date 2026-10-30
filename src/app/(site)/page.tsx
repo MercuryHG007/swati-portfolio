@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { getFeaturedArtworks } from "@/lib/queries";
 import { ArtworkCard } from "@/components/artwork-card";
+import { getYear } from "@/lib/format";
 
 export const revalidate = 60;
 
 export default async function Home() {
-  const artworks = await getFeaturedArtworks(6);
+  const artworks = await getFeaturedArtworks(4);
 
   return (
     <main className="flex flex-1 flex-col gap-16 px-6 py-16">
@@ -35,8 +36,11 @@ export default async function Home() {
                 key={artwork.slug}
                 slug={artwork.slug}
                 title={artwork.title}
-                year={artwork.year}
+                year={getYear(artwork.dateMade)}
                 image={artwork.images?.[0]}
+                // Small, fixed-size (getFeaturedArtworks(4)) grid -- every card renders above
+                // the fold at once, so any of them can end up the reported LCP candidate.
+                priority
               />
             ))}
           </div>

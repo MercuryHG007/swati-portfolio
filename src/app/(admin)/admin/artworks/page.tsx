@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { Pencil, Trash2 } from "lucide-react";
 import { getAllArtworks } from "@/lib/admin-queries";
 import { deleteArtwork } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { buttonClass, dangerButtonClass, secondaryButtonClass, cardClass } from "@/components/admin/ui";
+import { ActionIcon, buttonClass, cardClass } from "@/components/admin/ui";
+import { getYear } from "@/lib/format";
 
 export default async function AdminArtworksListPage() {
   const artworks = await getAllArtworks();
@@ -21,7 +23,7 @@ export default async function AdminArtworksListPage() {
           <div key={String(artwork._id)} className={`${cardClass} flex items-center justify-between gap-3`}>
             <div>
               <p className="text-foreground">
-                {artwork.title} {artwork.year ? `(${artwork.year})` : ""}
+                {artwork.title} {getYear(artwork.dateMade) ? `(${getYear(artwork.dateMade)})` : ""}
               </p>
               <p className="text-xs text-muted">
                 {artwork.status} · {artwork.medium?.name ?? "no medium"}
@@ -29,13 +31,16 @@ export default async function AdminArtworksListPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Link href={`/admin/artworks/${artwork._id}`} className={secondaryButtonClass}>
-                Edit
+              <Link href={`/admin/artworks/${artwork._id}`} aria-label={`Edit ${artwork.title}`}>
+                <ActionIcon icon={Pencil} />
               </Link>
               <form action={deleteArtwork}>
                 <input type="hidden" name="id" value={String(artwork._id)} />
-                <ConfirmButton confirmText={`Delete artwork "${artwork.title}"?`} className={dangerButtonClass}>
-                  Delete
+                <ConfirmButton
+                  confirmText={`Delete artwork "${artwork.title}"?`}
+                  aria-label={`Delete ${artwork.title}`}
+                >
+                  <ActionIcon icon={Trash2} variant="danger" />
                 </ConfirmButton>
               </form>
             </div>

@@ -7,6 +7,8 @@ import {
   getSubjects,
 } from "@/lib/queries";
 import { ArtworkCard } from "@/components/artwork-card";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { getYear } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -20,6 +22,7 @@ export default async function PortfolioPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-16 px-6 py-16">
+      <Breadcrumbs items={[{ label: "Portfolio" }]} />
       <header className="flex flex-col gap-3">
         <h1 className="text-3xl font-semibold text-foreground">Portfolio</h1>
         <p className="max-w-2xl text-muted">
@@ -53,7 +56,7 @@ export default async function PortfolioPage() {
         <section className="flex flex-col gap-6">
           <h2 className="text-lg font-semibold text-foreground">Series</h2>
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-            {series.map((s) => (
+            {series.map((s, index) => (
               <Link key={s.slug} href={`/portfolio/series/${s.slug}`} className="group block">
                 <div className="relative aspect-[16/10] overflow-hidden rounded-md bg-surface">
                   {s.coverImage ? (
@@ -65,6 +68,7 @@ export default async function PortfolioPage() {
                       gravity="auto"
                       sizes="(min-width: 640px) 50vw, 100vw"
                       className="object-cover transition duration-300 group-hover:scale-105"
+                      loading={index === 0 ? "eager" : "lazy"}
                     />
                   ) : null}
                 </div>
@@ -82,13 +86,14 @@ export default async function PortfolioPage() {
         <section className="flex flex-col gap-6">
           <h2 className="text-lg font-semibold text-foreground">More work</h2>
           <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
-            {standalone.map((artwork) => (
+            {standalone.map((artwork, index) => (
               <ArtworkCard
                 key={artwork.slug}
                 slug={artwork.slug}
                 title={artwork.title}
-                year={artwork.year}
+                year={getYear(artwork.dateMade)}
                 image={artwork.images?.[0]}
+                priority={index === 0 && series.length === 0}
               />
             ))}
           </div>

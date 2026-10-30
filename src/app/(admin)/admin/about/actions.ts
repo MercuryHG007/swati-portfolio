@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
 import { About } from "@/models";
+import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 
 function readImage(formData: FormData) {
   const raw = String(formData.get("photo") ?? "null");
@@ -26,11 +27,12 @@ export async function updateAbout(formData: FormData) {
   const photo = readImage(formData);
 
   await connectToDatabase();
-  await About.findOneAndUpdate(
+  const previous = await About.findOneAndUpdate(
     {},
     { bio, statement, resumeUrl, contactEmail, photo, socials: { instagram } },
     { upsert: true }
-  );
+  ).lean<{ photo?: { publicId: string } }>();
+  await destroyCloudinaryAssets(removedPublicIds(previous?.photo ? [previous.photo] : [], photo ? [photo] : []));
 
   revalidatePath("/about");
   revalidatePath("/contact");

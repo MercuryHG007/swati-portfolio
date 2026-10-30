@@ -6,6 +6,8 @@ import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Series, Artwork } from "@/models";
 import { slugify } from "@/lib/slugify";
+import { withAltFallback } from "@/lib/image-alt";
+import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 
 function refresh(slug?: string) {
   revalidatePath("/admin/series");
@@ -26,10 +28,10 @@ function readFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(title);
   const description = String(formData.get("description") ?? "").trim();
-  const order = Number(formData.get("order") ?? 0) || 0;
   const status = formData.get("status") === "published" ? "published" : "hidden";
-  const coverImage = readImage(formData);
-  return { title, slug, description, order, status, coverImage };
+  const coverImageRaw = readImage(formData);
+  const coverImage = coverImageRaw ? withAltFallback([coverImageRaw], title)[0] : null;
+  return { title, slug, description, status, coverImage };
 }
 
 export async function createSeries(formData: FormData) {
@@ -38,7 +40,8 @@ export async function createSeries(formData: FormData) {
   if (!fields.title || !fields.slug) redirect("/admin/series/new?error=invalid");
 
   await connectToDatabase();
-  await Series.create(fields);
+  const order = await Series.countDocuments();
+  await Series.create({ ...fields, order });
   refresh(fields.slug);
   redirect("/admin/series");
 }
@@ -50,7 +53,10 @@ export async function updateSeries(formData: FormData) {
   if (!id || !fields.title || !fields.slug) redirect(`/admin/series/${id}?error=invalid`);
 
   await connectToDatabase();
-  await Series.findByIdAndUpdate(id, fields);
+  const previous = await Series.findByIdAndUpdate(id, fields).lean<{ coverImage?: { publicId: string } }>();
+  await destroyCloudinaryAssets(
+    removedPublicIds(previous?.coverImage ? [previous.coverImage] : [], fields.coverImage ? [fields.coverImage] : [])
+  );
   refresh(fields.slug);
   redirect("/admin/series");
 }
@@ -63,7 +69,16 @@ export async function deleteSeries(formData: FormData) {
   await connectToDatabase();
   // A series is an optional grouping — unlink its artworks (make them standalone) instead of blocking.
   await Artwork.updateMany({ series: id }, { series: null });
-  await Series.findByIdAndDelete(id);
+  const deleted = await Series.findByIdAndDelete(id).lean<{ coverImage?: { publicId: string } }>();
+  await destroyCloudinaryAssets(deleted?.coverImage ? [deleted.coverImage.publicId] : []);
   refresh();
   redirect("/admin/series");
 }
+
+export async function reorderSeries(orderedIds: string[]) {
+  await requireAdminSession();
+  await connectToDatabase();
+  await Promise.all(orderedIds.map((id, index) => Series.updateOne({ _id: id }, { order: index })));
+  refresh();
+}
+

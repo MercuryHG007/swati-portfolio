@@ -2,19 +2,15 @@ import { getOrCreateAbout } from "@/lib/admin-queries";
 import { updateAbout } from "./actions";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { Field, inputClass, buttonClass } from "@/components/admin/ui";
+import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
-export default async function AdminAboutPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ saved?: string }>;
-}) {
-  const { saved } = await searchParams;
+export default async function AdminAboutPage() {
   const about = await getOrCreateAbout();
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-6 py-16">
+      <ToastOnLoad configs={[{ param: "saved", type: "success", message: "Saved." }]} />
       <h1 className="text-2xl font-semibold text-foreground">About page</h1>
-      {saved ? <p className="text-sm text-foreground">Saved.</p> : null}
 
       <form action={updateAbout} className="flex flex-col gap-4">
         <Field label="Bio">

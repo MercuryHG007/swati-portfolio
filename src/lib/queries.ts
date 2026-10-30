@@ -31,9 +31,17 @@ export async function getSubjectBySlug(slug: string) {
   return Subject.findOne({ slug }).lean();
 }
 
-export async function getFeaturedArtworks(limit = 6) {
+export async function getFeaturedArtworks(limit = 4) {
   await connectToDatabase();
-  return Artwork.find({ status: "published" }).sort({ order: 1, createdAt: -1 }).limit(limit).lean();
+  const featured = await Artwork.find({ status: "published", featured: true })
+    .sort({ order: 1, createdAt: -1 })
+    .limit(limit)
+    .lean();
+  if (featured.length > 0) return featured;
+
+  // Nothing explicitly featured yet — fall back to the work made most recently
+  // (by `dateMade`, not upload date — an artist may upload an older piece later).
+  return Artwork.find({ status: "published" }).sort({ dateMade: -1, createdAt: -1 }).limit(limit).lean();
 }
 
 export async function getStandaloneArtworks() {
@@ -43,7 +51,7 @@ export async function getStandaloneArtworks() {
 
 export async function getArtworksBySeriesId(seriesId: unknown) {
   await connectToDatabase();
-  return Artwork.find({ status: "published", series: seriesId }).sort({ order: 1, createdAt: -1 }).lean();
+  return Artwork.find({ status: "published", series: seriesId }).sort({ seriesOrder: 1, createdAt: -1 }).lean();
 }
 
 export async function getArtworksByMediumSlug(slug: string) {
@@ -82,7 +90,17 @@ export async function getPublishedExhibitions() {
 
 export async function getExhibitionBySlug(slug: string) {
   await connectToDatabase();
-  return Exhibition.findOne({ slug, status: "published" }).lean();
+  const exhibition = await Exhibition.findOne({ slug, status: "published" })
+    .populate({ path: "artworks", match: { status: "published" } })
+    .lean();
+  if (!exhibition) return null;
+  // populate `match` leaves a null in place of any non-matching (hidden) artwork.
+  return { ...exhibition, artworks: (exhibition.artworks ?? []).filter(Boolean) };
+}
+
+export async function getExhibitionsForArtwork(artworkId: unknown) {
+  await connectToDatabase();
+  return Exhibition.find({ status: "published", artworks: artworkId }).sort({ startDate: -1 }).lean();
 }
 
 export async function getAbout() {

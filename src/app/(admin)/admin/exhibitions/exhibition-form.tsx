@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ImageUploader } from "@/components/admin/image-uploader";
-import { Field, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
+import { ArtworkMultiSelect } from "@/components/admin/artwork-multi-select";
+import { Field, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
+import { getAllArtworks } from "@/lib/admin-queries";
+import { getYear } from "@/lib/format";
 
 function toDateInputValue(date?: Date | string) {
   if (!date) return "";
@@ -8,7 +11,7 @@ function toDateInputValue(date?: Date | string) {
   return value.toISOString().slice(0, 10);
 }
 
-export function ExhibitionForm({
+export async function ExhibitionForm({
   exhibition,
   action,
 }: {
@@ -25,9 +28,18 @@ export function ExhibitionForm({
     description: string;
     images: { publicId: string; width: number; height: number; alt: string }[];
     status: string;
+    artworks?: unknown[];
   };
   action: (formData: FormData) => void;
 }) {
+  const allArtworks = await getAllArtworks();
+  const artworkOptions = allArtworks.map((artwork) => ({
+    id: String(artwork._id),
+    title: artwork.title,
+    year: getYear(artwork.dateMade),
+  }));
+  const initialSelectedIds = (exhibition?.artworks ?? []).map(String);
+
   return (
     <form action={action} className="flex flex-col gap-4">
       {exhibition ? <input type="hidden" name="id" value={String(exhibition._id)} /> : null}
@@ -35,9 +47,7 @@ export function ExhibitionForm({
       <Field label="Title">
         <input name="title" defaultValue={exhibition?.title} required className={inputClass} />
       </Field>
-      <Field label="Slug (leave blank to auto-generate from title)">
-        <input name="slug" defaultValue={exhibition?.slug} className={inputClass} />
-      </Field>
+      <input type="hidden" name="slug" defaultValue={exhibition?.slug} />
       <Field label="Venue">
         <input name="venue" defaultValue={exhibition?.venue} required className={inputClass} />
       </Field>
@@ -50,10 +60,10 @@ export function ExhibitionForm({
         </Field>
       </div>
       <Field label="Type">
-        <select name="type" defaultValue={exhibition?.type ?? "group"} className={inputClass}>
+        <Select name="type" defaultValue={exhibition?.type ?? "group"}>
           <option value="group">Group</option>
           <option value="solo">Solo</option>
-        </select>
+        </Select>
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Start date">
@@ -85,11 +95,14 @@ export function ExhibitionForm({
           multiple
         />
       </Field>
+      <Field label="Artworks shown at this exhibition">
+        <ArtworkMultiSelect name="artworks" options={artworkOptions} initialSelectedIds={initialSelectedIds} />
+      </Field>
       <Field label="Status">
-        <select name="status" defaultValue={exhibition?.status ?? "hidden"} className={inputClass}>
+        <Select name="status" defaultValue={exhibition?.status ?? "hidden"}>
           <option value="hidden">Hidden</option>
           <option value="published">Published</option>
-        </select>
+        </Select>
       </Field>
 
       <div className="flex gap-3">

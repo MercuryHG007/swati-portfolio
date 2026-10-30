@@ -11,9 +11,10 @@ type ArtworkCardProps = {
   title: string;
   year?: number | null;
   image?: ArtworkCardImage | null;
+  priority?: boolean;
 };
 
-export function ArtworkCard({ slug, title, year, image }: ArtworkCardProps) {
+export function ArtworkCard({ slug, title, year, image, priority = false }: ArtworkCardProps) {
   return (
     <Link href={`/artwork/${slug}`} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden rounded-md bg-surface">
@@ -26,6 +27,7 @@ export function ArtworkCard({ slug, title, year, image }: ArtworkCardProps) {
             gravity="auto"
             sizes="(min-width: 768px) 25vw, 50vw"
             className="object-cover transition duration-300 group-hover:scale-105"
+            loading={priority ? "eager" : "lazy"}
           />
         ) : null}
       </div>

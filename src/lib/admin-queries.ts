@@ -14,6 +14,11 @@ export async function getSeriesById(id: string) {
   return Series.findById(id).lean();
 }
 
+export async function getArtworksBySeriesIdAdmin(seriesId: string) {
+  await connectToDatabase();
+  return Artwork.find({ series: seriesId }).sort({ seriesOrder: 1, createdAt: -1 }).lean();
+}
+
 export async function getAllMediums() {
   await connectToDatabase();
   return Medium.find().sort({ name: 1 }).lean();

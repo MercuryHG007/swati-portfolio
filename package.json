@@ -8,19 +8,27 @@
     "start": "next start",
     "lint": "eslint",
     "create-admin": "node --env-file=.env.local scripts/create-admin.mjs",
+    "migrate-artwork-date-made": "node --env-file=.env.local scripts/migrate-artwork-date-made.mjs",
     "seed-demo": "node --env-file=.env.local scripts/seed-demo.mjs",
     "seed-resume-content": "node --env-file=.env.local scripts/seed-resume-content.mjs"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@vercel/speed-insights": "^2.0.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.11.0",
+    "lucide-react": "^1.49.0",
     "mongoose": "^9.10.3",
     "next": "16.3.7",
     "next-auth": "^5.0.0-beta.32",
     "next-cloudinary": "^6.19.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "resend": "^6.31.0"
+    "resend": "^6.31.0",
+    "sonner": "^2.0.8",
+    "yet-another-react-lightbox": "^3.32.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

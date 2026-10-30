@@ -6,6 +6,8 @@ import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Exhibition } from "@/models";
 import { slugify } from "@/lib/slugify";
+import { withAltFallback } from "@/lib/image-alt";
+import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 
 function refresh(slug?: string) {
   revalidatePath("/exhibitions");
@@ -35,8 +37,9 @@ function readFields(formData: FormData) {
   const endDate = endDateRaw ? new Date(endDateRaw) : undefined;
   const description = String(formData.get("description") ?? "").trim();
   const status = formData.get("status") === "published" ? "published" : "hidden";
-  const images = readImages(formData);
-  return { title, slug, venue, city, country, type, startDate, endDate, description, status, images };
+  const images = withAltFallback(readImages(formData), title);
+  const artworks = formData.getAll("artworks").map(String).filter(Boolean);
+  return { title, slug, venue, city, country, type, startDate, endDate, description, status, images, artworks };
 }
 
 export async function createExhibition(formData: FormData) {
@@ -61,7 +64,8 @@ export async function updateExhibition(formData: FormData) {
   }
 
   await connectToDatabase();
-  await Exhibition.findByIdAndUpdate(id, fields);
+  const previous = await Exhibition.findByIdAndUpdate(id, fields).lean<{ images?: { publicId: string }[] }>();
+  await destroyCloudinaryAssets(removedPublicIds(previous?.images ?? [], fields.images));
   refresh(fields.slug);
   redirect("/admin/exhibitions");
 }
@@ -72,7 +76,8 @@ export async function deleteExhibition(formData: FormData) {
   if (!id) redirect("/admin/exhibitions");
 
   await connectToDatabase();
-  await Exhibition.findByIdAndDelete(id);
+  const deleted = await Exhibition.findByIdAndDelete(id).lean<{ images?: { publicId: string }[] }>();
+  await destroyCloudinaryAssets((deleted?.images ?? []).map((img) => img.publicId));
   refresh();
   redirect("/admin/exhibitions");
 }
