@@ -1,54 +1,91 @@
 import Link from "next/link";
-import { getFeaturedArtworks } from "@/lib/queries";
-import { ArtworkCard } from "@/components/artwork-card";
-import { getYear } from "@/lib/format";
+import { FeaturedCarousel, type CarouselItem } from "@/components/featured-carousel";
+import { getAbout, getFeaturedArtworks, getMediums } from "@/lib/queries";
 
 export const revalidate = 60;
 
 export default async function Home() {
-  const artworks = await getFeaturedArtworks(4);
+  const [artworks, mediums, about] = await Promise.all([
+    getFeaturedArtworks(8),
+    getMediums(),
+    getAbout(),
+  ]);
+
+  const carouselItems: CarouselItem[] = artworks.map((artwork) => ({
+    href: `/artwork/${artwork.slug}`,
+    title: artwork.title,
+    image: artwork.images?.[0] ?? null,
+  }));
 
   return (
-    <main className="flex flex-1 flex-col gap-16 px-6 py-16">
-      <section className="flex flex-col items-center gap-4 text-center">
-        <p className="font-mono text-sm tracking-wide text-accent">Swati Garg /</p>
-        <h1 className="max-w-2xl text-3xl font-semibold text-foreground">
-          Watercolor &amp; Mixed Media Artist
+    <main className="flex flex-1 flex-col gap-24 py-16">
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6">
+        <h1 className="max-w-4xl text-5xl font-medium leading-[1.02] tracking-tight text-foreground md:text-7xl">
+          Swati Garg. Paintings exploring light, landscape and quiet moments.
         </h1>
-        <p className="max-w-md text-muted">
-          Paintings exploring light, landscape and quiet moments — browse the full portfolio,
-          exhibitions and more.
-        </p>
         <Link
           href="/portfolio"
-          className="mt-2 rounded-md bg-accent px-4 py-2 text-sm text-accent-foreground"
+          className="w-fit rounded-full bg-accent px-6 py-3 text-sm text-accent-foreground hover:opacity-80"
         >
           View portfolio
         </Link>
       </section>
 
-      <section className="mx-auto w-full max-w-5xl">
-        <h2 className="mb-6 text-lg font-semibold text-foreground">Featured work</h2>
-        {artworks.length > 0 ? (
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
-            {artworks.map((artwork) => (
-              <ArtworkCard
-                key={artwork.slug}
-                slug={artwork.slug}
-                title={artwork.title}
-                year={getYear(artwork.dateMade)}
-                image={artwork.images?.[0]}
-                // Small, fixed-size (getFeaturedArtworks(4)) grid -- every card renders above
-                // the fold at once, so any of them can end up the reported LCP candidate.
-                priority
-              />
-            ))}
+      {carouselItems.length > 0 ? (
+        <section className="flex flex-col gap-6">
+          <div className="mx-auto flex w-full max-w-6xl items-end justify-between px-6">
+            <h2 className="text-xs uppercase tracking-widest text-muted">Featured work</h2>
+            <Link href="/portfolio" className="text-sm text-foreground hover:text-muted">
+              ALL WORKS
+            </Link>
           </div>
-        ) : (
-          <p className="text-muted">New work coming soon.</p>
-        )}
+          <FeaturedCarousel items={carouselItems} />
+        </section>
+      ) : (
+        <p className="mx-auto w-full max-w-6xl px-6 text-muted">New work coming soon.</p>
+      )}
+
+      {mediums.length > 0 ? (
+        <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6">
+          <h2 className="text-xs uppercase tracking-widest text-muted">Working mediums</h2>
+          <ul className="flex flex-wrap gap-3">
+            {mediums.map((medium) => (
+              <li key={medium.slug}>
+                <Link
+                  href={`/portfolio/medium/${medium.slug}`}
+                  className="inline-block rounded-full border border-foreground px-5 py-2 text-sm text-foreground hover:bg-foreground hover:text-background"
+                >
+                  {medium.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 border-t border-border px-6 pt-12">
+        <h2 className="max-w-3xl text-3xl font-medium leading-tight tracking-tight text-foreground md:text-5xl">
+          Commissions and enquiries are welcome.
+        </h2>
+        <div className="flex flex-wrap gap-4 text-sm">
+          <Link
+            href="/contact"
+            className="rounded-full bg-accent px-6 py-3 text-accent-foreground hover:opacity-80"
+          >
+            Get in touch
+          </Link>
+          {about?.socials?.instagram ? (
+            <a
+              href={about.socials.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full border border-foreground px-6 py-3 text-foreground hover:bg-foreground hover:text-background"
+            >
+              Message on Instagram
+            </a>
+          ) : null}
+        </div>
       </section>
     </main>
   );
 }
-

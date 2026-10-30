@@ -25,7 +25,7 @@ export async function AdminNav() {
   return (
     <header className="h-(--header-height) border-b border-border">
       <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-6">
-        <Link href="/admin" className="font-mono text-sm tracking-wide text-accent">
+        <Link href="/admin" className="text-sm font-medium tracking-tight text-foreground">
           Admin
         </Link>
         <nav className="hidden flex-wrap gap-5 text-sm text-foreground md:flex">

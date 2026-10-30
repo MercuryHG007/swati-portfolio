@@ -4,16 +4,16 @@
  * Design tokens — the single source of truth for the site's look.
  * Change a value here (or swap the palette entirely) and it propagates
  * everywhere via Tailwind's generated utilities (bg-background, text-muted,
- * border-border, bg-accent, rounded-md, font-mono, etc.).
+ * border-border, bg-accent, rounded-md, etc.).
  */
 :root {
-  /* Warm, neutral "soothing gallery" palette */
-  --color-bg: #f7f4ef;
-  --color-bg-elevated: #ffffff;
-  --color-fg: #211f1d;
-  --color-fg-muted: #6f6a63;
-  --color-border: #e4dfd6;
-  --color-accent: #a8735a;
+  /* Monochrome gallery palette: white ground, black type, the artwork supplies the colour */
+  --color-bg: #ffffff;
+  --color-bg-elevated: #f4f4f2;
+  --color-fg: #000000;
+  --color-fg-muted: #6b6b6b;
+  --color-border: #e3e3e3;
+  --color-accent: #000000;
   --color-accent-fg: #ffffff;
 
   /* Radii */
@@ -39,7 +39,6 @@
   --radius-lg: var(--radius-lg);
 
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
 }
 
 body {

@@ -10,7 +10,7 @@ import { withAltFallback } from "@/lib/image-alt";
 import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 
 function refresh(slug?: string) {
-  revalidatePath("/exhibitions");
+  revalidatePath("/about");
   if (slug) revalidatePath(`/exhibitions/${slug}`);
 }
 

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { connectToDatabase } from "@/lib/mongodb";
 import { ContactMessage } from "@/models";
 import { sendContactNotification } from "@/lib/email";
+import { getAbout } from "@/lib/queries";
 
 export const revalidate = 60;
 
@@ -46,6 +47,7 @@ export default async function ContactPage({
   searchParams: Promise<{ sent?: string; error?: string }>;
 }) {
   const { sent, error } = await searchParams;
+  const about = await getAbout();
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-16">
@@ -53,6 +55,17 @@ export default async function ContactPage({
       <p className="text-muted">
         For commissions, exhibitions or general enquiries, send a message below.
       </p>
+
+      {about?.socials?.instagram ? (
+        <a
+          href={about.socials.instagram}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-fit rounded-full border border-foreground px-5 py-2 text-sm text-foreground hover:bg-foreground hover:text-background"
+        >
+          Send a DM on Instagram
+        </a>
+      ) : null}
 
       {sent ? (
         <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-foreground">

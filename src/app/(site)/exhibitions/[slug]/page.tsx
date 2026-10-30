@@ -27,13 +27,15 @@ export default async function ExhibitionDetailPage({
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-6 py-16">
-      <Breadcrumbs items={[{ label: "Exhibitions", href: "/exhibitions" }, { label: exhibition.title }]} />
-      <header className="flex flex-col gap-3">
-        <p className="font-mono text-xs uppercase tracking-wide text-accent">
+      <Breadcrumbs items={[{ label: "About", href: "/about" }, { label: exhibition.title }]} />
+      <header className="flex flex-col gap-4">
+        <p className="text-xs uppercase tracking-widest text-muted">
           {exhibition.type === "solo" ? "Solo exhibition" : "Group exhibition"}
         </p>
-        <h1 className="text-3xl font-semibold text-foreground">{exhibition.title}</h1>
-        <p className="text-muted">
+        <h1 className="text-4xl font-medium leading-tight tracking-tight text-foreground md:text-6xl">
+          {exhibition.title}
+        </h1>
+        <p className="text-lg text-foreground">
           {exhibition.venue}
           {location ? `, ${location}` : ""}
         </p>

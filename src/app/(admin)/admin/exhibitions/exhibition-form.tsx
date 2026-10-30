@@ -8,7 +8,8 @@ import { getYear } from "@/lib/format";
 function toDateInputValue(date?: Date | string) {
   if (!date) return "";
   const value = typeof date === "string" ? new Date(date) : date;
-  return value.toISOString().slice(0, 10);
+  // Exhibition dates are month-precision (stored at UTC midnight on the 1st), so the input is YYYY-MM.
+  return value.toISOString().slice(0, 7);
 }
 
 export async function ExhibitionForm({
@@ -66,19 +67,19 @@ export async function ExhibitionForm({
         </Select>
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Start date">
+        <Field label="Start (month)">
           <input
             name="startDate"
-            type="date"
+            type="month"
             defaultValue={toDateInputValue(exhibition?.startDate)}
             required
             className={inputClass}
           />
         </Field>
-        <Field label="End date">
+        <Field label="End (month, optional)">
           <input
             name="endDate"
-            type="date"
+            type="month"
             defaultValue={toDateInputValue(exhibition?.endDate)}
             className={inputClass}
           />
