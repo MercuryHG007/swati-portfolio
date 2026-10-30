@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { TextLink } from "@/components/text-link/text-link";
 import { getAbout } from "@/lib/queries";
 
 export async function SiteFooter() {
@@ -16,20 +16,20 @@ export async function SiteFooter() {
           </p>
         </div>
         <nav aria-label="Footer" className="flex flex-col gap-2">
-          <Link href="/portfolio" className="hover:text-muted">Portfolio</Link>
-          <Link href="/about" className="hover:text-muted">About</Link>
-          <Link href="/contact" className="hover:text-muted">Get in touch</Link>
+          <TextLink href="/portfolio" variant="inverse" className="w-fit">Portfolio</TextLink>
+          <TextLink href="/about" variant="inverse" className="w-fit">About</TextLink>
+          <TextLink href="/contact" variant="inverse" className="w-fit">Get in touch</TextLink>
         </nav>
         <div className="flex flex-col gap-2">
           {email ? (
-            <a href={`mailto:${email}`} className="hover:text-muted">
+            <TextLink href={`mailto:${email}`} variant="primary" className="w-fit">
               {email}
-            </a>
+            </TextLink>
           ) : null}
           {instagram ? (
-            <a href={instagram} target="_blank" rel="noopener noreferrer" className="hover:text-muted">
+            <TextLink href={instagram} variant="primary" className="w-fit">
               Instagram
-            </a>
+            </TextLink>
           ) : null}
         </div>
       </div>

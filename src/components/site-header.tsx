@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
+import { TextLink } from "@/components/text-link/text-link";
 
 // Exhibitions live on the About page, so they're not a top-level link.
 const NAV_LINKS = [
@@ -18,9 +19,9 @@ export function SiteHeader() {
         </Link>
         <nav className="hidden items-center gap-8 text-sm text-foreground md:flex">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} prefetch={false} className="hover:text-muted">
+            <TextLink key={link.href} href={link.href} variant="inverse" prefetch={false}>
               {link.label}
-            </Link>
+            </TextLink>
           ))}
           <Link
             href={CTA.href}
@@ -32,14 +33,9 @@ export function SiteHeader() {
         </nav>
         <MobileNavDrawer>
           {[...NAV_LINKS, CTA].map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              prefetch={false}
-              className="text-lg text-foreground hover:text-muted"
-            >
+            <TextLink key={link.href} href={link.href} variant="inverse" prefetch={false} className="text-lg text-foreground">
               {link.label}
-            </Link>
+            </TextLink>
           ))}
         </MobileNavDrawer>
       </div>

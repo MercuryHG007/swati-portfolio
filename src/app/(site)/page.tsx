@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FeaturedCarousel, type CarouselItem } from "@/components/featured-carousel";
+import { TextLink } from "@/components/text-link/text-link";
 import { getAbout, getFeaturedArtworks, getMediums } from "@/lib/queries";
 
 export const revalidate = 60;
@@ -35,9 +36,9 @@ export default async function Home() {
         <section className="flex flex-col gap-6">
           <div className="mx-auto flex w-full max-w-6xl items-end justify-between px-6">
             <h2 className="text-xs uppercase tracking-widest text-muted">Featured work</h2>
-            <Link href="/portfolio" className="text-sm text-foreground hover:text-muted">
+            <TextLink href="/portfolio" variant="primary" className="text-sm text-foreground">
               ALL WORKS
-            </Link>
+            </TextLink>
           </div>
           <FeaturedCarousel items={carouselItems} />
         </section>

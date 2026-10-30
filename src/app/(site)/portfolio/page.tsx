@@ -7,6 +7,7 @@ import {
   getSubjects,
 } from "@/lib/queries";
 import { ArtworkCard } from "@/components/artwork-card";
+import { CardTitle } from "@/components/card-title/card-title";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { getYear } from "@/lib/format";
 
@@ -67,12 +68,14 @@ export default async function PortfolioPage() {
                       crop="fill"
                       gravity="auto"
                       sizes="(min-width: 640px) 50vw, 100vw"
-                      className="object-cover transition duration-300 group-hover:scale-105"
+                      className="scale-[1.05] object-cover transition duration-500 ease-out group-hover:scale-100 group-focus-visible:scale-100 motion-reduce:scale-100 motion-reduce:transition-none"
                       loading={index === 0 ? "eager" : "lazy"}
                     />
                   ) : null}
                 </div>
-                <h3 className="mt-3 text-base font-semibold text-foreground">{s.title}</h3>
+                <h3 className="mt-3 text-base font-semibold text-foreground">
+                  <CardTitle>{s.title}</CardTitle>
+                </h3>
                 {s.description ? (
                   <p className="mt-1 line-clamp-2 text-sm text-muted">{s.description}</p>
                 ) : null}

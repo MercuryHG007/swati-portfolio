@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { TextLink } from "@/components/text-link/text-link";
 import { ProtectedImage } from "@/components/cloudinary-image";
 import { getAbout, getPublishedExhibitions } from "@/lib/queries";
 import { formatDateRange, getYearUTC } from "@/lib/format";
@@ -83,12 +83,13 @@ export default async function AboutPage() {
                           .join(", ");
                         return (
                           <li key={exhibition.slug} className="flex flex-col gap-1">
-                            <Link
+                            <TextLink
                               href={`/exhibitions/${exhibition.slug}`}
-                              className="w-fit text-foreground underline-offset-4 hover:underline"
+                              variant="inverse"
+                              className="w-fit text-foreground"
                             >
                               {exhibition.title}
-                            </Link>
+                            </TextLink>
                             <p className="text-sm text-muted">
                               {venueLine} · {formatDateRange(exhibition.startDate, exhibition.endDate)}
                             </p>
@@ -140,23 +141,18 @@ export default async function AboutPage() {
           <div className="flex flex-col gap-3">
             <p className="text-xs uppercase tracking-widest text-muted">Contact</p>
             {email ? (
-              <a href={`mailto:${email}`} className="w-fit text-foreground underline-offset-4 hover:underline">
+              <TextLink href={`mailto:${email}`} variant="primary" className="w-fit text-foreground">
                 {email}
-              </a>
+              </TextLink>
             ) : null}
             {instagram ? (
-              <a
-                href={instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-fit text-foreground underline-offset-4 hover:underline"
-              >
+              <TextLink href={instagram} variant="primary" className="w-fit text-foreground">
                 Message on Instagram
-              </a>
+              </TextLink>
             ) : null}
-            <Link href="/contact" className="w-fit text-foreground underline-offset-4 hover:underline">
+            <TextLink href="/contact" variant="primary" className="w-fit text-foreground">
               Send a message
-            </Link>
+            </TextLink>
           </div>
         </aside>
       </div>

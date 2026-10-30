@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { TextLink } from "@/components/text-link/text-link";
 
 export type BreadcrumbItem = {
   label: string;
@@ -17,9 +17,9 @@ export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
             <li key={`${item.label}-${index}`} className="flex items-center gap-2">
               {index > 0 ? <span aria-hidden="true">/</span> : null}
               {item.href && !isLast ? (
-                <Link href={item.href} className="hover:text-accent">
+                <TextLink href={item.href} variant="inverse">
                   {item.label}
-                </Link>
+                </TextLink>
               ) : (
                 <span aria-current={isLast ? "page" : undefined} className={isLast ? "text-foreground" : ""}>
                   {item.label}

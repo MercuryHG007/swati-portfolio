@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TextLink } from "@/components/text-link/text-link";
 import { notFound } from "next/navigation";
 import {
   getArtworkBySlug,
@@ -65,9 +66,9 @@ export default async function ArtworkDetailPage({
           {artwork.medium ? (
             <>
               <span aria-hidden>·</span>
-              <Link href={`/portfolio/medium/${artwork.medium.slug}`} className="hover:text-accent">
+              <TextLink href={`/portfolio/medium/${artwork.medium.slug}`} variant="primary">
                 {artwork.medium.name}
-              </Link>
+              </TextLink>
             </>
           ) : null}
           {dimensions ? (
@@ -98,9 +99,9 @@ export default async function ArtworkDetailPage({
           <p className="text-sm text-muted">
             Part of the{" "}
             {seriesIsLinkable ? (
-              <Link href={`/portfolio/series/${artwork.series.slug}`} className="text-accent hover:underline">
+              <TextLink href={`/portfolio/series/${artwork.series.slug}`} variant="primary" className="text-accent">
                 {artwork.series.title}
-              </Link>
+              </TextLink>
             ) : (
               <span className="text-foreground">{artwork.series.title}</span>
             )}{" "}
@@ -114,9 +115,9 @@ export default async function ArtworkDetailPage({
             <ul className="flex flex-col gap-1 text-sm">
               {exhibitions.map((exhibition) => (
                 <li key={exhibition.slug}>
-                  <Link href={`/exhibitions/${exhibition.slug}`} className="text-accent hover:underline">
+                  <TextLink href={`/exhibitions/${exhibition.slug}`} variant="primary" className="text-accent">
                     {exhibition.title}
-                  </Link>{" "}
+                  </TextLink>{" "}
                   <span className="text-muted">
                     ({formatDateRange(exhibition.startDate, exhibition.endDate)})
                   </span>

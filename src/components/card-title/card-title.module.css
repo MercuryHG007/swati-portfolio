@@ -1,0 +1,19 @@
+/* Draws left-to-right while the enclosing `.group` is hovered or focused. */
+.underline {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1px;
+  transition: background-size 300ms ease;
+}
+
+:global(.group:hover) .underline,
+:global(.group:focus-visible) .underline {
+  background-size: 100% 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .underline {
+    transition: none;
+  }
+}
