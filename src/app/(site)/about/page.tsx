@@ -125,7 +125,7 @@ export default async function AboutPage() {
           ) : null}
         </div>
 
-        <aside className="flex flex-col gap-10 text-sm md:sticky md:top-12 md:self-start">
+        <aside className="flex flex-col gap-10 text-sm md:sticky md:top-[calc(var(--header-height)+2rem)] md:self-start">
           {about?.resumeUrl ? (
             <Button href={about.resumeUrl} variant="inverse" size="md">
               Download CV (PDF)
