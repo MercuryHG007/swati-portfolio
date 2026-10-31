@@ -14,8 +14,8 @@ export type CarouselItem = {
 };
 
 // Motion model (matches the reference site): a constant idle drift, plus a velocity impulse from
-// wheel input that decays each frame. Wheel direction sets the drift direction, so scrolling down
-// moves the row right-to-left and scrolling up moves it left-to-right.
+// wheel or page-scroll input that decays each frame. Scroll direction sets the drift direction, so
+// scrolling down moves the row right-to-left and scrolling up moves it left-to-right.
 // The idle drift is 6rem per second, where rem is the root font size. That size is vw/192 on
 // desktop and min(vw/37.5, 12px) below 1024px, so phones and tablets move faster.
 const DRIFT_REM = 6;
@@ -24,6 +24,10 @@ const DESKTOP_ROOT_DIVISOR = 192;
 const ADAPTIVE_ROOT_DIVISOR = 37.5;
 const ADAPTIVE_ROOT_MAX = 12;
 const WHEEL_GAIN = 2;
+const SCROLL_GAIN = 2;
+// A wheel gesture also fires scroll events; ignore those so the impulse isn't applied twice.
+const WHEEL_SCROLL_OVERLAP_MS = 150;
+const DRAG_CLICK_THRESHOLD = 6;
 const KEY_IMPULSE = 800;
 const MAX_VELOCITY = 6000;
 const DECAY_PER_FRAME = 0.92;
@@ -143,12 +147,66 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
     });
     observer.observe(viewport);
 
+    let lastWheel = -Infinity;
     const onWheel = (event: WheelEvent) => {
+      lastWheel = performance.now();
       if (!s.running || reduced) return;
       if (Math.abs(event.deltaY) > 1) s.dir = event.deltaY > 0 ? 1 : -1;
       s.v = clampVelocity(s.v + event.deltaY * WHEEL_GAIN);
     };
     window.addEventListener("wheel", onWheel, { passive: true });
+
+    // Touch screens never fire wheel events, so follow the page scroll itself. This covers finger
+    // drags, momentum, keyboard and scrollbar scrolling, wherever on the page the gesture starts.
+    let lastY = window.scrollY;
+    const onPageScroll = () => {
+      const maxY = document.documentElement.scrollHeight - window.innerHeight;
+      // Skip iOS rubber-band overscroll, which would flip the direction spuriously.
+      if (window.scrollY < 0 || window.scrollY > maxY) return;
+      const dy = window.scrollY - lastY;
+      lastY = window.scrollY;
+      if (!s.running || reduced || performance.now() - lastWheel < WHEEL_SCROLL_OVERLAP_MS) return;
+      if (Math.abs(dy) > 1) s.dir = dy > 0 ? 1 : -1;
+      s.v = clampVelocity(s.v + dy * SCROLL_GAIN);
+    };
+    window.addEventListener("scroll", onPageScroll, { passive: true });
+
+    // A mouse or pen drag doesn't scroll the page, so read it directly: dragging up acts like
+    // scrolling down. Touch is left to the browser's own pan and handled by the scroll listener.
+    let dragY: number | null = null;
+    let dragDistance = 0;
+    let dragged = false;
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType === "touch" || event.button !== 0) return;
+      dragY = event.clientY;
+      dragDistance = 0;
+      dragged = false;
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (dragY === null) return;
+      const dy = dragY - event.clientY;
+      dragY = event.clientY;
+      dragDistance += Math.abs(dy);
+      if (dragDistance > DRAG_CLICK_THRESHOLD) dragged = true;
+      if (!s.running || reduced) return;
+      if (Math.abs(dy) > 1) s.dir = dy > 0 ? 1 : -1;
+      s.v = clampVelocity(s.v + dy * SCROLL_GAIN);
+    };
+    const onPointerEnd = () => {
+      dragY = null;
+    };
+    // Releasing a drag over a tile would otherwise open it.
+    const onClickCapture = (event: MouseEvent) => {
+      if (!dragged) return;
+      dragged = false;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    viewport.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerup", onPointerEnd);
+    window.addEventListener("pointercancel", onPointerEnd);
+    viewport.addEventListener("click", onClickCapture, true);
 
     // Browsers can scroll an overflow:hidden box when a focused link is off-screen; undo that.
     const onScroll = () => {
@@ -162,6 +220,12 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
       observer.disconnect();
       resizeObserver.disconnect();
       window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("scroll", onPageScroll);
+      viewport.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerEnd);
+      window.removeEventListener("pointercancel", onPointerEnd);
+      viewport.removeEventListener("click", onClickCapture, true);
       viewport.removeEventListener("scroll", onScroll);
     };
   }, []);
