@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -29,6 +29,8 @@ type ImageUploaderProps = {
   folder: string;
   initial?: CloudinaryImageValue[];
   multiple?: boolean;
+  // Lets a parent react to how many images are currently attached (e.g. to show a hint).
+  onCountChange?: (count: number) => void;
 };
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -91,12 +93,16 @@ function SortableThumb({
   );
 }
 
-export function ImageUploader({ name, folder, initial = [], multiple = false }: ImageUploaderProps) {
+export function ImageUploader({ name, folder, initial = [], multiple = false, onCountChange }: ImageUploaderProps) {
   const inputId = useId();
   const [images, setImages] = useState<ImageItem[]>(() => initial.map(withUid));
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  useEffect(() => {
+    onCountChange?.(images.length);
+  }, [images.length, onCountChange]);
 
   async function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;

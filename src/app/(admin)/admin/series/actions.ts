@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Series, Artwork } from "@/models";
+import { Series, Artwork, SeriesSettings } from "@/models";
+import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
 import { slugify } from "@/lib/slugify";
 import { withAltFallback } from "@/lib/image-alt";
 import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
@@ -12,6 +13,7 @@ import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-clea
 function refresh(slug?: string) {
   revalidatePath("/admin/series");
   revalidatePath("/portfolio");
+  revalidatePath("/series");
   if (slug) revalidatePath(`/portfolio/series/${slug}`);
 }
 
@@ -29,9 +31,10 @@ function readFields(formData: FormData) {
   const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(title);
   const description = String(formData.get("description") ?? "").trim();
   const status = formData.get("status") === "published" ? "published" : "hidden";
+  const featured = formData.get("featured") === "on";
   const coverImageRaw = readImage(formData);
   const coverImage = coverImageRaw ? withAltFallback([coverImageRaw], title)[0] : null;
-  return { title, slug, description, status, coverImage };
+  return { title, slug, description, status, featured, coverImage };
 }
 
 export async function createSeries(formData: FormData) {
@@ -80,5 +83,19 @@ export async function reorderSeries(orderedIds: string[]) {
   await connectToDatabase();
   await Promise.all(orderedIds.map((id, index) => Series.updateOne({ _id: id }, { order: index })));
   refresh();
+}
+
+// Singleton text for the portfolio carousel. Blank heading or button text falls back to the defaults.
+export async function updateSeriesSettings(formData: FormData) {
+  await requireAdminSession();
+  const heading = String(formData.get("heading") ?? "").trim().slice(0, 100) || SERIES_SETTINGS_DEFAULTS.heading;
+  const body = String(formData.get("body") ?? "").trim().slice(0, 400);
+  const ctaLabel = String(formData.get("ctaLabel") ?? "").trim().slice(0, 40) || SERIES_SETTINGS_DEFAULTS.ctaLabel;
+
+  await connectToDatabase();
+  await SeriesSettings.findOneAndUpdate({}, { heading, body, ctaLabel }, { upsert: true });
+  revalidatePath("/portfolio");
+  revalidatePath("/admin/series");
+  redirect("/admin/series?saved=1");
 }
 

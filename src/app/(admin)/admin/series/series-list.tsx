@@ -22,7 +22,7 @@ import { deleteSeries, reorderSeries } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { ActionIcon, buttonClass, secondaryButtonClass, cardClass } from "@/components/admin/ui";
 
-type SeriesItem = { _id: string; title: string; status: string };
+type SeriesItem = { _id: string; title: string; status: string; featured: boolean };
 
 function SortableSeriesCard({ item }: { item: SeriesItem }) {
   const id = String(item._id);
@@ -45,6 +45,7 @@ function SortableSeriesCard({ item }: { item: SeriesItem }) {
           <GripVertical className="h-4 w-4" />
         </button>
         <p className="text-foreground">{item.title}</p>
+        {item.featured ? <span className="text-xs text-muted">Featured</span> : null}
       </div>
       <div className="flex gap-2">
         <Link href={`/admin/series/${id}`} aria-label={`Edit ${item.title}`}>

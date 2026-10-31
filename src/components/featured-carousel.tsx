@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent, type Ref } from "react";
+import { useEffect, useRef, type CSSProperties, type KeyboardEvent, type Ref } from "react";
 import { ProtectedImage } from "@/components/cloudinary-image";
 
 export type CarouselItem = {
@@ -9,6 +9,8 @@ export type CarouselItem = {
   title: string;
   cta?: string;
   image?: { publicId: string; alt?: string; width: number; height: number } | null;
+  // Tiny blurred copy of the image, shown until the full picture has loaded.
+  placeholder?: string;
 };
 
 // Motion model (matches the reference site): a constant idle drift, plus a velocity impulse from
@@ -26,8 +28,6 @@ const KEY_IMPULSE = 800;
 const MAX_VELOCITY = 6000;
 const DECAY_PER_FRAME = 0.92;
 const DIRECTION_EASE = 6;
-const FLING_FACTOR = 0.9;
-const DRAG_SLOP = 6;
 const START_DIRECTION = -1; // before any scroll the row moves left-to-right
 
 // Each picture is drawn 130% of its frame width, so it can slide up to 15% of the frame each way.
@@ -44,12 +44,6 @@ type MotionState = {
   running: boolean;
   raf: number;
   last: number;
-  dragging: boolean;
-  captured: boolean;
-  lastX: number;
-  lastT: number;
-  dragV: number;
-  moved: number;
 };
 
 const clampVelocity = (v: number) => Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, v));
@@ -90,12 +84,6 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
     running: false,
     raf: 0,
     last: 0,
-    dragging: false,
-    captured: false,
-    lastX: 0,
-    lastT: 0,
-    dragV: 0,
-    moved: 0,
   });
 
   useEffect(() => {
@@ -128,7 +116,7 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
 
       s.dirNow += (s.dir - s.dirNow) * Math.min(1, dt * DIRECTION_EASE);
       const drift = reduced ? 0 : driftPerSecond(window.innerWidth) * s.dirNow;
-      const speed = s.dragging ? 0 : drift + s.v;
+      const speed = drift + s.v;
       s.x = wrap(s.x - speed * dt);
       track.style.transform = `translate3d(${s.x.toFixed(2)}px,0,0)`;
       if (!reduced) applyParallax(track, window.innerWidth);
@@ -175,42 +163,6 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
     };
   }, []);
 
-  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (event.button !== 0) return;
-    const s = motion.current;
-    s.dragging = true;
-    s.captured = false;
-    s.dragV = 0;
-    s.moved = 0;
-    s.lastX = event.clientX;
-    s.lastT = performance.now();
-  }
-
-  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
-    const s = motion.current;
-    if (!s.dragging) return;
-    const dx = event.clientX - s.lastX;
-    const now = performance.now();
-    s.x += dx;
-    s.moved += Math.abs(dx);
-    s.dragV = (dx / Math.max(1, now - s.lastT)) * 1000;
-    if (Math.abs(dx) > 1) s.dir = dx > 0 ? -1 : 1;
-    s.lastX = event.clientX;
-    s.lastT = now;
-    // Only capture once it's clearly a drag, so taps on links still navigate.
-    if (!s.captured && s.moved > DRAG_SLOP) {
-      s.captured = true;
-      event.currentTarget.setPointerCapture(event.pointerId);
-    }
-  }
-
-  function endDrag() {
-    const s = motion.current;
-    if (!s.dragging) return;
-    s.dragging = false;
-    if (Math.abs(s.dragV) > 50) s.v = clampVelocity(s.v - s.dragV * FLING_FACTOR);
-  }
-
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const s = motion.current;
     if (event.key === "ArrowRight") {
@@ -219,14 +171,6 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
       s.v = clampVelocity(s.v - KEY_IMPULSE);
-    }
-  }
-
-  // Suppress the click that ends a drag, so releasing after a swipe doesn't open a link.
-  function onClickCapture(event: MouseEvent<HTMLDivElement>) {
-    if (motion.current.moved > DRAG_SLOP) {
-      event.preventDefault();
-      event.stopPropagation();
     }
   }
 
@@ -240,12 +184,7 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
       aria-label={label}
       tabIndex={0}
       onKeyDown={onKeyDown}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={endDrag}
-      onPointerCancel={endDrag}
-      onClickCapture={onClickCapture}
-      className="relative w-full cursor-grab touch-pan-y select-none overflow-hidden active:cursor-grabbing"
+      className="relative w-full touch-pan-y select-none overflow-hidden"
       style={{ "--h": "55svh" } as CSSProperties}
     >
       <div ref={trackRef} className="flex w-max will-change-transform">
@@ -259,14 +198,14 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
 function Group({ items, groupRef, hidden = false }: { items: CarouselItem[]; groupRef?: Ref<HTMLDivElement>; hidden?: boolean }) {
   return (
     <div ref={groupRef} aria-hidden={hidden || undefined} className="flex shrink-0 gap-8 pr-8">
-      {items.map((item, index) => (
-        <Tile key={`${hidden ? "b" : "a"}-${item.href}`} item={item} hidden={hidden} priority={!hidden && index < 2} />
+      {items.map((item) => (
+        <Tile key={`${hidden ? "b" : "a"}-${item.href}`} item={item} hidden={hidden} />
       ))}
     </div>
   );
 }
 
-function Tile({ item, hidden, priority }: { item: CarouselItem; hidden: boolean; priority: boolean }) {
+function Tile({ item, hidden }: { item: CarouselItem; hidden: boolean }) {
   const ratio = item.image && item.image.height ? item.image.width / item.image.height : 0.8;
 
   return (
@@ -293,7 +232,9 @@ function Tile({ item, hidden, priority }: { item: CarouselItem; hidden: boolean;
               sizes="50vw"
               draggable={false}
               className="object-cover"
-              loading={priority ? "eager" : "lazy"}
+              loading="eager"
+              placeholder={item.placeholder ? "blur" : "empty"}
+              blurDataURL={item.placeholder}
             />
           ) : null}
         </span>

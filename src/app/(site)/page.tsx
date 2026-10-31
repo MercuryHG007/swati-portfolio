@@ -1,3 +1,4 @@
+import { getCldImageUrl } from "next-cloudinary";
 import { FeaturedCarousel, type CarouselItem } from "@/components/featured-carousel";
 import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
@@ -5,17 +6,37 @@ import { getFeaturedArtworks, getMediums } from "@/lib/queries";
 
 export const revalidate = 60;
 
+const PLACEHOLDER_WIDTH = 32;
+
+function blurPlaceholder(image: { publicId: string; width: number; height: number }) {
+  if (!image.width || !image.height) return undefined;
+  return getCldImageUrl({
+    src: image.publicId,
+    width: PLACEHOLDER_WIDTH,
+    height: Math.round((PLACEHOLDER_WIDTH * image.height) / image.width),
+    crop: "fill",
+    gravity: "auto",
+    blur: "1000",
+    quality: "auto:low",
+    format: "auto",
+  });
+}
+
 export default async function Home() {
   const [artworks, mediums] = await Promise.all([
     getFeaturedArtworks(8),
     getMediums(),
   ]);
 
-  const carouselItems: CarouselItem[] = artworks.map((artwork) => ({
-    href: `/artwork/${artwork.slug}`,
-    title: artwork.title,
-    image: artwork.images?.[0] ?? null,
-  }));
+  const carouselItems: CarouselItem[] = artworks.map((artwork) => {
+    const image = artwork.images?.[0] ?? null;
+    return {
+      href: `/artwork/${artwork.slug}`,
+      title: artwork.title,
+      image,
+      placeholder: image ? blurPlaceholder(image) : undefined,
+    };
+  });
 
   return (
     <main className="flex flex-1 flex-col gap-24 py-16">

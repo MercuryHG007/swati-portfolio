@@ -1,3 +1,6 @@
+"use client";
+
+import { useCallback, useState } from "react";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { Field, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
 import Link from "next/link";
@@ -13,9 +16,14 @@ export function SeriesForm({
     description: string;
     coverImage: { publicId: string; width: number; height: number; alt: string } | null;
     status: string;
+    featured?: boolean;
   };
   action: (formData: FormData) => void;
 }) {
+  const [featured, setFeatured] = useState(series?.featured ?? false);
+  const [hasCover, setHasCover] = useState(Boolean(series?.coverImage));
+  const handleImageCount = useCallback((count: number) => setHasCover(count > 0), []);
+
   return (
     <form action={action} className="flex flex-col gap-4">
       {series ? <input type="hidden" name="id" value={String(series._id)} /> : null}
@@ -32,6 +40,7 @@ export function SeriesForm({
           name="coverImage"
           folder="swati-portfolio/series"
           initial={series?.coverImage ? [series.coverImage] : []}
+          onCountChange={handleImageCount}
         />
       </Field>
       <Field label="Status">
@@ -40,6 +49,22 @@ export function SeriesForm({
           <option value="published">Published</option>
         </Select>
       </Field>
+      <div className="flex flex-col gap-1">
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            name="featured"
+            checked={featured}
+            onChange={(event) => setFeatured(event.target.checked)}
+          />
+          Featured on portfolio
+        </label>
+        {featured && !hasCover ? (
+          <p role="alert" className="text-xs text-amber-700">
+            Add a cover image so this series can appear in the portfolio carousel.
+          </p>
+        ) : null}
+      </div>
 
       <div className="flex gap-3">
         <button type="submit" className={buttonClass}>

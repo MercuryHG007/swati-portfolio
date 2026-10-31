@@ -1,9 +1,31 @@
 import { connectToDatabase } from "@/lib/mongodb";
-import { Series, Medium, Subject, Artwork, Exhibition, About } from "@/models";
+import { Series, Medium, Subject, Artwork, Exhibition, About, SeriesSettings } from "@/models";
+import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
 
 export async function getPublishedSeries() {
   await connectToDatabase();
   return Series.find({ status: "published" }).sort({ order: 1, title: 1 }).lean();
+}
+
+// Series shown in the portfolio carousel. Falls back to the latest published series when none are
+// featured yet, the same way homepage artworks fall back to recent work.
+export async function getFeaturedSeries(limit = 8) {
+  await connectToDatabase();
+  const featured = await Series.find({ status: "published", featured: true, coverImage: { $ne: null } })
+    .sort({ order: 1, title: 1 })
+    .limit(limit)
+    .lean();
+  if (featured.length > 0) return featured;
+  return Series.find({ status: "published", coverImage: { $ne: null } })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+}
+
+export async function getSeriesSettings() {
+  await connectToDatabase();
+  const settings = await SeriesSettings.findOne().lean();
+  return { ...SERIES_SETTINGS_DEFAULTS, ...settings };
 }
 
 export async function getSeriesBySlug(slug: string) {
