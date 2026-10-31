@@ -1,33 +1,33 @@
 import {
-  getPublishedSeries,
   getFeaturedSeries,
   getSeriesSettings,
-  getStandaloneArtworks,
-  getMediumsWithWork,
-  getSubjectsWithWork,
+  getPortfolioFacets,
+  getPortfolioPage,
+  resolvePortfolioFilters,
 } from "@/lib/queries";
-import { ArtworkCard } from "@/components/artwork-card";
 import { GridCarousel } from "@/components/grid-carousel/grid-carousel";
-import { Pill } from "@/components/pill/pill";
+import { PortfolioBrowser } from "@/components/portfolio/portfolio-browser";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { getYear } from "@/lib/format";
+import { parsePortfolioFilters, portfolioSearchParams } from "@/lib/portfolio-filters";
 
-export const revalidate = 60;
+type PortfolioPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default async function PortfolioPage() {
-  const [series, featuredSeries, seriesSettings, standalone, mediums, subjects] = await Promise.all([
-    getPublishedSeries(),
+export default async function PortfolioPage({ searchParams }: PortfolioPageProps) {
+  const filters = parsePortfolioFilters(await searchParams);
+  const resolved = await resolvePortfolioFilters(filters);
+  const [featuredSeries, seriesSettings, firstPage, facets] = await Promise.all([
     getFeaturedSeries(8),
     getSeriesSettings(),
-    getStandaloneArtworks(),
-    getMediumsWithWork(),
-    getSubjectsWithWork(),
+    getPortfolioPage(resolved, 1),
+    getPortfolioFacets(resolved),
   ]);
 
   return (
     <main className="flex flex-1 flex-col gap-16 py-16">
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6">
+      <div className="flex w-full flex-col px-6">
         <Breadcrumbs items={[{ label: "Portfolio" }]} />
       </div>
 
@@ -45,50 +45,23 @@ export default async function PortfolioPage() {
         />
       )}
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6">
-        <header className="flex flex-col gap-3">
+      <div className="flex w-full flex-col gap-10 px-6">
+        <header id="portfolio" className="flex scroll-mt-24 flex-col gap-3">
           <h1 className="text-3xl font-medium text-foreground">Portfolio</h1>
           <p className="max-w-2xl text-muted">
-            Browse by series, or filter across the full body of work by medium or subject.
+            Browse by series, or filter the full body of work by medium, subject or size.
           </p>
-          {(mediums.length > 0 || subjects.length > 0) && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {mediums.map((medium) => (
-                <Pill key={medium.slug} href={`/portfolio/medium/${medium.slug}`}>
-                  {medium.name}
-                </Pill>
-              ))}
-              {subjects.map((subject) => (
-                <Pill key={subject.slug} href={`/portfolio/subject/${subject.slug}`}>
-                  {subject.name}
-                </Pill>
-              ))}
-            </div>
-          )}
         </header>
-      </div>
 
-      {standalone.length > 0 && (
-        <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6">
-          <h2 className="text-lg font-medium text-foreground">More work</h2>
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
-            {standalone.map((artwork, index) => (
-              <ArtworkCard
-                key={artwork.slug}
-                slug={artwork.slug}
-                title={artwork.title}
-                year={getYear(artwork.dateMade)}
-                image={artwork.images?.[0]}
-                priority={index === 0 && series.length === 0}
-              />
-            ))}
-          </div>
+        <section aria-label="All paintings">
+          <PortfolioBrowser
+            key={portfolioSearchParams(filters).toString()}
+            initialFilters={filters}
+            initialFacets={facets}
+            initialPage={firstPage}
+          />
         </section>
-      )}
-
-      {series.length === 0 && standalone.length === 0 && (
-        <p className="mx-auto w-full max-w-6xl px-6 text-muted">New work coming soon.</p>
-      )}
+      </div>
     </main>
   );
 }

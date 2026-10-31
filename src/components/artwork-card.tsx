@@ -13,11 +13,13 @@ type ArtworkCardProps = {
   year?: number | null;
   image?: ArtworkCardImage | null;
   priority?: boolean;
+  id?: string;
+  dataIndex?: number;
 };
 
-export function ArtworkCard({ slug, title, year, image, priority = false }: ArtworkCardProps) {
+export function ArtworkCard({ slug, title, year, image, priority = false, id, dataIndex }: ArtworkCardProps) {
   return (
-    <Link href={`/artwork/${slug}`} className="group block">
+    <Link href={`/artwork/${slug}`} id={id} data-index={dataIndex} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden rounded-md bg-surface">
         {image ? (
           <ProtectedImage

@@ -73,3 +73,12 @@ button {
   background: var(--color-accent);
   color: var(--color-accent-fg);
 }
+
+@keyframes drawer-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

@@ -69,7 +69,7 @@ export default async function Home() {
           <ul className="flex flex-wrap gap-3">
             {mediums.map((medium) => (
               <li key={medium.slug}>
-                <Button href={`/portfolio/medium/${medium.slug}`} variant="inverse" size="md">
+                <Button href={`/portfolio?medium=${encodeURIComponent(medium.slug)}#portfolio`} variant="inverse" size="md">
                   {medium.name}
                 </Button>
               </li>

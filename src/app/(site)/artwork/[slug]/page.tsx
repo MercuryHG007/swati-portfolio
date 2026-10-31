@@ -39,7 +39,7 @@ export default async function ArtworkDetailPage({
   if (year) metaParts.push(<span>{year}</span>);
   if (artwork.medium) {
     metaParts.push(
-      <TextLink href={`/portfolio/medium/${artwork.medium.slug}`} variant="primary">
+      <TextLink href={`/portfolio?medium=${encodeURIComponent(artwork.medium.slug)}#portfolio`} variant="primary">
         {artwork.medium.name}
       </TextLink>
     );
@@ -86,7 +86,7 @@ export default async function ArtworkDetailPage({
         {artwork.subjects?.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {artwork.subjects.map((subject: { slug: string; name: string }) => (
-                <Pill key={subject.slug} href={`/portfolio/subject/${subject.slug}`}>
+                <Pill key={subject.slug} href={`/portfolio?subject=${encodeURIComponent(subject.slug)}#portfolio`}>
                   {subject.name}
                 </Pill>
             ))}

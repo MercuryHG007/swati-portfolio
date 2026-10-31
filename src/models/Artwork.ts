@@ -32,4 +32,7 @@ const artworkSchema = new Schema(
   { timestamps: true }
 );
 
+// Matches the portfolio sort so paged queries can use the index.
+artworkSchema.index({ status: 1, order: 1, createdAt: -1, _id: -1 });
+
 export default models.Artwork || model("Artwork", artworkSchema);
