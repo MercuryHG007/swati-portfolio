@@ -11,10 +11,16 @@ export type CarouselItem = {
   image?: { publicId: string; alt?: string; width: number; height: number } | null;
 };
 
-// Motion model (matches the reference site): a constant idle drift scaled to the viewport width,
-// plus a velocity impulse from wheel input that decays each frame. Wheel direction sets the drift
-// direction, so scrolling down moves the row right-to-left and scrolling up moves it left-to-right.
-const DRIFT_DIVISOR = 32; // idle speed = innerWidth / 32 px per second
+// Motion model (matches the reference site): a constant idle drift, plus a velocity impulse from
+// wheel input that decays each frame. Wheel direction sets the drift direction, so scrolling down
+// moves the row right-to-left and scrolling up moves it left-to-right.
+// The idle drift is 6rem per second, where rem is the root font size. That size is vw/192 on
+// desktop and min(vw/37.5, 12px) below 1024px, so phones and tablets move faster.
+const DRIFT_REM = 6;
+const ADAPTIVE_BREAKPOINT = 1024;
+const DESKTOP_ROOT_DIVISOR = 192;
+const ADAPTIVE_ROOT_DIVISOR = 37.5;
+const ADAPTIVE_ROOT_MAX = 12;
 const WHEEL_GAIN = 2;
 const KEY_IMPULSE = 800;
 const MAX_VELOCITY = 6000;
@@ -28,7 +34,6 @@ const START_DIRECTION = -1; // before any scroll the row moves left-to-right
 const OVERSCAN = 0.15;
 const PARALLAX_DESKTOP = 0.15;
 const PARALLAX_MOBILE = 0.1;
-const MOBILE_BREAKPOINT = 768;
 
 type MotionState = {
   x: number;
@@ -49,11 +54,19 @@ type MotionState = {
 
 const clampVelocity = (v: number) => Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, v));
 
+function driftPerSecond(viewportWidth: number) {
+  const rootPx =
+    viewportWidth < ADAPTIVE_BREAKPOINT
+      ? Math.min(viewportWidth / ADAPTIVE_ROOT_DIVISOR, ADAPTIVE_ROOT_MAX)
+      : viewportWidth / DESKTOP_ROOT_DIVISOR;
+  return DRIFT_REM * rootPx;
+}
+
 // Shift each picture against its tile's position in the viewport, so the image appears to slide
 // inside its frame as the row moves. Offscreen tiles are skipped.
 function applyParallax(track: HTMLElement, viewportWidth: number) {
   const halfW = viewportWidth / 2;
-  const shift = viewportWidth < MOBILE_BREAKPOINT ? PARALLAX_MOBILE : PARALLAX_DESKTOP;
+  const shift = viewportWidth < ADAPTIVE_BREAKPOINT ? PARALLAX_MOBILE : PARALLAX_DESKTOP;
   for (const layer of track.querySelectorAll<HTMLElement>("[data-parallax]")) {
     const frame = layer.parentElement;
     if (!frame) continue;
@@ -114,7 +127,7 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
       s.last = now;
 
       s.dirNow += (s.dir - s.dirNow) * Math.min(1, dt * DIRECTION_EASE);
-      const drift = reduced ? 0 : (window.innerWidth / DRIFT_DIVISOR) * s.dirNow;
+      const drift = reduced ? 0 : driftPerSecond(window.innerWidth) * s.dirNow;
       const speed = s.dragging ? 0 : drift + s.v;
       s.x = wrap(s.x - speed * dt);
       track.style.transform = `translate3d(${s.x.toFixed(2)}px,0,0)`;
@@ -233,7 +246,7 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
       onPointerCancel={endDrag}
       onClickCapture={onClickCapture}
       className="relative w-full cursor-grab touch-pan-y select-none overflow-hidden active:cursor-grabbing"
-      style={{ "--h": "clamp(16rem, 60vh, 38rem)" } as CSSProperties}
+      style={{ "--h": "55svh" } as CSSProperties}
     >
       <div ref={trackRef} className="flex w-max will-change-transform">
         <Group items={items} groupRef={groupRef} />
