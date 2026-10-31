@@ -18,6 +18,8 @@ const aboutSchema = new Schema(
     statement: { type: String, default: "" },
     location: { type: String, default: "" },
     photo: { type: cloudinaryImageSchema, default: null },
+    // Square mark shown in the site footer. Null hides it.
+    footerLogo: { type: cloudinaryImageSchema, default: null },
     resumeUrl: { type: String, default: "" },
     contactEmail: { type: String, default: "" },
     socials: {

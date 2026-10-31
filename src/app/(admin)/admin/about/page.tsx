@@ -41,6 +41,15 @@ export default async function AdminAboutPage() {
           />
         </Field>
 
+        <Field label="Footer logo">
+          <ImageUploader
+            name="footerLogo"
+            folder="swati-portfolio/about/logo"
+            initial={about.footerLogo ? [about.footerLogo] : []}
+          />
+          <p className="text-xs text-muted">Square, at least 768 px. Shown in the footer at 72 px. Leave empty to hide it.</p>
+        </Field>
+
         <fieldset className="flex flex-col gap-3">
           <legend className="mb-1 text-sm font-medium text-foreground">Education</legend>
           <CvRowsField name="education" initial={toRows(about.education)} addLabel="Add education" />

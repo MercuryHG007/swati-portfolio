@@ -7,8 +7,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { About } from "@/models";
 import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 
-function readImage(formData: FormData) {
-  const raw = String(formData.get("photo") ?? "null");
+function readImage(formData: FormData, name = "photo") {
+  const raw = String(formData.get(name) ?? "null");
   try {
     return JSON.parse(raw);
   } catch {
@@ -55,6 +55,7 @@ export async function updateAbout(formData: FormData) {
     .map((line) => line.trim())
     .filter(Boolean);
   const photo = readImage(formData);
+  const footerLogo = readImage(formData, "footerLogo");
 
   await connectToDatabase();
   const previous = await About.findOneAndUpdate(
@@ -66,6 +67,7 @@ export async function updateAbout(formData: FormData) {
       resumeUrl,
       contactEmail,
       photo,
+      footerLogo,
       socials: { instagram },
       education,
       awards,
@@ -73,8 +75,13 @@ export async function updateAbout(formData: FormData) {
       publicCollections,
     },
     { upsert: true }
-  ).lean<{ photo?: { publicId: string } }>();
-  await destroyCloudinaryAssets(removedPublicIds(previous?.photo ? [previous.photo] : [], photo ? [photo] : []));
+  ).lean<{ photo?: { publicId: string }; footerLogo?: { publicId: string } }>();
+  await destroyCloudinaryAssets(
+    removedPublicIds(
+      [previous?.photo, previous?.footerLogo].filter((image): image is { publicId: string } => Boolean(image)),
+      [photo, footerLogo].filter(Boolean)
+    )
+  );
 
   revalidatePath("/", "layout");
   redirect("/admin/about?saved=1");
