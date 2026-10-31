@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { FeaturedCarousel, type CarouselItem } from "@/components/featured-carousel";
 import { TextLink } from "@/components/text-link/text-link";
-import { getAbout, getFeaturedArtworks, getMediums } from "@/lib/queries";
+import { getFeaturedArtworks, getMediums } from "@/lib/queries";
 
 export const revalidate = 60;
 
 export default async function Home() {
-  const [artworks, mediums, about] = await Promise.all([
+  const [artworks, mediums] = await Promise.all([
     getFeaturedArtworks(8),
     getMediums(),
-    getAbout(),
   ]);
 
   const carouselItems: CarouselItem[] = artworks.map((artwork) => ({
@@ -28,7 +27,7 @@ export default async function Home() {
           href="/portfolio"
           className="w-fit rounded-full bg-accent px-6 py-3 text-sm text-accent-foreground hover:opacity-80"
         >
-          View portfolio
+          View Portfolio
         </Link>
       </section>
 
@@ -75,16 +74,6 @@ export default async function Home() {
           >
             Get in touch
           </Link>
-          {about?.socials?.instagram ? (
-            <a
-              href={about.socials.instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border border-foreground px-6 py-3 text-foreground hover:bg-foreground hover:text-background"
-            >
-              Message on Instagram
-            </a>
-          ) : null}
         </div>
       </section>
     </main>

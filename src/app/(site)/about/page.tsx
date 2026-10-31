@@ -22,8 +22,6 @@ export default async function AboutPage() {
   const [about, exhibitions] = await Promise.all([getAbout(), getPublishedExhibitions()]);
 
   const location = about?.location;
-  const email = about?.contactEmail;
-  const instagram = about?.socials?.instagram;
   const exhibitionsByYear = groupByYear(exhibitions);
 
   return (
@@ -140,16 +138,6 @@ export default async function AboutPage() {
 
           <div className="flex flex-col gap-3">
             <p className="text-xs uppercase tracking-widest text-muted">Contact</p>
-            {email ? (
-              <TextLink href={`mailto:${email}`} variant="primary" className="w-fit text-foreground">
-                {email}
-              </TextLink>
-            ) : null}
-            {instagram ? (
-              <TextLink href={instagram} variant="primary" className="w-fit text-foreground">
-                Message on Instagram
-              </TextLink>
-            ) : null}
             <TextLink href="/contact" variant="primary" className="w-fit text-foreground">
               Send a message
             </TextLink>
