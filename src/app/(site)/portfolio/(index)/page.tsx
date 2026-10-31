@@ -1,9 +1,8 @@
 import {
-  getFeaturedSeries,
-  getSeriesSettings,
-  getPortfolioFacets,
-  getPortfolioPage,
-  resolvePortfolioFilters,
+  getCachedFeaturedSeriesCards,
+  getCachedSeriesSettings,
+  getCachedPortfolioFacets,
+  getCachedPortfolioPage,
 } from "@/lib/queries";
 import { GridCarousel } from "@/components/grid-carousel/grid-carousel";
 import { PortfolioBrowser } from "@/components/portfolio/portfolio-browser";
@@ -16,12 +15,11 @@ type PortfolioPageProps = {
 
 export default async function PortfolioPage({ searchParams }: PortfolioPageProps) {
   const filters = parsePortfolioFilters(await searchParams);
-  const resolved = await resolvePortfolioFilters(filters);
   const [featuredSeries, seriesSettings, firstPage, facets] = await Promise.all([
-    getFeaturedSeries(8),
-    getSeriesSettings(),
-    getPortfolioPage(resolved, 1),
-    getPortfolioFacets(resolved),
+    getCachedFeaturedSeriesCards(),
+    getCachedSeriesSettings(),
+    getCachedPortfolioPage(filters, 1),
+    getCachedPortfolioFacets(filters),
   ]);
 
   return (
@@ -40,7 +38,7 @@ export default async function PortfolioPage({ searchParams }: PortfolioPageProps
           items={featuredSeries.map((s) => ({
             href: `/portfolio/series/${s.slug}`,
             title: s.title,
-            image: s.coverImage ? { publicId: s.coverImage.publicId, alt: s.coverImage.alt } : null,
+            image: s.image,
           }))}
         />
       )}

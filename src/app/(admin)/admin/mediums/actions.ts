@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
+import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Medium, Artwork } from "@/models";
 import { slugify } from "@/lib/slugify";
@@ -10,6 +11,7 @@ import { slugify } from "@/lib/slugify";
 function refresh() {
   revalidatePath("/admin/mediums");
   revalidatePath("/portfolio");
+  updateTag(PORTFOLIO_CACHE_TAG);
 }
 
 export async function createMedium(formData: FormData) {

@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import type { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { getYear } from "@/lib/format";
@@ -257,3 +258,46 @@ export async function getAbout() {
   await connectToDatabase();
   return About.findOne().lean();
 }
+
+// Cached copies of everything the /portfolio page reads. The page depends on searchParams, so it
+// can't be prerendered; caching the queries keeps it from hitting MongoDB on every visit. Admin
+// actions call updateTag(PORTFOLIO_CACHE_TAG) so edits show up immediately, and the time-based
+// revalidate is only a safety net. Results are JSON round-tripped, so only plain fields are returned.
+export const PORTFOLIO_CACHE_TAG = "portfolio";
+const PORTFOLIO_CACHE_SECONDS = 300;
+const portfolioCacheOptions = { tags: [PORTFOLIO_CACHE_TAG], revalidate: PORTFOLIO_CACHE_SECONDS };
+
+export const getCachedFeaturedSeriesCards = unstable_cache(
+  async () => {
+    const series = await getFeaturedSeries(8);
+    return series.map((item) => ({
+      slug: item.slug,
+      title: item.title,
+      image: item.coverImage ? { publicId: item.coverImage.publicId, alt: item.coverImage.alt } : null,
+    }));
+  },
+  ["portfolio-featured-series"],
+  portfolioCacheOptions
+);
+
+export const getCachedSeriesSettings = unstable_cache(
+  async () => {
+    const { heading, body, ctaLabel } = await getSeriesSettings();
+    return { heading, body, ctaLabel };
+  },
+  ["portfolio-series-settings"],
+  portfolioCacheOptions
+);
+
+export const getCachedPortfolioPage = unstable_cache(
+  async (filters: PortfolioFilters, page: number) =>
+    getPortfolioPage(await resolvePortfolioFilters(filters), page),
+  ["portfolio-page"],
+  portfolioCacheOptions
+);
+
+export const getCachedPortfolioFacets = unstable_cache(
+  async (filters: PortfolioFilters) => getPortfolioFacets(await resolvePortfolioFilters(filters)),
+  ["portfolio-facets"],
+  portfolioCacheOptions
+);

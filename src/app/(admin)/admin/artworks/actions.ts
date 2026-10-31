@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
+import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Artwork, Exhibition } from "@/models";
 import { slugify } from "@/lib/slugify";
@@ -12,6 +13,7 @@ import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-clea
 function refresh(slug?: string) {
   revalidatePath("/");
   revalidatePath("/portfolio");
+  updateTag(PORTFOLIO_CACHE_TAG);
   if (slug) revalidatePath(`/artwork/${slug}`);
 }
 
@@ -103,5 +105,6 @@ export async function reorderArtworksInSeries(seriesId: string, orderedIds: stri
   );
   revalidatePath(`/admin/series/${seriesId}`);
   revalidatePath("/portfolio");
+  updateTag(PORTFOLIO_CACHE_TAG);
 }
 

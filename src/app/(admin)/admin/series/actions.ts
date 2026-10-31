@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
+import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Series, Artwork, SeriesSettings } from "@/models";
 import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
@@ -13,6 +14,7 @@ import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-clea
 function refresh(slug?: string) {
   revalidatePath("/admin/series");
   revalidatePath("/portfolio");
+  updateTag(PORTFOLIO_CACHE_TAG);
   revalidatePath("/series");
   if (slug) revalidatePath(`/portfolio/series/${slug}`);
 }
@@ -95,6 +97,7 @@ export async function updateSeriesSettings(formData: FormData) {
   await connectToDatabase();
   await SeriesSettings.findOneAndUpdate({}, { heading, body, ctaLabel }, { upsert: true });
   revalidatePath("/portfolio");
+  updateTag(PORTFOLIO_CACHE_TAG);
   revalidatePath("/admin/series");
   redirect("/admin/series?saved=1");
 }
