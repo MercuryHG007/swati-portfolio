@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
+import { TextLink, textLinkClasses } from "@/components/text-link/text-link";
 
 const ADMIN_LINKS = [
   { href: "/admin", label: "Dashboard" },
@@ -25,45 +26,38 @@ export async function AdminNav() {
   return (
     <header className="h-(--header-height) border-b border-border">
       <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-6">
-        <Link href="/admin" className="text-sm font-medium tracking-tight text-foreground">
-          Admin
+        <Link href="/admin" className="min-w-0 max-w-[14rem] truncate text-sm font-medium tracking-tight text-foreground">
+          {session.user.email ?? "Admin"}
         </Link>
-        <nav className="hidden flex-wrap gap-5 text-sm text-foreground md:flex">
+        <nav className="hidden gap-5 text-sm text-foreground lg:flex">
           {ADMIN_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} prefetch={false} className="hover:text-accent">
+            <TextLink key={link.href} href={link.href} variant="inverse" prefetch={false}>
               {link.label}
-            </Link>
+            </TextLink>
           ))}
         </nav>
-        <div className="hidden items-center gap-4 text-sm text-muted md:flex">
-          <span>{session.user.email}</span>
-          <Link href="/admin/account" prefetch={false} className="hover:text-accent">
+        <div className="hidden items-center gap-4 text-sm text-foreground lg:flex">
+          <TextLink href="/admin/account" variant="inverse" prefetch={false}>
             Account
-          </Link>
+          </TextLink>
           <form action={signOutAction}>
-            <button type="submit" className="hover:text-accent">
+            <button type="submit" className={`${textLinkClasses("inverse")} cursor-pointer`}>
               Sign out
             </button>
           </form>
         </div>
-        <MobileNavDrawer>
+        <MobileNavDrawer breakpoint="lg">
           {ADMIN_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              prefetch={false}
-              className="text-lg text-foreground hover:text-accent"
-            >
+            <TextLink key={link.href} href={link.href} variant="inverse" prefetch={false} className="text-lg text-foreground">
               {link.label}
-            </Link>
+            </TextLink>
           ))}
-          <div className="mt-auto flex flex-col gap-3 border-t border-border pt-6 text-sm text-muted">
-            <span>{session.user.email}</span>
-            <Link href="/admin/account" prefetch={false} className="text-foreground hover:text-accent">
+          <div className="mt-auto flex flex-col gap-3 border-t border-border pt-6 text-sm text-foreground">
+            <TextLink href="/admin/account" variant="inverse" prefetch={false} className="w-fit">
               Account
-            </Link>
+            </TextLink>
             <form action={signOutAction}>
-              <button type="submit" className="text-foreground hover:text-accent">
+              <button type="submit" className={`${textLinkClasses("inverse")} w-fit cursor-pointer`}>
                 Sign out
               </button>
             </form>

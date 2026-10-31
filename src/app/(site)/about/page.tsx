@@ -32,7 +32,7 @@ export default async function AboutPage() {
           <h1 className="text-5xl font-medium leading-none tracking-tight text-foreground md:text-7xl">
             Swati Garg
           </h1>
-          <p className="text-lg text-muted">
+          <p className="text-lg italic text-muted">
             Watercolor &amp; mixed media artist
             {location ? ` · Lives and works in ${location}` : ""}
           </p>
@@ -73,7 +73,7 @@ export default async function AboutPage() {
             <Section title="Exhibitions">
               <ul className="flex flex-col gap-10">
                 {exhibitionsByYear.map(([year, items]) => (
-                  <li key={year} className="grid gap-4 md:grid-cols-[8rem_1fr]">
+                  <li key={year} className="grid gap-1 md:grid-cols-[8rem_1fr]">
                     <p className="text-sm text-muted">{year}</p>
                     <ul className="flex flex-col gap-5">
                       {items.map((exhibition) => {

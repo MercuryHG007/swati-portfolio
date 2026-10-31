@@ -6,9 +6,13 @@ import { Menu, X } from "lucide-react";
 // Flip to "left" to have the drawer fly in from the opposite side.
 const DRAWER_DIRECTION: "left" | "right" = "right";
 
-export function MobileNavDrawer({ children }: { children: ReactNode }) {
+// Full class names so Tailwind can detect them.
+const HIDE_ABOVE: Record<"md" | "lg", string> = { md: "md:hidden", lg: "lg:hidden" };
+
+export function MobileNavDrawer({ children, breakpoint = "md" }: { children: ReactNode; breakpoint?: "md" | "lg" }) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
+  const hideAbove = HIDE_ABOVE[breakpoint];
 
   useEffect(() => {
     if (!open) return;
@@ -34,13 +38,13 @@ export function MobileNavDrawer({ children }: { children: ReactNode }) {
         onClick={() => setOpen((value) => !value)}
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
-        className="cursor-pointer text-foreground md:hidden"
+        className={`cursor-pointer text-foreground ${hideAbove}`}
       >
         {open ? <X size={24} /> : <Menu size={24} />}
       </button>
 
       {open ? (
-        <div className="fixed inset-x-0 bottom-0 top-(--header-height) z-40 md:hidden">
+        <div className={`fixed inset-x-0 bottom-0 top-(--header-height) z-40 ${hideAbove}`}>
           <button
             type="button"
             aria-label="Close menu"

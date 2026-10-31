@@ -8,9 +8,16 @@ type TextLinkProps = Omit<ComponentProps<"a">, "href"> & {
   prefetch?: boolean;
 };
 
+export type TextLinkVariant = "primary" | "inverse";
+
+// Shared with elements that aren't anchors (e.g. a submit button styled as a text link).
+export function textLinkClasses(variant: TextLinkVariant = "primary") {
+  return `${styles.textLink} ${styles[variant]}`;
+}
+
 // The underline is a 1px ::after line. Primary starts drawn and retracts on hover; inverse draws in on hover.
 export function TextLink({ href, variant = "primary", className = "", prefetch, ...props }: TextLinkProps) {
-  const classes = `${styles.textLink} ${styles[variant]} ${className}`.trim();
+  const classes = `${textLinkClasses(variant)} ${className}`.trim();
   const isInternal = href.startsWith("/") && !href.startsWith("//");
 
   if (isInternal) {
