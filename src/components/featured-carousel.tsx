@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, type CSSProperties, type KeyboardEvent, type Ref } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type Ref } from "react";
 import { ProtectedImage } from "@/components/cloudinary-image";
 
 export type CarouselItem = {
@@ -75,6 +75,7 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const groupRef = useRef<HTMLDivElement>(null);
+  const [copies, setCopies] = useState(2);
   const motion = useRef<MotionState>({
     x: 0,
     v: 0,
@@ -94,9 +95,11 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
     const s = motion.current;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // One group (all items + trailing gap) is one loop period, so wrapping by it is seamless.
+    // One group is one loop period. Copies must cover the viewport plus one period, otherwise the
+    // track runs out at the edge while it wraps and a gap shows.
     const measure = () => {
       s.period = group.offsetWidth;
+      if (s.period > 0) setCopies(Math.max(2, Math.ceil(viewport.clientWidth / s.period) + 1));
     };
     measure();
     const resizeObserver = new ResizeObserver(measure);
@@ -188,8 +191,9 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
       style={{ "--h": "55svh" } as CSSProperties}
     >
       <div ref={trackRef} className="flex w-max will-change-transform">
-        <Group items={items} groupRef={groupRef} />
-        <Group items={items} hidden />
+        {Array.from({ length: copies }, (_, index) => (
+          <Group key={index} items={items} groupRef={index === 0 ? groupRef : undefined} hidden={index > 0} />
+        ))}
       </div>
     </div>
   );
