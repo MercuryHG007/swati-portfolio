@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Button } from "@/components/button/button";
 import { connectToDatabase } from "@/lib/mongodb";
 import { ContactMessage } from "@/models";
 import { sendContactNotification } from "@/lib/email";
@@ -57,14 +58,9 @@ export default async function ContactPage({
       </p>
 
       {about?.socials?.instagram ? (
-        <a
-          href={about.socials.instagram}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-fit rounded-full border border-foreground px-5 py-2 text-sm text-foreground hover:bg-foreground hover:text-background"
-        >
+        <Button href={about.socials.instagram} variant="inverse" size="md">
           Send a DM on Instagram
-        </a>
+        </Button>
       ) : null}
 
       {sent ? (
@@ -122,9 +118,9 @@ export default async function ContactPage({
               className="rounded-md border border-border bg-surface px-3 py-2"
             />
           </label>
-          <button type="submit" className="rounded-md bg-accent px-4 py-2 text-accent-foreground">
+          <Button type="submit" size="md">
             Send message
-          </button>
+          </Button>
         </form>
       )}
     </main>

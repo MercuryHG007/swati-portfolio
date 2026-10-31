@@ -34,7 +34,7 @@ export function MobileNavDrawer({ children }: { children: ReactNode }) {
         onClick={() => setOpen((value) => !value)}
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
-        className="text-foreground md:hidden"
+        className="cursor-pointer text-foreground md:hidden"
       >
         {open ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -45,7 +45,7 @@ export function MobileNavDrawer({ children }: { children: ReactNode }) {
             type="button"
             aria-label="Close menu"
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-foreground/30"
+            className="absolute inset-0 cursor-pointer bg-foreground/30"
           />
           <nav
             ref={panelRef}

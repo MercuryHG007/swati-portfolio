@@ -8,6 +8,7 @@ import {
 } from "@/lib/queries";
 import { ArtworkCard } from "@/components/artwork-card";
 import { CardTitle } from "@/components/card-title/card-title";
+import { Pill } from "@/components/pill/pill";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { getYear } from "@/lib/format";
 
@@ -32,22 +33,14 @@ export default async function PortfolioPage() {
         {(mediums.length > 0 || subjects.length > 0) && (
           <div className="mt-2 flex flex-wrap gap-2">
             {mediums.map((medium) => (
-              <Link
-                key={medium.slug}
-                href={`/portfolio/medium/${medium.slug}`}
-                className="rounded-full border border-border px-3 py-1 text-xs text-foreground hover:border-accent hover:text-accent"
-              >
+              <Pill key={medium.slug} href={`/portfolio/medium/${medium.slug}`}>
                 {medium.name}
-              </Link>
+              </Pill>
             ))}
             {subjects.map((subject) => (
-              <Link
-                key={subject.slug}
-                href={`/portfolio/subject/${subject.slug}`}
-                className="rounded-full border border-border px-3 py-1 text-xs text-foreground hover:border-accent hover:text-accent"
-              >
+              <Pill key={subject.slug} href={`/portfolio/subject/${subject.slug}`}>
                 {subject.name}
-              </Link>
+              </Pill>
             ))}
           </div>
         )}

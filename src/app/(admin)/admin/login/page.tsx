@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
+import { Button } from "@/components/button/button";
 import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
 export default function AdminLoginPage() {
@@ -45,12 +46,9 @@ export default function AdminLoginPage() {
             className="rounded-md border border-border bg-surface px-3 py-2"
           />
         </label>
-        <button
-          type="submit"
-          className="rounded-md bg-accent px-4 py-2 text-accent-foreground"
-        >
+        <Button type="submit" size="md">
           Sign in
-        </button>
+        </Button>
       </form>
     </main>
   );

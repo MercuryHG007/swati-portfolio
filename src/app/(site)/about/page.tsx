@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
 import { ProtectedImage } from "@/components/cloudinary-image";
 import { getAbout, getPublishedExhibitions } from "@/lib/queries";
@@ -126,14 +127,9 @@ export default async function AboutPage() {
 
         <aside className="flex flex-col gap-10 text-sm md:sticky md:top-12 md:self-start">
           {about?.resumeUrl ? (
-            <a
-              href={about.resumeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-fit rounded-full border border-foreground px-5 py-2 text-foreground hover:bg-foreground hover:text-background"
-            >
+            <Button href={about.resumeUrl} variant="inverse" size="md">
               Download CV (PDF)
-            </a>
+            </Button>
           ) : null}
 
           <div className="flex flex-col gap-3">

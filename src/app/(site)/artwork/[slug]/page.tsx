@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { TextLink } from "@/components/text-link/text-link";
 import { notFound } from "next/navigation";
 import {
@@ -8,6 +7,7 @@ import {
   getExhibitionsForArtwork,
 } from "@/lib/queries";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/breadcrumbs";
+import { Pill } from "@/components/pill/pill";
 import { PrevNextNav } from "@/components/prev-next-nav";
 import { ArtworkGallery } from "@/components/artwork-gallery";
 import { getPrevNext } from "@/lib/prev-next";
@@ -82,13 +82,9 @@ export default async function ArtworkDetailPage({
         {artwork.subjects?.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {artwork.subjects.map((subject: { slug: string; name: string }) => (
-              <Link
-                key={subject.slug}
-                href={`/portfolio/subject/${subject.slug}`}
-                className="rounded-full border border-border px-3 py-1 text-xs text-foreground hover:border-accent hover:text-accent"
-              >
-                {subject.name}
-              </Link>
+                <Pill key={subject.slug} href={`/portfolio/subject/${subject.slug}`}>
+                  {subject.name}
+                </Pill>
             ))}
           </div>
         ) : null}

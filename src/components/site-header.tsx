@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
+import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
 
 // Exhibitions live on the About page, so they're not a top-level link.
@@ -23,20 +24,19 @@ export function SiteHeader() {
               {link.label}
             </TextLink>
           ))}
-          <Link
-            href={CTA.href}
-            prefetch={false}
-            className="rounded-full bg-accent px-4 py-2 text-accent-foreground hover:opacity-80"
-          >
+          <Button href={CTA.href} size="sm" prefetch={false}>
             {CTA.label}
-          </Link>
+          </Button>
         </nav>
         <MobileNavDrawer>
-          {[...NAV_LINKS, CTA].map((link) => (
+          {NAV_LINKS.map((link) => (
             <TextLink key={link.href} href={link.href} variant="inverse" prefetch={false} className="text-lg text-foreground">
               {link.label}
             </TextLink>
           ))}
+          <Button href={CTA.href} size="sm" prefetch={false}>
+            {CTA.label}
+          </Button>
         </MobileNavDrawer>
       </div>
     </header>

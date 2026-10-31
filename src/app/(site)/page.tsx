@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { FeaturedCarousel, type CarouselItem } from "@/components/featured-carousel";
+import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
 import { getFeaturedArtworks, getMediums } from "@/lib/queries";
 
@@ -23,12 +23,9 @@ export default async function Home() {
         <h1 className="max-w-4xl text-5xl font-medium leading-[1.02] tracking-tight text-foreground md:text-7xl">
           Swati Garg. Paintings exploring light, landscape and quiet moments.
         </h1>
-        <Link
-          href="/portfolio"
-          className="w-fit rounded-full bg-accent px-6 py-3 text-sm text-accent-foreground hover:opacity-80"
-        >
+        <Button href="/portfolio" size="lg">
           View Portfolio
-        </Link>
+        </Button>
       </section>
 
       {carouselItems.length > 0 ? (
@@ -51,12 +48,9 @@ export default async function Home() {
           <ul className="flex flex-wrap gap-3">
             {mediums.map((medium) => (
               <li key={medium.slug}>
-                <Link
-                  href={`/portfolio/medium/${medium.slug}`}
-                  className="inline-block rounded-full border border-foreground px-5 py-2 text-sm text-foreground hover:bg-foreground hover:text-background"
-                >
+                <Button href={`/portfolio/medium/${medium.slug}`} variant="inverse" size="md">
                   {medium.name}
-                </Link>
+                </Button>
               </li>
             ))}
           </ul>
@@ -68,12 +62,9 @@ export default async function Home() {
           Commissions and enquiries are welcome.
         </h2>
         <div className="flex flex-wrap gap-4 text-sm">
-          <Link
-            href="/contact"
-            className="rounded-full bg-accent px-6 py-3 text-accent-foreground hover:opacity-80"
-          >
+          <Button href="/contact" size="lg">
             Get in touch
-          </Link>
+          </Button>
         </div>
       </section>
     </main>

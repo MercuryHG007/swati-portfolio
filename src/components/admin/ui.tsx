@@ -1,10 +1,11 @@
 import type { ReactNode, SelectHTMLAttributes } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown } from "lucide-react";
+import { buttonClasses } from "@/components/button/button";
 
 export const inputClass = "rounded-md border border-border bg-surface px-3 py-2 text-foreground";
-export const buttonClass = "rounded-md bg-accent px-4 py-2 text-accent-foreground";
-export const secondaryButtonClass = "rounded-md border border-border px-4 py-2 text-foreground";
+export const buttonClass = buttonClasses({ variant: "primary", size: "md" });
+export const secondaryButtonClass = buttonClasses({ variant: "inverse", size: "md" });
 export const dangerButtonClass = "rounded-md border border-red-300 px-4 py-2 text-red-600";
 export const cardClass = "rounded-md border border-border bg-surface p-4";
 

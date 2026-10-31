@@ -64,7 +64,7 @@ export function CvRowsField({
       <button
         type="button"
         onClick={() => setRows((prev) => [...prev, { title: "", detail: "", date: "" }])}
-        className={`${secondaryButtonClass} flex w-fit items-center gap-2 text-sm`}
+        className={`${secondaryButtonClass} w-fit gap-2`}
       >
         <Plus className="h-4 w-4" />
         {addLabel}
