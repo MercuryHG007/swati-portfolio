@@ -3,8 +3,8 @@ import {
   getFeaturedSeries,
   getSeriesSettings,
   getStandaloneArtworks,
-  getMediums,
-  getSubjects,
+  getMediumsWithWork,
+  getSubjectsWithWork,
 } from "@/lib/queries";
 import { ArtworkCard } from "@/components/artwork-card";
 import { GridCarousel } from "@/components/grid-carousel/grid-carousel";
@@ -20,14 +20,14 @@ export default async function PortfolioPage() {
     getFeaturedSeries(8),
     getSeriesSettings(),
     getStandaloneArtworks(),
-    getMediums(),
-    getSubjects(),
+    getMediumsWithWork(),
+    getSubjectsWithWork(),
   ]);
 
   return (
     <main className="flex flex-1 flex-col gap-16 py-16">
 
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-16 px-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6">
         <Breadcrumbs items={[{ label: "Portfolio" }]} />
       </div>
 
@@ -45,7 +45,7 @@ export default async function PortfolioPage() {
         />
       )}
 
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-16 px-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6">
         <header className="flex flex-col gap-3">
           <h1 className="text-3xl font-medium text-foreground">Portfolio</h1>
           <p className="max-w-2xl text-muted">
@@ -69,7 +69,7 @@ export default async function PortfolioPage() {
       </div>
 
       {standalone.length > 0 && (
-        <section className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6">
+        <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6">
           <h2 className="text-lg font-medium text-foreground">More work</h2>
           <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
             {standalone.map((artwork, index) => (
@@ -87,7 +87,7 @@ export default async function PortfolioPage() {
       )}
 
       {series.length === 0 && standalone.length === 0 && (
-        <p className="mx-auto w-full max-w-5xl px-6 text-muted">New work coming soon.</p>
+        <p className="mx-auto w-full max-w-6xl px-6 text-muted">New work coming soon.</p>
       )}
     </main>
   );

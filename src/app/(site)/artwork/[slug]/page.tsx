@@ -1,3 +1,4 @@
+import { Fragment, type ReactNode } from "react";
 import { TextLink } from "@/components/text-link/text-link";
 import { notFound } from "next/navigation";
 import {
@@ -32,6 +33,18 @@ export default async function ArtworkDetailPage({
   if (!artwork) notFound();
 
   const dimensions = formatDimensions(artwork.dimensions);
+  // Only the values that exist become parts, so the separators never lead, trail or double up.
+  const metaParts: ReactNode[] = [];
+  const year = getYear(artwork.dateMade);
+  if (year) metaParts.push(<span>{year}</span>);
+  if (artwork.medium) {
+    metaParts.push(
+      <TextLink href={`/portfolio/medium/${artwork.medium.slug}`} variant="primary">
+        {artwork.medium.name}
+      </TextLink>
+    );
+  }
+  if (dimensions) metaParts.push(<span>{dimensions}</span>);
   // A series only has a public page while it's published — don't link to a 404.
   const seriesIsLinkable = artwork.series?.status === "published";
 
@@ -55,28 +68,19 @@ export default async function ArtworkDetailPage({
   breadcrumbItems.push({ label: artwork.title });
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-6 py-16">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-6 py-16">
       <Breadcrumbs items={breadcrumbItems} />
       <ArtworkGallery images={artwork.images ?? []} title={artwork.title} />
 
       <div className="flex flex-col gap-3">
         <h1 className="text-2xl font-medium text-foreground">{artwork.title}</h1>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-          {getYear(artwork.dateMade) ? <span>{getYear(artwork.dateMade)}</span> : null}
-          {artwork.medium ? (
-            <>
-              <span aria-hidden>·</span>
-              <TextLink href={`/portfolio/medium/${artwork.medium.slug}`} variant="primary">
-                {artwork.medium.name}
-              </TextLink>
-            </>
-          ) : null}
-          {dimensions ? (
-            <>
-              <span aria-hidden>·</span>
-              <span>{dimensions}</span>
-            </>
-          ) : null}
+          {metaParts.map((part, index) => (
+            <Fragment key={index}>
+              {index > 0 ? <span aria-hidden>·</span> : null}
+              {part}
+            </Fragment>
+          ))}
         </div>
 
         {artwork.subjects?.length > 0 ? (

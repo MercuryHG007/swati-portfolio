@@ -2,7 +2,7 @@ import { getCldImageUrl } from "next-cloudinary";
 import { FeaturedCarousel, type CarouselItem } from "@/components/featured-carousel";
 import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
-import { getFeaturedArtworks, getMediums } from "@/lib/queries";
+import { getFeaturedArtworks, getMediumsWithWork } from "@/lib/queries";
 
 export const revalidate = 60;
 
@@ -25,7 +25,7 @@ function blurPlaceholder(image: { publicId: string; width: number; height: numbe
 export default async function Home() {
   const [artworks, mediums] = await Promise.all([
     getFeaturedArtworks(8),
-    getMediums(),
+    getMediumsWithWork(),
   ]);
 
   const carouselItems: CarouselItem[] = artworks.map((artwork) => {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { serif, sans } from "@/lib/fonts";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import "../globals.css";
 
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>
         <SiteFooter />
+        <ScrollToTop />
         <SpeedInsights />
       </body>
     </html>

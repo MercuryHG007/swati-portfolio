@@ -48,6 +48,19 @@ export async function getSubjects() {
   return Subject.find().sort({ name: 1 }).lean();
 }
 
+// Filters on the public site only list mediums and subjects that lead to at least one published artwork.
+export async function getMediumsWithWork() {
+  await connectToDatabase();
+  const ids = await Artwork.distinct("medium", { status: "published" });
+  return Medium.find({ _id: { $in: ids } }).sort({ name: 1 }).lean();
+}
+
+export async function getSubjectsWithWork() {
+  await connectToDatabase();
+  const ids = await Artwork.distinct("subjects", { status: "published" });
+  return Subject.find({ _id: { $in: ids } }).sort({ name: 1 }).lean();
+}
+
 export async function getSubjectBySlug(slug: string) {
   await connectToDatabase();
   return Subject.findOne({ slug }).lean();

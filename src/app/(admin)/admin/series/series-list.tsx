@@ -20,9 +20,16 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { deleteSeries, reorderSeries } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
+import { AdminThumbnail } from "@/components/admin/thumbnail";
 import { ActionIcon, buttonClass, secondaryButtonClass, cardClass } from "@/components/admin/ui";
 
-type SeriesItem = { _id: string; title: string; status: string; featured: boolean };
+type SeriesItem = {
+  _id: string;
+  title: string;
+  status: string;
+  featured: boolean;
+  coverImage?: { publicId: string; alt?: string } | null;
+};
 
 function SortableSeriesCard({ item }: { item: SeriesItem }) {
   const id = String(item._id);
@@ -44,8 +51,14 @@ function SortableSeriesCard({ item }: { item: SeriesItem }) {
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <p className="text-foreground">{item.title}</p>
-        {item.featured ? <span className="text-xs text-muted">Featured</span> : null}
+        <AdminThumbnail image={item.coverImage} alt={item.title} />
+        <div className="min-w-0">
+          <p className="truncate text-foreground">{item.title}</p>
+          <p className="text-xs text-muted">
+            {item.status}
+            {item.featured ? " · Featured" : ""}
+          </p>
+        </div>
       </div>
       <div className="flex gap-2">
         <Link href={`/admin/series/${id}`} aria-label={`Edit ${item.title}`}>

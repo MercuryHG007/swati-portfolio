@@ -24,7 +24,7 @@ export async function AdminNav() {
   };
 
   return (
-    <header className="h-(--header-height) border-b border-border">
+    <header className="sticky top-0 z-40 h-(--header-height) border-b border-border bg-background">
       <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-6">
         <Link href="/admin" className="min-w-0 max-w-[14rem] truncate text-sm font-medium tracking-tight text-foreground">
           {session.user.email ?? "Admin"}

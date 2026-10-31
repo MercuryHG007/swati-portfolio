@@ -40,7 +40,7 @@ export function MobileNavDrawer({ children, breakpoint = "md" }: { children: Rea
         aria-expanded={open}
         className={`cursor-pointer text-foreground ${hideAbove}`}
       >
-        {open ? <X size={24} /> : <Menu size={24} />}
+        {open ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       {open ? (

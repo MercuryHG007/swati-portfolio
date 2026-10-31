@@ -11,6 +11,7 @@ export default async function AdminSeriesListPage() {
     title: item.title,
     status: item.status,
     featured: item.featured ?? false,
+    coverImage: item.coverImage ? { publicId: item.coverImage.publicId, alt: item.coverImage.alt } : null,
   }));
 
   return (
