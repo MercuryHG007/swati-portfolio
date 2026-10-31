@@ -20,7 +20,7 @@ export default async function MediumDetailPage({
       <Breadcrumbs items={[{ label: "Portfolio", href: "/portfolio" }, { label: medium.name }]} />
       <header className="flex flex-col gap-3">
         <p className="text-xs uppercase tracking-widest text-muted">Medium</p>
-        <h1 className="text-3xl font-semibold text-foreground">{medium.name}</h1>
+        <h1 className="text-3xl font-medium text-foreground">{medium.name}</h1>
       </header>
 
       {artworks.length > 0 ? (

@@ -14,7 +14,7 @@ export function SiteHeader() {
   return (
     <header className="h-(--header-height) border-b border-border">
       <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-6">
-        <Link href="/" className="text-base font-medium tracking-tight text-foreground">
+        <Link href="/" className="font-serif text-base font-medium tracking-tight text-foreground">
           Swati Garg
         </Link>
         <nav className="hidden items-center gap-8 text-sm text-foreground md:flex">

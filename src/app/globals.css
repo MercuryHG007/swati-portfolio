@@ -39,6 +39,19 @@
   --radius-lg: var(--radius-lg);
 
   --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+}
+
+/*
+ * Public site headings use the serif. Scoped to `.site-public` so the admin keeps Space Grotesk.
+ * Sits in `@layer base` so utilities such as `font-sans` can still override it on individual headings.
+ */
+@layer base {
+  .site-public h1,
+  .site-public h2,
+  .site-public h3 {
+    font-family: var(--font-serif);
+  }
 }
 
 body {

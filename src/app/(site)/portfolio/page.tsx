@@ -25,7 +25,7 @@ export default async function PortfolioPage() {
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-16 px-6 py-16">
       <Breadcrumbs items={[{ label: "Portfolio" }]} />
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold text-foreground">Portfolio</h1>
+        <h1 className="text-3xl font-medium text-foreground">Portfolio</h1>
         <p className="max-w-2xl text-muted">
           Browse by series, or filter across the full body of work by medium or subject.
         </p>
@@ -55,7 +55,7 @@ export default async function PortfolioPage() {
 
       {series.length > 0 && (
         <section className="flex flex-col gap-6">
-          <h2 className="text-lg font-semibold text-foreground">Series</h2>
+          <h2 className="text-lg font-medium text-foreground">Series</h2>
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
             {series.map((s, index) => (
               <Link key={s.slug} href={`/portfolio/series/${s.slug}`} className="group block">
@@ -73,7 +73,7 @@ export default async function PortfolioPage() {
                     />
                   ) : null}
                 </div>
-                <h3 className="mt-3 text-base font-semibold text-foreground">
+                <h3 className="mt-3 font-sans text-base font-semibold text-foreground">
                   <CardTitle>{s.title}</CardTitle>
                 </h3>
                 {s.description ? (
@@ -87,7 +87,7 @@ export default async function PortfolioPage() {
 
       {standalone.length > 0 && (
         <section className="flex flex-col gap-6">
-          <h2 className="text-lg font-semibold text-foreground">More work</h2>
+          <h2 className="text-lg font-medium text-foreground">More work</h2>
           <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
             {standalone.map((artwork, index) => (
               <ArtworkCard

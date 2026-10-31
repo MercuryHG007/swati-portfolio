@@ -51,7 +51,7 @@ export default async function ContactPage({
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-16">
-      <h1 className="text-3xl font-semibold text-foreground">Contact</h1>
+      <h1 className="text-3xl font-medium text-foreground">Contact</h1>
       <p className="text-muted">
         For commissions, exhibitions or general enquiries, send a message below.
       </p>

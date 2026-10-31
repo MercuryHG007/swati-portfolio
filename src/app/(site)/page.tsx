@@ -34,7 +34,7 @@ export default async function Home() {
       {carouselItems.length > 0 ? (
         <section className="flex flex-col gap-6">
           <div className="mx-auto flex w-full max-w-6xl items-end justify-between px-6">
-            <h2 className="text-xs uppercase tracking-widest text-muted">Featured work</h2>
+        <h2 className="text-xs uppercase tracking-widest font-sans text-muted">Featured work</h2>
             <TextLink href="/portfolio" variant="primary" className="text-sm text-foreground">
               ALL WORKS
             </TextLink>
@@ -47,7 +47,7 @@ export default async function Home() {
 
       {mediums.length > 0 ? (
         <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6">
-          <h2 className="text-xs uppercase tracking-widest text-muted">Working mediums</h2>
+          <h2 className="text-xs uppercase tracking-widest font-sans text-muted">Working mediums</h2>
           <ul className="flex flex-wrap gap-3">
             {mediums.map((medium) => (
               <li key={medium.slug}>

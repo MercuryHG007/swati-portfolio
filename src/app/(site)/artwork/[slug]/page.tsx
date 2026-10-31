@@ -60,7 +60,7 @@ export default async function ArtworkDetailPage({
       <ArtworkGallery images={artwork.images ?? []} title={artwork.title} />
 
       <div className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold text-foreground">{artwork.title}</h1>
+        <h1 className="text-2xl font-medium text-foreground">{artwork.title}</h1>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
           {getYear(artwork.dateMade) ? <span>{getYear(artwork.dateMade)}</span> : null}
           {artwork.medium ? (

@@ -63,7 +63,7 @@ export default async function ExhibitionDetailPage({
 
       {exhibition.artworks?.length > 0 ? (
         <section className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 className="text-lg font-medium text-foreground">
             Artworks in this exhibition ({exhibition.artworks.length})
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">

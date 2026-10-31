@@ -20,7 +20,7 @@ export default async function SubjectDetailPage({
       <Breadcrumbs items={[{ label: "Portfolio", href: "/portfolio" }, { label: subject.name }]} />
       <header className="flex flex-col gap-3">
         <p className="text-xs uppercase tracking-widest text-muted">Subject</p>
-        <h1 className="text-3xl font-semibold text-foreground">{subject.name}</h1>
+        <h1 className="text-3xl font-medium text-foreground">{subject.name}</h1>
       </header>
 
       {artworks.length > 0 ? (

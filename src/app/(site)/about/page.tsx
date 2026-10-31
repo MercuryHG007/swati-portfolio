@@ -151,7 +151,7 @@ export default async function AboutPage() {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-6 border-t border-border pt-6">
-      <h2 className="text-xs uppercase tracking-widest text-muted">{title}</h2>
+      <h2 className="text-xs uppercase tracking-widest font-sans text-muted">{title}</h2>
       {children}
     </section>
   );

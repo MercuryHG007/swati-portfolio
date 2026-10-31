@@ -25,7 +25,7 @@ export default async function SeriesDetailPage({
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-10 px-6 py-16">
       <Breadcrumbs items={[{ label: "Portfolio", href: "/portfolio" }, { label: series.title }]} />
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold text-foreground">{series.title}</h1>
+        <h1 className="text-3xl font-medium text-foreground">{series.title}</h1>
         {series.description ? <p className="max-w-2xl text-muted">{series.description}</p> : null}
       </header>
 
