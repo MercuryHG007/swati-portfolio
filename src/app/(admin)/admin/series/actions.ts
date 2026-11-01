@@ -10,6 +10,7 @@ import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
 import { slugify } from "@/lib/slugify";
 import { withAltFallback } from "@/lib/image-alt";
 import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
+import { readSingleImage } from "@/lib/form-fields";
 
 function refresh(slug?: string) {
   revalidatePath("/admin/series");
@@ -19,23 +20,15 @@ function refresh(slug?: string) {
   if (slug) revalidatePath(`/portfolio/series/${slug}`);
 }
 
-function readImage(formData: FormData) {
-  const raw = String(formData.get("coverImage") ?? "null");
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
 function readFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(title);
   const description = String(formData.get("description") ?? "").trim();
   const status = formData.get("status") === "published" ? "published" : "hidden";
   const featured = formData.get("featured") === "on";
-  const coverImageRaw = readImage(formData);
-  const coverImage = coverImageRaw ? withAltFallback([coverImageRaw], title)[0] : null;
+  // null clears the cover; undefined means the form didn't send it and the stored cover is left alone.
+  const coverImageRaw = readSingleImage(formData, "coverImage");
+  const coverImage = coverImageRaw ? withAltFallback([coverImageRaw], title)[0] : coverImageRaw;
   return { title, slug, description, status, featured, coverImage };
 }
 
@@ -46,7 +39,7 @@ export async function createSeries(formData: FormData) {
 
   await connectToDatabase();
   const order = await Series.countDocuments();
-  await Series.create({ ...fields, order });
+  await Series.create({ ...fields, coverImage: fields.coverImage ?? null, order });
   refresh(fields.slug);
   redirect("/admin/series");
 }
@@ -58,10 +51,16 @@ export async function updateSeries(formData: FormData) {
   if (!id || !fields.title || !fields.slug) redirect(`/admin/series/${id}?error=invalid`);
 
   await connectToDatabase();
-  const previous = await Series.findByIdAndUpdate(id, fields).lean<{ coverImage?: { publicId: string } }>();
-  await destroyCloudinaryAssets(
-    removedPublicIds(previous?.coverImage ? [previous.coverImage] : [], fields.coverImage ? [fields.coverImage] : [])
-  );
+  const { coverImage, ...rest } = fields;
+  const previous = await Series.findByIdAndUpdate(id, {
+    ...rest,
+    ...(coverImage !== undefined && { coverImage }),
+  }).lean<{ coverImage?: { publicId: string } }>();
+  if (coverImage !== undefined) {
+    await destroyCloudinaryAssets(
+      removedPublicIds(previous?.coverImage ? [previous.coverImage] : [], coverImage ? [coverImage] : [])
+    );
+  }
   refresh(fields.slug);
   redirect("/admin/series");
 }

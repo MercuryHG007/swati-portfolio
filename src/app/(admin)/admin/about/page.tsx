@@ -33,7 +33,7 @@ export default async function AdminAboutPage() {
         <Field label="Location (shown as “Lives and works in …”)">
           <input name="location" defaultValue={about.location} className={inputClass} />
         </Field>
-        <Field label="Photo">
+        <Field key="photo" label="Photo">
           <ImageUploader
             name="photo"
             folder="swati-portfolio/about"
@@ -41,7 +41,7 @@ export default async function AdminAboutPage() {
           />
         </Field>
 
-        <Field label="Footer logo">
+        <Field key="footerLogo" label="Footer logo">
           <ImageUploader
             name="footerLogo"
             folder="swati-portfolio/about/logo"
@@ -50,17 +50,19 @@ export default async function AdminAboutPage() {
           <p className="text-xs text-muted">Square, at least 768 px. Shown in the footer at 72 px. Leave empty to hide it.</p>
         </Field>
 
-        <fieldset className="flex flex-col gap-3">
+        {/* Stateful fields are keyed by name so React never hands one field's state to another when
+            the form's layout changes while the page is open. */}
+        <fieldset key="education" className="flex flex-col gap-3">
           <legend className="mb-1 text-sm font-medium text-foreground">Education</legend>
           <CvRowsField name="education" initial={toRows(about.education)} addLabel="Add education" />
         </fieldset>
 
-        <fieldset className="flex flex-col gap-3">
+        <fieldset key="awards" className="flex flex-col gap-3">
           <legend className="mb-1 text-sm font-medium text-foreground">Awards</legend>
           <CvRowsField name="awards" initial={toRows(about.awards)} addLabel="Add award" />
         </fieldset>
 
-        <fieldset className="flex flex-col gap-3">
+        <fieldset key="achievements" className="flex flex-col gap-3">
           <legend className="mb-1 text-sm font-medium text-foreground">Achievements</legend>
           <CvRowsField name="achievements" initial={toRows(about.achievements)} addLabel="Add achievement" />
         </fieldset>
