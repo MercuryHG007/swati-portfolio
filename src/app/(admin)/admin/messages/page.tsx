@@ -5,12 +5,14 @@ import { ConfirmButton } from "@/components/admin/confirm-button";
 import { ActionIcon, buttonClass, cardClass } from "@/components/admin/ui";
 import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
+// Pinned so the admin sees the same time on every server; the server default is UTC.
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
   year: "numeric",
   hour: "numeric",
   minute: "2-digit",
+  timeZone: "Asia/Kolkata",
 });
 
 export default async function AdminMessagesPage() {

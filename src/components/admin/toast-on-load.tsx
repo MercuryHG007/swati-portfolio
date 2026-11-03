@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
@@ -13,7 +13,16 @@ export type ToastConfig = {
 
 // Reads one-off feedback out of redirect query params (e.g. ?saved=1, ?error=invalid),
 // shows it as a toast, then strips the param so refresh/back-nav doesn't re-fire it.
-export function ToastOnLoad({ configs }: { configs: ToastConfig[] }) {
+// useSearchParams needs a Suspense boundary so statically prerendered routes don't fail the build.
+export function ToastOnLoad(props: { configs: ToastConfig[] }) {
+  return (
+    <Suspense fallback={null}>
+      <ToastOnLoadInner {...props} />
+    </Suspense>
+  );
+}
+
+function ToastOnLoadInner({ configs }: { configs: ToastConfig[] }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();

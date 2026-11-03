@@ -3,7 +3,7 @@ import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
 import { ProtectedImage } from "@/components/cloudinary-image";
 import { getAbout, getPublishedExhibitions } from "@/lib/queries";
-import { formatDateRange, getYearUTC } from "@/lib/format";
+import { formatDateRange, getYear } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -173,7 +173,7 @@ function EntryList({ entries }: { entries: CvEntry[] }) {
 function groupByYear(items: ExhibitionItem[]): [number, ExhibitionItem[]][] {
   const groups = new Map<number, ExhibitionItem[]>();
   for (const item of items) {
-    const year = getYearUTC(item.startDate);
+    const year = getYear(item.startDate);
     if (!year) continue;
     groups.set(year, [...(groups.get(year) ?? []), item]);
   }

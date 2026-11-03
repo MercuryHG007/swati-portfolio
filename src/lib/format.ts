@@ -3,12 +3,8 @@
 const monthFormatter = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 const monthOnlyFormatter = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" });
 
+// Dates are stored at UTC midnight, so the year is read in UTC. Local time would show the previous year in western time zones.
 export function getYear(date?: Date | string | null) {
-  if (!date) return undefined;
-  return new Date(date).getFullYear();
-}
-
-export function getYearUTC(date?: Date | string | null) {
   if (!date) return undefined;
   return new Date(date).getUTCFullYear();
 }
