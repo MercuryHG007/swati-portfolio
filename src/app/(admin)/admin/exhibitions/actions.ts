@@ -8,20 +8,11 @@ import { Exhibition } from "@/models";
 import { slugify } from "@/lib/slugify";
 import { withAltFallback } from "@/lib/image-alt";
 import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
+import { readImageList } from "@/lib/form-fields";
 
 function refresh(slug?: string) {
-  revalidatePath("/exhibitions");
+  revalidatePath("/about");
   if (slug) revalidatePath(`/exhibitions/${slug}`);
-}
-
-function readImages(formData: FormData) {
-  const raw = String(formData.get("images") ?? "[]");
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
 }
 
 function readFields(formData: FormData) {
@@ -37,7 +28,9 @@ function readFields(formData: FormData) {
   const endDate = endDateRaw ? new Date(endDateRaw) : undefined;
   const description = String(formData.get("description") ?? "").trim();
   const status = formData.get("status") === "published" ? "published" : "hidden";
-  const images = withAltFallback(readImages(formData), title);
+  // undefined when the form didn't send the field: the stored images are then left alone.
+  const submittedImages = readImageList(formData, "images");
+  const images = submittedImages && withAltFallback(submittedImages, title);
   const artworks = formData.getAll("artworks").map(String).filter(Boolean);
   return { title, slug, venue, city, country, type, startDate, endDate, description, status, images, artworks };
 }
@@ -50,9 +43,9 @@ export async function createExhibition(formData: FormData) {
   }
 
   await connectToDatabase();
-  await Exhibition.create(fields);
+  await Exhibition.create({ ...fields, images: fields.images ?? [] });
   refresh(fields.slug);
-  redirect("/admin/exhibitions");
+  redirect("/admin/exhibitions?saved=1");
 }
 
 export async function updateExhibition(formData: FormData) {
@@ -64,10 +57,14 @@ export async function updateExhibition(formData: FormData) {
   }
 
   await connectToDatabase();
-  const previous = await Exhibition.findByIdAndUpdate(id, fields).lean<{ images?: { publicId: string }[] }>();
-  await destroyCloudinaryAssets(removedPublicIds(previous?.images ?? [], fields.images));
+  const { images, ...rest } = fields;
+  const previous = await Exhibition.findByIdAndUpdate(id, {
+    ...rest,
+    ...(images !== undefined && { images }),
+  }).lean<{ images?: { publicId: string }[] }>();
+  if (images !== undefined) await destroyCloudinaryAssets(removedPublicIds(previous?.images ?? [], images));
   refresh(fields.slug);
-  redirect("/admin/exhibitions");
+  redirect("/admin/exhibitions?saved=1");
 }
 
 export async function deleteExhibition(formData: FormData) {
@@ -79,5 +76,5 @@ export async function deleteExhibition(formData: FormData) {
   const deleted = await Exhibition.findByIdAndDelete(id).lean<{ images?: { publicId: string }[] }>();
   await destroyCloudinaryAssets((deleted?.images ?? []).map((img) => img.publicId));
   refresh();
-  redirect("/admin/exhibitions");
+  redirect("/admin/exhibitions?deleted=1");
 }

@@ -1,27 +1,23 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
+import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Series, Artwork } from "@/models";
+import { Series, Artwork, SeriesSettings } from "@/models";
+import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
 import { slugify } from "@/lib/slugify";
 import { withAltFallback } from "@/lib/image-alt";
 import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
+import { readSingleImage } from "@/lib/form-fields";
 
 function refresh(slug?: string) {
   revalidatePath("/admin/series");
   revalidatePath("/portfolio");
+  updateTag(PORTFOLIO_CACHE_TAG);
+  revalidatePath("/series");
   if (slug) revalidatePath(`/portfolio/series/${slug}`);
-}
-
-function readImage(formData: FormData) {
-  const raw = String(formData.get("coverImage") ?? "null");
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
 }
 
 function readFields(formData: FormData) {
@@ -29,9 +25,11 @@ function readFields(formData: FormData) {
   const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(title);
   const description = String(formData.get("description") ?? "").trim();
   const status = formData.get("status") === "published" ? "published" : "hidden";
-  const coverImageRaw = readImage(formData);
-  const coverImage = coverImageRaw ? withAltFallback([coverImageRaw], title)[0] : null;
-  return { title, slug, description, status, coverImage };
+  const featured = formData.get("featured") === "on";
+  // null clears the cover; undefined means the form didn't send it and the stored cover is left alone.
+  const coverImageRaw = readSingleImage(formData, "coverImage");
+  const coverImage = coverImageRaw ? withAltFallback([coverImageRaw], title)[0] : coverImageRaw;
+  return { title, slug, description, status, featured, coverImage };
 }
 
 export async function createSeries(formData: FormData) {
@@ -41,9 +39,9 @@ export async function createSeries(formData: FormData) {
 
   await connectToDatabase();
   const order = await Series.countDocuments();
-  await Series.create({ ...fields, order });
+  await Series.create({ ...fields, coverImage: fields.coverImage ?? null, order });
   refresh(fields.slug);
-  redirect("/admin/series");
+  redirect("/admin/series?saved=1");
 }
 
 export async function updateSeries(formData: FormData) {
@@ -53,12 +51,18 @@ export async function updateSeries(formData: FormData) {
   if (!id || !fields.title || !fields.slug) redirect(`/admin/series/${id}?error=invalid`);
 
   await connectToDatabase();
-  const previous = await Series.findByIdAndUpdate(id, fields).lean<{ coverImage?: { publicId: string } }>();
-  await destroyCloudinaryAssets(
-    removedPublicIds(previous?.coverImage ? [previous.coverImage] : [], fields.coverImage ? [fields.coverImage] : [])
-  );
+  const { coverImage, ...rest } = fields;
+  const previous = await Series.findByIdAndUpdate(id, {
+    ...rest,
+    ...(coverImage !== undefined && { coverImage }),
+  }).lean<{ coverImage?: { publicId: string } }>();
+  if (coverImage !== undefined) {
+    await destroyCloudinaryAssets(
+      removedPublicIds(previous?.coverImage ? [previous.coverImage] : [], coverImage ? [coverImage] : [])
+    );
+  }
   refresh(fields.slug);
-  redirect("/admin/series");
+  redirect("/admin/series?saved=1");
 }
 
 export async function deleteSeries(formData: FormData) {
@@ -72,7 +76,7 @@ export async function deleteSeries(formData: FormData) {
   const deleted = await Series.findByIdAndDelete(id).lean<{ coverImage?: { publicId: string } }>();
   await destroyCloudinaryAssets(deleted?.coverImage ? [deleted.coverImage.publicId] : []);
   refresh();
-  redirect("/admin/series");
+  redirect("/admin/series?deleted=1");
 }
 
 export async function reorderSeries(orderedIds: string[]) {
@@ -80,5 +84,20 @@ export async function reorderSeries(orderedIds: string[]) {
   await connectToDatabase();
   await Promise.all(orderedIds.map((id, index) => Series.updateOne({ _id: id }, { order: index })));
   refresh();
+}
+
+// Singleton text for the portfolio carousel. Blank heading or button text falls back to the defaults.
+export async function updateSeriesSettings(formData: FormData) {
+  await requireAdminSession();
+  const heading = String(formData.get("heading") ?? "").trim().slice(0, 100) || SERIES_SETTINGS_DEFAULTS.heading;
+  const body = String(formData.get("body") ?? "").trim().slice(0, 400);
+  const ctaLabel = String(formData.get("ctaLabel") ?? "").trim().slice(0, 40) || SERIES_SETTINGS_DEFAULTS.ctaLabel;
+
+  await connectToDatabase();
+  await SeriesSettings.findOneAndUpdate({}, { heading, body, ctaLabel }, { upsert: true });
+  revalidatePath("/portfolio");
+  updateTag(PORTFOLIO_CACHE_TAG);
+  revalidatePath("/admin/series");
+  redirect("/admin/series?saved=1");
 }
 

@@ -30,7 +30,25 @@ export default async function EditSeriesPage({
           View
         </Link>
       </div>
-      <SeriesForm series={series} action={updateSeries} />
+      <SeriesForm
+        series={{
+          _id: String(series._id),
+          title: series.title,
+          slug: series.slug,
+          description: series.description,
+          coverImage: series.coverImage
+            ? {
+                publicId: series.coverImage.publicId,
+                width: series.coverImage.width,
+                height: series.coverImage.height,
+                alt: series.coverImage.alt,
+              }
+            : null,
+          status: series.status,
+          featured: series.featured ?? false,
+        }}
+        action={updateSeries}
+      />
       <SeriesArtworksList seriesId={id} initialArtworks={artworkItems} />
     </main>
   );

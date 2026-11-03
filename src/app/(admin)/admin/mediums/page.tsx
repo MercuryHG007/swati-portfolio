@@ -2,7 +2,8 @@ import { Save, Trash2 } from "lucide-react";
 import { getAllMediums } from "@/lib/admin-queries";
 import { createMedium, updateMedium, deleteMedium } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { ActionIcon, inputClass, buttonClass, cardClass } from "@/components/admin/ui";
+import { ActionIcon, inputClass, cardClass } from "@/components/admin/ui";
+import { NewNameDialog } from "@/components/admin/new-name-dialog";
 import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -15,8 +16,22 @@ export default async function AdminMediumsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-6 py-16">
-      <ToastOnLoad configs={[{ param: "error", type: "error", message: ERROR_MESSAGES }]} />
-      <h1 className="text-2xl font-semibold text-foreground">Mediums</h1>
+      <ToastOnLoad
+        configs={[
+          { param: "saved", type: "success", message: "Saved." },
+          { param: "deleted", type: "success", message: "Deleted." },
+          { param: "error", type: "error", message: ERROR_MESSAGES },
+        ]}
+      />
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-foreground">Mediums</h1>
+        <NewNameDialog
+          triggerLabel="New medium"
+          title="New medium"
+          placeholder="Medium name"
+          action={createMedium}
+        />
+      </div>
 
       <div className="flex flex-col gap-3">
         {mediums.map((medium) => (
@@ -27,7 +42,7 @@ export default async function AdminMediumsPage() {
           >
             <input type="hidden" name="id" value={String(medium._id)} />
             <input name="name" defaultValue={medium.name} className={`${inputClass} min-w-0 flex-1`} />
-            <button type="submit" aria-label={`Save ${medium.name}`}>
+            <button type="submit" aria-label={`Save ${medium.name}`} className="cursor-pointer">
               <ActionIcon icon={Save} variant="primary" />
             </button>
             <ConfirmButton
@@ -40,13 +55,6 @@ export default async function AdminMediumsPage() {
           </form>
         ))}
       </div>
-
-      <form action={createMedium} className={`${cardClass} flex flex-wrap items-center gap-3`}>
-        <input name="name" placeholder="New medium name" required className={`${inputClass} min-w-0 flex-1`} />
-        <button type="submit" className={buttonClass}>
-          Add
-        </button>
-      </form>
     </main>
   );
 }

@@ -1,28 +1,21 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
+import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Artwork, Exhibition } from "@/models";
 import { slugify } from "@/lib/slugify";
 import { withAltFallback } from "@/lib/image-alt";
 import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
+import { readImageList } from "@/lib/form-fields";
 
 function refresh(slug?: string) {
   revalidatePath("/");
   revalidatePath("/portfolio");
+  updateTag(PORTFOLIO_CACHE_TAG);
   if (slug) revalidatePath(`/artwork/${slug}`);
-}
-
-function readImages(formData: FormData) {
-  const raw = String(formData.get("images") ?? "[]");
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
 }
 
 function readFields(formData: FormData) {
@@ -37,7 +30,9 @@ function readFields(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const status = formData.get("status") === "published" ? "published" : "hidden";
   const featured = formData.get("featured") === "on";
-  const images = withAltFallback(readImages(formData), title);
+  // undefined when the form didn't send the field: the stored images are then left alone.
+  const submittedImages = readImageList(formData, "images");
+  const images = submittedImages && withAltFallback(submittedImages, title);
   const dimensions = {
     height: formData.get("height") ? Number(formData.get("height")) : undefined,
     width: formData.get("width") ? Number(formData.get("width")) : undefined,
@@ -54,9 +49,9 @@ export async function createArtwork(formData: FormData) {
   await connectToDatabase();
   const order = await Artwork.countDocuments();
   const seriesOrder = fields.series ? await Artwork.countDocuments({ series: fields.series }) : 0;
-  await Artwork.create({ ...fields, order, seriesOrder });
+  await Artwork.create({ ...fields, images: fields.images ?? [], order, seriesOrder });
   refresh(fields.slug);
-  redirect("/admin/artworks");
+  redirect("/admin/artworks?saved=1");
 }
 
 export async function updateArtwork(formData: FormData) {
@@ -74,10 +69,15 @@ export async function updateArtwork(formData: FormData) {
     fields.series && String(existing?.series ?? "") !== fields.series
       ? await Artwork.countDocuments({ series: fields.series })
       : undefined;
-  await Artwork.findByIdAndUpdate(id, seriesOrder === undefined ? fields : { ...fields, seriesOrder });
-  await destroyCloudinaryAssets(removedPublicIds(existing?.images ?? [], fields.images));
+  const { images, ...rest } = fields;
+  await Artwork.findByIdAndUpdate(id, {
+    ...rest,
+    ...(images !== undefined && { images }),
+    ...(seriesOrder !== undefined && { seriesOrder }),
+  });
+  if (images !== undefined) await destroyCloudinaryAssets(removedPublicIds(existing?.images ?? [], images));
   refresh(fields.slug);
-  redirect("/admin/artworks");
+  redirect("/admin/artworks?saved=1");
 }
 
 export async function deleteArtwork(formData: FormData) {
@@ -90,7 +90,7 @@ export async function deleteArtwork(formData: FormData) {
   const deleted = await Artwork.findByIdAndDelete(id).lean<{ images?: { publicId: string }[] }>();
   await destroyCloudinaryAssets((deleted?.images ?? []).map((img) => img.publicId));
   refresh();
-  redirect("/admin/artworks");
+  redirect("/admin/artworks?deleted=1");
 }
 
 export async function reorderArtworksInSeries(seriesId: string, orderedIds: string[]) {
@@ -103,5 +103,6 @@ export async function reorderArtworksInSeries(seriesId: string, orderedIds: stri
   );
   revalidatePath(`/admin/series/${seriesId}`);
   revalidatePath("/portfolio");
+  updateTag(PORTFOLIO_CACHE_TAG);
 }
 

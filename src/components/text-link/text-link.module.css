@@ -1,0 +1,49 @@
+/*
+ * Both variants draw a 1px line in currentColor with a scaleX transform:
+ * - primary: underlined at rest; on hover the line retracts left-to-right (origin on the right).
+ * - inverse: no line at rest; on hover the line draws left-to-right (origin on the left).
+ * Keyboard focus shows the same state as hover.
+ */
+.textLink {
+  position: relative;
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.textLink::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1px;
+  height: 1px;
+  background-color: currentColor;
+  transition: transform 300ms ease;
+}
+
+.primary::after {
+  transform: scaleX(1);
+  transform-origin: right center;
+}
+
+.primary:hover::after,
+.primary:focus-visible::after {
+  transform: scaleX(0);
+}
+
+.inverse::after {
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.inverse:hover::after,
+.inverse:focus-visible::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .textLink::after {
+    transition: none;
+  }
+}

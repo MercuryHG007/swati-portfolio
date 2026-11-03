@@ -8,6 +8,8 @@ const seriesSchema = new Schema(
     description: { type: String, default: "" },
     coverImage: { type: cloudinaryImageSchema, default: null },
     order: { type: Number, default: 0 },
+    // Curated by the admin for the portfolio carousel. Carousel order follows `order`.
+    featured: { type: Boolean, default: false },
     status: { type: String, enum: PUBLICATION_STATUS, default: "hidden" },
   },
   { timestamps: true }

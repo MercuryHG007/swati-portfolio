@@ -54,7 +54,7 @@ export function ArtworkMultiSelect({
                 type="button"
                 onClick={() => toggle(option.id)}
                 aria-label={`Remove ${option.title}`}
-                className="text-muted hover:text-accent"
+                className="cursor-pointer text-muted hover:text-accent"
               >
                 ×
               </button>

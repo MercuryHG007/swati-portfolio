@@ -3,13 +3,16 @@ import { getAllMessages } from "@/lib/admin-queries";
 import { markMessageRead, deleteMessage } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { ActionIcon, buttonClass, cardClass } from "@/components/admin/ui";
+import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
+// Pinned so the admin sees the same time on every server; the server default is UTC.
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
   year: "numeric",
   hour: "numeric",
   minute: "2-digit",
+  timeZone: "Asia/Kolkata",
 });
 
 export default async function AdminMessagesPage() {
@@ -17,6 +20,12 @@ export default async function AdminMessagesPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-16">
+      <ToastOnLoad
+        configs={[
+          { param: "marked", type: "success", message: "Marked as read." },
+          { param: "deleted", type: "success", message: "Deleted." },
+        ]}
+      />
       <h1 className="text-2xl font-semibold text-foreground">Messages</h1>
 
       <div className="flex flex-col gap-3">

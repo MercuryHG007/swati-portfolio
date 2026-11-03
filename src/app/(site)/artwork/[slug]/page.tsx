@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { Fragment, type ReactNode } from "react";
+import { TextLink } from "@/components/text-link/text-link";
 import { notFound } from "next/navigation";
 import {
   getArtworkBySlug,
@@ -7,6 +8,7 @@ import {
   getExhibitionsForArtwork,
 } from "@/lib/queries";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/breadcrumbs";
+import { Pill } from "@/components/pill/pill";
 import { PrevNextNav } from "@/components/prev-next-nav";
 import { ArtworkGallery } from "@/components/artwork-gallery";
 import { getPrevNext } from "@/lib/prev-next";
@@ -31,6 +33,18 @@ export default async function ArtworkDetailPage({
   if (!artwork) notFound();
 
   const dimensions = formatDimensions(artwork.dimensions);
+  // Only the values that exist become parts, so the separators never lead, trail or double up.
+  const metaParts: ReactNode[] = [];
+  const year = getYear(artwork.dateMade);
+  if (year) metaParts.push(<span>{year}</span>);
+  if (artwork.medium) {
+    metaParts.push(
+      <TextLink href={`/portfolio?medium=${encodeURIComponent(artwork.medium.slug)}#portfolio`} variant="primary">
+        {artwork.medium.name}
+      </TextLink>
+    );
+  }
+  if (dimensions) metaParts.push(<span>{dimensions}</span>);
   // A series only has a public page while it's published — don't link to a 404.
   const seriesIsLinkable = artwork.series?.status === "published";
 
@@ -54,40 +68,27 @@ export default async function ArtworkDetailPage({
   breadcrumbItems.push({ label: artwork.title });
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-6 py-16">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-6 py-16">
       <Breadcrumbs items={breadcrumbItems} />
       <ArtworkGallery images={artwork.images ?? []} title={artwork.title} />
 
       <div className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold text-foreground">{artwork.title}</h1>
+        <h1 className="text-2xl font-medium text-foreground">{artwork.title}</h1>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-          {getYear(artwork.dateMade) ? <span>{getYear(artwork.dateMade)}</span> : null}
-          {artwork.medium ? (
-            <>
-              <span aria-hidden>·</span>
-              <Link href={`/portfolio/medium/${artwork.medium.slug}`} className="hover:text-accent">
-                {artwork.medium.name}
-              </Link>
-            </>
-          ) : null}
-          {dimensions ? (
-            <>
-              <span aria-hidden>·</span>
-              <span>{dimensions}</span>
-            </>
-          ) : null}
+          {metaParts.map((part, index) => (
+            <Fragment key={index}>
+              {index > 0 ? <span aria-hidden>·</span> : null}
+              {part}
+            </Fragment>
+          ))}
         </div>
 
         {artwork.subjects?.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {artwork.subjects.map((subject: { slug: string; name: string }) => (
-              <Link
-                key={subject.slug}
-                href={`/portfolio/subject/${subject.slug}`}
-                className="rounded-full border border-border px-3 py-1 text-xs text-foreground hover:border-accent hover:text-accent"
-              >
-                {subject.name}
-              </Link>
+                <Pill key={subject.slug} href={`/portfolio?subject=${encodeURIComponent(subject.slug)}#portfolio`}>
+                  {subject.name}
+                </Pill>
             ))}
           </div>
         ) : null}
@@ -98,9 +99,9 @@ export default async function ArtworkDetailPage({
           <p className="text-sm text-muted">
             Part of the{" "}
             {seriesIsLinkable ? (
-              <Link href={`/portfolio/series/${artwork.series.slug}`} className="text-accent hover:underline">
+              <TextLink href={`/portfolio/series/${artwork.series.slug}`} variant="primary" className="text-accent">
                 {artwork.series.title}
-              </Link>
+              </TextLink>
             ) : (
               <span className="text-foreground">{artwork.series.title}</span>
             )}{" "}
@@ -114,9 +115,9 @@ export default async function ArtworkDetailPage({
             <ul className="flex flex-col gap-1 text-sm">
               {exhibitions.map((exhibition) => (
                 <li key={exhibition.slug}>
-                  <Link href={`/exhibitions/${exhibition.slug}`} className="text-accent hover:underline">
+                  <TextLink href={`/exhibitions/${exhibition.slug}`} variant="primary" className="text-accent">
                     {exhibition.title}
-                  </Link>{" "}
+                  </TextLink>{" "}
                   <span className="text-muted">
                     ({formatDateRange(exhibition.startDate, exhibition.endDate)})
                   </span>

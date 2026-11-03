@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CardTitle } from "@/components/card-title/card-title";
 import { ProtectedImage } from "@/components/cloudinary-image";
 
 type ArtworkCardImage = {
@@ -12,11 +13,13 @@ type ArtworkCardProps = {
   year?: number | null;
   image?: ArtworkCardImage | null;
   priority?: boolean;
+  id?: string;
+  dataIndex?: number;
 };
 
-export function ArtworkCard({ slug, title, year, image, priority = false }: ArtworkCardProps) {
+export function ArtworkCard({ slug, title, year, image, priority = false, id, dataIndex }: ArtworkCardProps) {
   return (
-    <Link href={`/artwork/${slug}`} className="group block">
+    <Link href={`/artwork/${slug}`} id={id} data-index={dataIndex} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden rounded-md bg-surface">
         {image ? (
           <ProtectedImage
@@ -26,12 +29,14 @@ export function ArtworkCard({ slug, title, year, image, priority = false }: Artw
             crop="fill"
             gravity="auto"
             sizes="(min-width: 768px) 25vw, 50vw"
-            className="object-cover transition duration-300 group-hover:scale-105"
+            className="scale-[1.05] object-cover transition duration-500 ease-out group-hover:scale-100 group-focus-visible:scale-100 motion-reduce:scale-100 motion-reduce:transition-none"
             loading={priority ? "eager" : "lazy"}
           />
         ) : null}
       </div>
-      <p className="mt-2 text-sm text-foreground">{title}</p>
+      <p className="mt-2 text-sm text-foreground">
+        <CardTitle>{title}</CardTitle>
+      </p>
       {year ? <p className="text-xs text-muted">{year}</p> : null}
     </Link>
   );

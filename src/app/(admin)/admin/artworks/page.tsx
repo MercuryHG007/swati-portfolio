@@ -1,53 +1,42 @@
 import Link from "next/link";
-import { Pencil, Trash2 } from "lucide-react";
 import { getAllArtworks } from "@/lib/admin-queries";
-import { deleteArtwork } from "./actions";
-import { ConfirmButton } from "@/components/admin/confirm-button";
-import { ActionIcon, buttonClass, cardClass } from "@/components/admin/ui";
 import { getYear } from "@/lib/format";
+import { ArtworkList, type ArtworkRow } from "./artwork-list";
+import { buttonClass } from "@/components/admin/ui";
+import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
 export default async function AdminArtworksListPage() {
   const artworks = await getAllArtworks();
+  const rows: ArtworkRow[] = artworks.map((artwork) => ({
+    id: String(artwork._id),
+    title: artwork.title,
+    year: getYear(artwork.dateMade) ?? null,
+    status: artwork.status,
+    featured: artwork.featured ?? false,
+    mediumId: artwork.medium ? String(artwork.medium._id) : null,
+    mediumName: artwork.medium?.name ?? null,
+    seriesId: artwork.series ? String(artwork.series._id) : null,
+    seriesTitle: artwork.series?.title ?? null,
+    thumb: artwork.images?.[0] ? { publicId: artwork.images[0].publicId, alt: artwork.images[0].alt } : null,
+  }));
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-16">
+      <ToastOnLoad
+        configs={[
+          { param: "saved", type: "success", message: "Saved." },
+          { param: "deleted", type: "success", message: "Deleted." },
+        ]}
+      />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Artworks</h1>
         <Link href="/admin/artworks/new" className={buttonClass}>
-          New artwork
+          New Artwork
         </Link>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {artworks.map((artwork) => (
-          <div key={String(artwork._id)} className={`${cardClass} flex items-center justify-between gap-3`}>
-            <div>
-              <p className="text-foreground">
-                {artwork.title} {getYear(artwork.dateMade) ? `(${getYear(artwork.dateMade)})` : ""}
-              </p>
-              <p className="text-xs text-muted">
-                {artwork.status} · {artwork.medium?.name ?? "no medium"}
-                {artwork.series?.title ? ` · ${artwork.series.title}` : ""}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Link href={`/admin/artworks/${artwork._id}`} aria-label={`Edit ${artwork.title}`}>
-                <ActionIcon icon={Pencil} />
-              </Link>
-              <form action={deleteArtwork}>
-                <input type="hidden" name="id" value={String(artwork._id)} />
-                <ConfirmButton
-                  confirmText={`Delete artwork "${artwork.title}"?`}
-                  aria-label={`Delete ${artwork.title}`}
-                >
-                  <ActionIcon icon={Trash2} variant="danger" />
-                </ConfirmButton>
-              </form>
-            </div>
-          </div>
-        ))}
-        {artworks.length === 0 ? <p className="text-muted">No artworks yet.</p> : null}
-      </div>
+      <ArtworkList artworks={rows} />
     </main>
   );
 }
+

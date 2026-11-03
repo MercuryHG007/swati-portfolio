@@ -1,16 +1,29 @@
 import Link from "next/link";
-import { Pencil, Trash2 } from "lucide-react";
 import { getAllExhibitions } from "@/lib/admin-queries";
 import { formatDateRange } from "@/lib/format";
-import { deleteExhibition } from "./actions";
-import { ConfirmButton } from "@/components/admin/confirm-button";
-import { ActionIcon, buttonClass, cardClass } from "@/components/admin/ui";
+import { ExhibitionList, type ExhibitionRow } from "./exhibition-list";
+import { buttonClass } from "@/components/admin/ui";
+import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
 export default async function AdminExhibitionsListPage() {
   const exhibitions = await getAllExhibitions();
+  const rows: ExhibitionRow[] = exhibitions.map((exhibition) => ({
+    id: String(exhibition._id),
+    title: exhibition.title,
+    venue: exhibition.venue,
+    status: exhibition.status,
+    range: formatDateRange(exhibition.startDate, exhibition.endDate),
+    startTime: new Date(exhibition.startDate).getTime(),
+  }));
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-16">
+      <ToastOnLoad
+        configs={[
+          { param: "saved", type: "success", message: "Saved." },
+          { param: "deleted", type: "success", message: "Deleted." },
+        ]}
+      />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Exhibitions</h1>
         <Link href="/admin/exhibitions/new" className={buttonClass}>
@@ -18,37 +31,8 @@ export default async function AdminExhibitionsListPage() {
         </Link>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {exhibitions.map((exhibition) => (
-          <div
-            key={String(exhibition._id)}
-            className={`${cardClass} flex items-center justify-between gap-3`}
-          >
-            <div>
-              <p className="text-foreground">{exhibition.title}</p>
-              <p className="text-xs text-muted">
-                {exhibition.status} · {exhibition.venue} ·{" "}
-                {formatDateRange(exhibition.startDate, exhibition.endDate)}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Link href={`/admin/exhibitions/${exhibition._id}`} aria-label={`Edit ${exhibition.title}`}>
-                <ActionIcon icon={Pencil} />
-              </Link>
-              <form action={deleteExhibition}>
-                <input type="hidden" name="id" value={String(exhibition._id)} />
-                <ConfirmButton
-                  confirmText={`Delete exhibition "${exhibition.title}"?`}
-                  aria-label={`Delete ${exhibition.title}`}
-                >
-                  <ActionIcon icon={Trash2} variant="danger" />
-                </ConfirmButton>
-              </form>
-            </div>
-          </div>
-        ))}
-        {exhibitions.length === 0 ? <p className="text-muted">No exhibitions yet.</p> : null}
-      </div>
+      <ExhibitionList exhibitions={rows} />
     </main>
   );
 }
+

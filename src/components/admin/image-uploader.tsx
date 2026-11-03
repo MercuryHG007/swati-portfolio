@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -29,6 +29,8 @@ type ImageUploaderProps = {
   folder: string;
   initial?: CloudinaryImageValue[];
   multiple?: boolean;
+  // Lets a parent react to how many images are currently attached (e.g. to show a hint).
+  onCountChange?: (count: number) => void;
 };
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -84,19 +86,23 @@ function SortableThumb({
         onChange={(event) => onAltChange(event.target.value)}
         className="rounded-md border border-border bg-surface px-2 py-1 text-xs text-foreground"
       />
-      <button type="button" onClick={onRemove} className="text-xs text-red-600 hover:underline">
+      <button type="button" onClick={onRemove} className="cursor-pointer text-xs text-red-600 hover:underline">
         Remove
       </button>
     </div>
   );
 }
 
-export function ImageUploader({ name, folder, initial = [], multiple = false }: ImageUploaderProps) {
+export function ImageUploader({ name, folder, initial = [], multiple = false, onCountChange }: ImageUploaderProps) {
   const inputId = useId();
   const [images, setImages] = useState<ImageItem[]>(() => initial.map(withUid));
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  useEffect(() => {
+    onCountChange?.(images.length);
+  }, [images.length, onCountChange]);
 
   async function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;

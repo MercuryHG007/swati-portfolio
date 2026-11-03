@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
+import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Medium, Artwork } from "@/models";
 import { slugify } from "@/lib/slugify";
@@ -10,6 +11,7 @@ import { slugify } from "@/lib/slugify";
 function refresh() {
   revalidatePath("/admin/mediums");
   revalidatePath("/portfolio");
+  updateTag(PORTFOLIO_CACHE_TAG);
 }
 
 export async function createMedium(formData: FormData) {
@@ -20,7 +22,7 @@ export async function createMedium(formData: FormData) {
   await connectToDatabase();
   await Medium.create({ name, slug: slugify(name) });
   refresh();
-  redirect("/admin/mediums");
+  redirect("/admin/mediums?saved=1");
 }
 
 export async function updateMedium(formData: FormData) {
@@ -32,7 +34,7 @@ export async function updateMedium(formData: FormData) {
   await connectToDatabase();
   await Medium.findByIdAndUpdate(id, { name, slug: slugify(name) });
   refresh();
-  redirect("/admin/mediums");
+  redirect("/admin/mediums?saved=1");
 }
 
 export async function deleteMedium(formData: FormData) {
@@ -46,5 +48,5 @@ export async function deleteMedium(formData: FormData) {
 
   await Medium.findByIdAndDelete(id);
   refresh();
-  redirect("/admin/mediums");
+  redirect("/admin/mediums?deleted=1");
 }

@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { changePassword } from "./actions";
 import { Field, inputClass, buttonClass } from "@/components/admin/ui";
 import { ToastOnLoad } from "@/components/admin/toast-on-load";
@@ -8,7 +9,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   mismatch: "New password and confirmation do not match.",
 };
 
-export default function AdminAccountPage() {
+export default async function AdminAccountPage() {
+  const session = await auth();
+
   return (
     <main className="mx-auto flex w-full max-w-sm flex-col gap-8 px-6 py-16">
       <ToastOnLoad
@@ -17,7 +20,16 @@ export default function AdminAccountPage() {
           { param: "error", type: "error", message: ERROR_MESSAGES },
         ]}
       />
-      <h1 className="text-2xl font-semibold text-foreground">Change password</h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold text-foreground">Account</h1>
+        {session?.user?.email ? (
+          <p className="text-sm text-muted">
+            Signed in as <span className="font-semibold text-foreground">{session.user.email}</span>
+          </p>
+        ) : null}
+      </div>
+
+      <h2 className="text-lg font-semibold text-foreground">Change password</h2>
 
       <form action={changePassword} className="flex flex-col gap-4">
         <Field label="Current password">

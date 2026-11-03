@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import { Button } from "@/components/button/button";
 import { connectToDatabase } from "@/lib/mongodb";
 import { ContactMessage } from "@/models";
 import { sendContactNotification } from "@/lib/email";
+import { getAbout } from "@/lib/queries";
 
 export const revalidate = 60;
 
@@ -46,13 +48,20 @@ export default async function ContactPage({
   searchParams: Promise<{ sent?: string; error?: string }>;
 }) {
   const { sent, error } = await searchParams;
+  const about = await getAbout();
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-16">
-      <h1 className="text-3xl font-semibold text-foreground">Contact</h1>
+      <h1 className="text-3xl font-medium text-foreground">Contact</h1>
       <p className="text-muted">
         For commissions, exhibitions or general enquiries, send a message below.
       </p>
+
+      {about?.socials?.instagram ? (
+        <Button href={about.socials.instagram} variant="inverse" size="md">
+          Send a DM on Instagram
+        </Button>
+      ) : null}
 
       {sent ? (
         <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-foreground">
@@ -109,9 +118,9 @@ export default async function ContactPage({
               className="rounded-md border border-border bg-surface px-3 py-2"
             />
           </label>
-          <button type="submit" className="rounded-md bg-accent px-4 py-2 text-accent-foreground">
+          <Button type="submit" size="md">
             Send message
-          </button>
+          </Button>
         </form>
       )}
     </main>
