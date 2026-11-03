@@ -7,12 +7,14 @@ import { deleteArtwork } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { AdminThumbnail } from "@/components/admin/thumbnail";
 import { ActionIcon, Select, cardClass, inputClass } from "@/components/admin/ui";
+import { capitalize } from "@/lib/format";
 
 export type ArtworkRow = {
   id: string;
   title: string;
   year: number | null;
   status: string;
+  featured: boolean;
   mediumId: string | null;
   mediumName: string | null;
   seriesId: string | null;
@@ -56,7 +58,7 @@ export function ArtworkList({ artworks }: { artworks: ArtworkRow[] }) {
     const list = artworks.filter(
       (a) =>
         (!q || a.title.toLowerCase().includes(q)) &&
-        (status === "all" || a.status === status) &&
+        (status === "all" || (status === "featured" ? a.featured : a.status === status)) &&
         (mediumId === "all" || a.mediumId === mediumId) &&
         (seriesId === "all" || (seriesId === "standalone" ? !a.seriesId : a.seriesId === seriesId))
     );
@@ -79,6 +81,7 @@ export function ArtworkList({ artworks }: { artworks: ArtworkRow[] }) {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="all">All statuses</option>
+            <option value="featured">Featured</option>
             <option value="published">Published</option>
             <option value="hidden">Hidden</option>
           </Select>
@@ -118,8 +121,14 @@ export function ArtworkList({ artworks }: { artworks: ArtworkRow[] }) {
                   {artwork.title} {artwork.year ? `(${artwork.year})` : ""}
                 </p>
                 <p className="text-xs text-muted">
-                  {artwork.status} · {artwork.mediumName ?? "no medium"}
-                  {artwork.seriesTitle ? ` · ${artwork.seriesTitle}` : ""}
+                  {[
+                    artwork.featured ? "Featured" : null,
+                    capitalize(artwork.status),
+                    artwork.mediumName ?? "No medium",
+                    artwork.seriesTitle,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </p>
               </div>
             </div>

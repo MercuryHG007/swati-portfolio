@@ -9,6 +9,10 @@ export function getYear(date?: Date | string | null) {
   return new Date(date).getUTCFullYear();
 }
 
+export function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export function formatDateRange(start: Date | string, end?: Date | string | null) {
   const startDate = new Date(start);
   if (!end) return monthFormatter.format(startDate);

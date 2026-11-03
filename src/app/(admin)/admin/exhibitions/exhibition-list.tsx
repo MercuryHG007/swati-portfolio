@@ -6,6 +6,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { deleteExhibition } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { ActionIcon, Select, cardClass, inputClass } from "@/components/admin/ui";
+import { capitalize } from "@/lib/format";
 
 export type ExhibitionRow = {
   id: string;
@@ -65,7 +66,7 @@ export function ExhibitionList({ exhibitions }: { exhibitions: ExhibitionRow[] }
             <div>
               <p className="text-foreground">{exhibition.title}</p>
               <p className="text-xs text-muted">
-                {exhibition.status} · {exhibition.venue} · {exhibition.range}
+                {capitalize(exhibition.status)} · {exhibition.venue} · {exhibition.range}
               </p>
             </div>
             <div className="flex gap-2">

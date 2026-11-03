@@ -20,6 +20,7 @@ import { GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { reorderArtworksInSeries } from "../../artworks/actions";
 import { secondaryButtonClass, cardClass } from "@/components/admin/ui";
+import { capitalize } from "@/lib/format";
 
 type SeriesArtwork = { _id: string; title: string; status: string };
 
@@ -43,7 +44,7 @@ function SortableArtworkRow({ artwork }: { artwork: SeriesArtwork }) {
         <GripVertical className="h-4 w-4" />
       </button>
       <p className="text-foreground">{artwork.title}</p>
-      <p className="text-xs text-muted">{artwork.status}</p>
+      <p className="text-xs text-muted">{capitalize(artwork.status)}</p>
     </div>
   );
 }

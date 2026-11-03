@@ -23,6 +23,7 @@ import { deleteSeries, reorderSeries } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { AdminThumbnail } from "@/components/admin/thumbnail";
 import { ActionIcon, buttonClass, secondaryButtonClass, cardClass } from "@/components/admin/ui";
+import { capitalize } from "@/lib/format";
 
 type SeriesItem = {
   _id: string;
@@ -56,8 +57,7 @@ function SortableSeriesCard({ item }: { item: SeriesItem }) {
         <div className="min-w-0">
           <p className="truncate text-foreground">{item.title}</p>
           <p className="text-xs text-muted">
-            {item.status}
-            {item.featured ? " · Featured" : ""}
+            {[item.featured ? "Featured" : null, capitalize(item.status)].filter(Boolean).join(" · ")}
           </p>
         </div>
       </div>

@@ -12,6 +12,7 @@ export default async function AdminArtworksListPage() {
     title: artwork.title,
     year: getYear(artwork.dateMade) ?? null,
     status: artwork.status,
+    featured: artwork.featured ?? false,
     mediumId: artwork.medium ? String(artwork.medium._id) : null,
     mediumName: artwork.medium?.name ?? null,
     seriesId: artwork.series ? String(artwork.series._id) : null,
