@@ -29,8 +29,8 @@ type PortfolioFilterBarProps = {
 export function PortfolioFilterBar({ filters, facets, total, onChange }: PortfolioFilterBarProps) {
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // Until the observer reports, assume the inline button is visible so the floating one doesn't flash in.
-  const [inlineButtonVisible, setInlineButtonVisible] = useState(true);
+  // True only once the inline button has scrolled above the header, so the floating one doesn't show before it is reached.
+  const [inlineButtonPassed, setInlineButtonPassed] = useState(false);
   const [footerVisible, setFooterVisible] = useState(false);
   const containersRef = useRef<Partial<Record<FilterKey, HTMLElement | null>>>({});
   const inlineButtonRef = useRef<HTMLButtonElement>(null);
@@ -57,11 +57,15 @@ export function PortfolioFilterBar({ filters, facets, total, onChange }: Portfol
   }, [openFilter]);
 
   // The sticky header covers the top of the viewport, so the inline button only counts as visible below it.
+  // "Passed" means it has left through the top; a button still below the fold is not passed.
   useEffect(() => {
     const node = inlineButtonRef.current;
     if (!node) return;
     const observer = new IntersectionObserver(
-      ([entry]) => setInlineButtonVisible(entry.isIntersecting),
+      ([entry]) =>
+        setInlineButtonPassed(
+          !entry.isIntersecting && entry.boundingClientRect.bottom <= (entry.rootBounds?.top ?? 0)
+        ),
       { rootMargin: "-80px 0px 0px 0px" }
     );
     observer.observe(node);
@@ -210,7 +214,7 @@ export function PortfolioFilterBar({ filters, facets, total, onChange }: Portfol
       </div>
 
       {/* Floats at the bottom centre once the inline button scrolls out of view. */}
-      {!inlineButtonVisible && !drawerOpen && !footerVisible && (
+      {inlineButtonPassed && !drawerOpen && !footerVisible && (
         <button
           type="button"
           aria-haspopup="dialog"
