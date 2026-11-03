@@ -16,7 +16,12 @@ export default async function AdminSeriesListPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-16">
-      <ToastOnLoad configs={[{ param: "saved", type: "success", message: "Saved." }]} />
+      <ToastOnLoad
+        configs={[
+          { param: "saved", type: "success", message: "Saved." },
+          { param: "deleted", type: "success", message: "Deleted." },
+        ]}
+      />
       <SeriesList initialSeries={items} />
       <CarouselTextForm settings={{ heading: settings.heading, body: settings.body, ctaLabel: settings.ctaLabel }} />
     </main>

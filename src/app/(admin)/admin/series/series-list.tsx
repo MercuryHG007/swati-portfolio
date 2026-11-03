@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { deleteSeries, reorderSeries } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { AdminThumbnail } from "@/components/admin/thumbnail";
@@ -99,6 +100,7 @@ export function SeriesList({ initialSeries }: { initialSeries: SeriesItem[] }) {
     startTransition(async () => {
       await reorderSeries(items.map((item) => String(item._id)));
       setIsDirty(false);
+      toast.success("Order saved.");
     });
   }
 

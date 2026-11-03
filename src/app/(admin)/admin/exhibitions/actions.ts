@@ -45,7 +45,7 @@ export async function createExhibition(formData: FormData) {
   await connectToDatabase();
   await Exhibition.create({ ...fields, images: fields.images ?? [] });
   refresh(fields.slug);
-  redirect("/admin/exhibitions");
+  redirect("/admin/exhibitions?saved=1");
 }
 
 export async function updateExhibition(formData: FormData) {
@@ -64,7 +64,7 @@ export async function updateExhibition(formData: FormData) {
   }).lean<{ images?: { publicId: string }[] }>();
   if (images !== undefined) await destroyCloudinaryAssets(removedPublicIds(previous?.images ?? [], images));
   refresh(fields.slug);
-  redirect("/admin/exhibitions");
+  redirect("/admin/exhibitions?saved=1");
 }
 
 export async function deleteExhibition(formData: FormData) {
@@ -76,5 +76,5 @@ export async function deleteExhibition(formData: FormData) {
   const deleted = await Exhibition.findByIdAndDelete(id).lean<{ images?: { publicId: string }[] }>();
   await destroyCloudinaryAssets((deleted?.images ?? []).map((img) => img.publicId));
   refresh();
-  redirect("/admin/exhibitions");
+  redirect("/admin/exhibitions?deleted=1");
 }

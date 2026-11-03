@@ -41,7 +41,7 @@ export async function createSeries(formData: FormData) {
   const order = await Series.countDocuments();
   await Series.create({ ...fields, coverImage: fields.coverImage ?? null, order });
   refresh(fields.slug);
-  redirect("/admin/series");
+  redirect("/admin/series?saved=1");
 }
 
 export async function updateSeries(formData: FormData) {
@@ -62,7 +62,7 @@ export async function updateSeries(formData: FormData) {
     );
   }
   refresh(fields.slug);
-  redirect("/admin/series");
+  redirect("/admin/series?saved=1");
 }
 
 export async function deleteSeries(formData: FormData) {
@@ -76,7 +76,7 @@ export async function deleteSeries(formData: FormData) {
   const deleted = await Series.findByIdAndDelete(id).lean<{ coverImage?: { publicId: string } }>();
   await destroyCloudinaryAssets(deleted?.coverImage ? [deleted.coverImage.publicId] : []);
   refresh();
-  redirect("/admin/series");
+  redirect("/admin/series?deleted=1");
 }
 
 export async function reorderSeries(orderedIds: string[]) {

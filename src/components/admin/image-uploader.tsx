@@ -86,7 +86,7 @@ function SortableThumb({
         onChange={(event) => onAltChange(event.target.value)}
         className="rounded-md border border-border bg-surface px-2 py-1 text-xs text-foreground"
       />
-      <button type="button" onClick={onRemove} className="text-xs text-red-600 hover:underline">
+      <button type="button" onClick={onRemove} className="cursor-pointer text-xs text-red-600 hover:underline">
         Remove
       </button>
     </div>

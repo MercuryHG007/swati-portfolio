@@ -55,7 +55,7 @@ export function CvRowsField({
             type="button"
             onClick={() => setRows((prev) => prev.filter((_, i) => i !== index))}
             aria-label="Remove entry"
-            className="self-start rounded-md p-2 text-muted hover:text-foreground"
+            className="self-start cursor-pointer rounded-md p-2 text-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>

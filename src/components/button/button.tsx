@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
-export type ButtonVariant = "primary" | "inverse";
+export type ButtonVariant = "primary" | "inverse" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 // Label size and padding scale together. Line height is fixed so the height comes from the padding.
@@ -15,13 +15,14 @@ const sizeClass: Record<ButtonSize, string> = {
 const variantClass: Record<ButtonVariant, string> = {
   primary: "border-accent bg-accent text-accent-foreground hover:bg-transparent hover:text-accent",
   inverse: "border-foreground text-foreground hover:bg-foreground hover:text-background",
+  danger: "border-red-600 bg-red-600 text-white hover:bg-transparent hover:text-red-600",
 };
 
 export function buttonClasses({
   variant = "primary",
   size = "md",
 }: { variant?: ButtonVariant; size?: ButtonSize } = {}) {
-  // Tailwind's preflight sets native buttons to `cursor: default`, so set it explicitly.
+  // Native <button>s keep the arrow cursor, so set the pointer explicitly.
   return `inline-flex cursor-pointer items-center whitespace-nowrap rounded-full border ${sizeClass[size]} ${variantClass[variant]}`;
 }
 

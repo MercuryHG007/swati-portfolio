@@ -15,7 +15,13 @@ export default async function AdminMediumsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-6 py-16">
-      <ToastOnLoad configs={[{ param: "error", type: "error", message: ERROR_MESSAGES }]} />
+      <ToastOnLoad
+        configs={[
+          { param: "saved", type: "success", message: "Saved." },
+          { param: "deleted", type: "success", message: "Deleted." },
+          { param: "error", type: "error", message: ERROR_MESSAGES },
+        ]}
+      />
       <h1 className="text-2xl font-semibold text-foreground">Mediums</h1>
 
       <div className="flex flex-col gap-3">
@@ -27,7 +33,7 @@ export default async function AdminMediumsPage() {
           >
             <input type="hidden" name="id" value={String(medium._id)} />
             <input name="name" defaultValue={medium.name} className={`${inputClass} min-w-0 flex-1`} />
-            <button type="submit" aria-label={`Save ${medium.name}`}>
+            <button type="submit" aria-label={`Save ${medium.name}`} className="cursor-pointer">
               <ActionIcon icon={Save} variant="primary" />
             </button>
             <ConfirmButton

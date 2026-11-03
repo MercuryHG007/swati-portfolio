@@ -22,7 +22,7 @@ export async function createSubject(formData: FormData) {
   await connectToDatabase();
   await Subject.create({ name, slug: slugify(name) });
   refresh();
-  redirect("/admin/subjects");
+  redirect("/admin/subjects?saved=1");
 }
 
 export async function updateSubject(formData: FormData) {
@@ -34,7 +34,7 @@ export async function updateSubject(formData: FormData) {
   await connectToDatabase();
   await Subject.findByIdAndUpdate(id, { name, slug: slugify(name) });
   refresh();
-  redirect("/admin/subjects");
+  redirect("/admin/subjects?saved=1");
 }
 
 export async function deleteSubject(formData: FormData) {
@@ -47,5 +47,5 @@ export async function deleteSubject(formData: FormData) {
   await Artwork.updateMany({ subjects: id }, { $pull: { subjects: id } });
   await Subject.findByIdAndDelete(id);
   refresh();
-  redirect("/admin/subjects");
+  redirect("/admin/subjects?deleted=1");
 }

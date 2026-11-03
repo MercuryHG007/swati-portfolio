@@ -59,6 +59,11 @@ body {
   color: var(--color-foreground);
 }
 
+/* Keep the page still while a confirmation dialog is open. */
+body:has(dialog[open]) {
+  overflow: hidden;
+}
+
 a,
 button {
   transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;

@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
+import { toast } from "sonner";
 import { reorderArtworksInSeries } from "../../artworks/actions";
 import { secondaryButtonClass, cardClass } from "@/components/admin/ui";
 
@@ -74,6 +75,7 @@ export function SeriesArtworksList({
     startTransition(async () => {
       await reorderArtworksInSeries(seriesId, items.map((item) => String(item._id)));
       setIsDirty(false);
+      toast.success("Order saved.");
     });
   }
 

@@ -3,6 +3,7 @@ import { getAllExhibitions } from "@/lib/admin-queries";
 import { formatDateRange } from "@/lib/format";
 import { ExhibitionList, type ExhibitionRow } from "./exhibition-list";
 import { buttonClass } from "@/components/admin/ui";
+import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
 export default async function AdminExhibitionsListPage() {
   const exhibitions = await getAllExhibitions();
@@ -17,6 +18,12 @@ export default async function AdminExhibitionsListPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-16">
+      <ToastOnLoad
+        configs={[
+          { param: "saved", type: "success", message: "Saved." },
+          { param: "deleted", type: "success", message: "Deleted." },
+        ]}
+      />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Exhibitions</h1>
         <Link href="/admin/exhibitions/new" className={buttonClass}>

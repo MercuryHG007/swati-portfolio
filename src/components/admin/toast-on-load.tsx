@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
@@ -18,8 +18,13 @@ export function ToastOnLoad({ configs }: { configs: ToastConfig[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const query = searchParams.toString();
+  // Strict Mode re-runs effects on mount, and router.replace is async, so the same query can arrive twice.
+  const lastHandledQuery = useRef<string | null>(null);
 
   useEffect(() => {
+    if (lastHandledQuery.current === query) return;
+    lastHandledQuery.current = query;
+
     const params = new URLSearchParams(query);
     let changed = false;
     for (const config of configs) {

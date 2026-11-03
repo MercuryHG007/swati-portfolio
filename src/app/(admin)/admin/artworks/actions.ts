@@ -51,7 +51,7 @@ export async function createArtwork(formData: FormData) {
   const seriesOrder = fields.series ? await Artwork.countDocuments({ series: fields.series }) : 0;
   await Artwork.create({ ...fields, images: fields.images ?? [], order, seriesOrder });
   refresh(fields.slug);
-  redirect("/admin/artworks");
+  redirect("/admin/artworks?saved=1");
 }
 
 export async function updateArtwork(formData: FormData) {
@@ -77,7 +77,7 @@ export async function updateArtwork(formData: FormData) {
   });
   if (images !== undefined) await destroyCloudinaryAssets(removedPublicIds(existing?.images ?? [], images));
   refresh(fields.slug);
-  redirect("/admin/artworks");
+  redirect("/admin/artworks?saved=1");
 }
 
 export async function deleteArtwork(formData: FormData) {
@@ -90,7 +90,7 @@ export async function deleteArtwork(formData: FormData) {
   const deleted = await Artwork.findByIdAndDelete(id).lean<{ images?: { publicId: string }[] }>();
   await destroyCloudinaryAssets((deleted?.images ?? []).map((img) => img.publicId));
   refresh();
-  redirect("/admin/artworks");
+  redirect("/admin/artworks?deleted=1");
 }
 
 export async function reorderArtworksInSeries(seriesId: string, orderedIds: string[]) {
