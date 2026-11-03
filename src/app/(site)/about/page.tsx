@@ -46,6 +46,7 @@ export default async function AboutPage() {
               crop="fill"
               gravity="face"
               sizes="160px"
+              loading="eager"
               className="object-cover"
             />
           </div>
@@ -125,14 +126,14 @@ export default async function AboutPage() {
           ) : null}
         </div>
 
-        <aside className="flex flex-col gap-10 text-sm md:sticky md:top-[calc(var(--header-height)+2rem)] md:self-start">
+        <aside className="flex flex-col gap-10 text-sm md:sticky md:top-[calc(var(--header-height)+2rem)] md:self-start md:items-end">
           {about?.resumeUrl ? (
             <Button href={about.resumeUrl} variant="inverse" size="md">
               Download CV (PDF)
             </Button>
           ) : null}
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 md:items-end">
             <p className="text-xs uppercase tracking-widest text-muted">Contact</p>
             <TextLink href="/contact" variant="primary" className="w-fit text-foreground">
               Send a message
