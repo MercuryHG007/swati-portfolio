@@ -2,7 +2,8 @@ import { Save, Trash2 } from "lucide-react";
 import { getAllMediums } from "@/lib/admin-queries";
 import { createMedium, updateMedium, deleteMedium } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { ActionIcon, inputClass, buttonClass, cardClass } from "@/components/admin/ui";
+import { ActionIcon, inputClass, cardClass } from "@/components/admin/ui";
+import { NewNameDialog } from "@/components/admin/new-name-dialog";
 import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -22,7 +23,15 @@ export default async function AdminMediumsPage() {
           { param: "error", type: "error", message: ERROR_MESSAGES },
         ]}
       />
-      <h1 className="text-2xl font-semibold text-foreground">Mediums</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-foreground">Mediums</h1>
+        <NewNameDialog
+          triggerLabel="New medium"
+          title="New medium"
+          placeholder="Medium name"
+          action={createMedium}
+        />
+      </div>
 
       <div className="flex flex-col gap-3">
         {mediums.map((medium) => (
@@ -46,13 +55,6 @@ export default async function AdminMediumsPage() {
           </form>
         ))}
       </div>
-
-      <form action={createMedium} className={`${cardClass} flex flex-wrap items-center gap-3`}>
-        <input name="name" placeholder="New medium name" required className={`${inputClass} min-w-0 flex-1`} />
-        <button type="submit" className={buttonClass}>
-          Add
-        </button>
-      </form>
     </main>
   );
 }

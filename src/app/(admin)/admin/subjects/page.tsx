@@ -2,7 +2,8 @@ import { Save, Trash2 } from "lucide-react";
 import { getAllSubjects } from "@/lib/admin-queries";
 import { createSubject, updateSubject, deleteSubject } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { ActionIcon, inputClass, buttonClass, cardClass } from "@/components/admin/ui";
+import { ActionIcon, inputClass, cardClass } from "@/components/admin/ui";
+import { NewNameDialog } from "@/components/admin/new-name-dialog";
 import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
 export default async function AdminSubjectsPage() {
@@ -17,7 +18,15 @@ export default async function AdminSubjectsPage() {
           { param: "error", type: "error", message: "Name is required." },
         ]}
       />
-      <h1 className="text-2xl font-semibold text-foreground">Subjects</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-foreground">Subjects</h1>
+        <NewNameDialog
+          triggerLabel="New subject"
+          title="New subject"
+          placeholder="Subject name"
+          action={createSubject}
+        />
+      </div>
 
       <div className="flex flex-col gap-3">
         {subjects.map((subject) => (
@@ -41,13 +50,6 @@ export default async function AdminSubjectsPage() {
           </form>
         ))}
       </div>
-
-      <form action={createSubject} className={`${cardClass} flex flex-wrap items-center gap-3`}>
-        <input name="name" placeholder="New subject name" required className={`${inputClass} min-w-0 flex-1`} />
-        <button type="submit" className={buttonClass}>
-          Add
-        </button>
-      </form>
     </main>
   );
 }
