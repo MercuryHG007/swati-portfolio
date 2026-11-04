@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BrandLink } from "@/components/brand-link";
 import { CldImage } from "@/components/cloudinary-image";
 import { TextLink } from "@/components/text-link/text-link";
 import { getAbout } from "@/lib/queries";
@@ -37,7 +37,7 @@ export async function SiteFooter() {
           ) : null}
         </div>
         {logo ? (
-          <Link
+          <BrandLink
             href="/"
             aria-label="Swati Garg home"
             className="order-3 w-fit md:order-none md:col-start-1 md:row-start-1 md:justify-self-start"
@@ -51,7 +51,7 @@ export async function SiteFooter() {
               quality="auto"
               className="h-[72px] w-[72px]"
             />
-          </Link>
+        </BrandLink>
         ) : null}
       </div>
     </footer>

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BrandLink } from "@/components/brand-link";
 import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
 import { NavButton, NavTextLink } from "@/components/nav-links";
 import { HeaderFilterSwap } from "@/components/header-filter";
@@ -15,9 +15,9 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 h-(--header-height) border-b border-border bg-background">
       <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-6">
-        <Link href="/" className="font-serif text-base font-medium tracking-tight text-foreground">
+        <BrandLink href="/" className="font-serif text-base font-medium tracking-tight text-foreground">
           Swati Garg
-        </Link>
+        </BrandLink>
         <HeaderFilterSwap>
           <nav className="hidden items-center gap-8 text-sm text-foreground md:flex">
             {NAV_LINKS.map((link) => (
