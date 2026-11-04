@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
 import { NavButton, NavTextLink } from "@/components/nav-links";
+import { HeaderFilterSwap } from "@/components/header-filter";
 
 // Exhibitions live on the About page, so they're not a top-level link.
 const NAV_LINKS = [
@@ -17,16 +18,18 @@ export function SiteHeader() {
         <Link href="/" className="font-serif text-base font-medium tracking-tight text-foreground">
           Swati Garg
         </Link>
-        <nav className="hidden items-center gap-8 text-sm text-foreground md:flex">
-          {NAV_LINKS.map((link) => (
-            <NavTextLink key={link.href} href={link.href} variant="inverse" prefetch={false}>
-              {link.label}
-            </NavTextLink>
-          ))}
-          <NavButton href={CTA.href} size="sm" prefetch={false}>
-            {CTA.label}
-          </NavButton>
-        </nav>
+        <HeaderFilterSwap>
+          <nav className="hidden items-center gap-8 text-sm text-foreground md:flex">
+            {NAV_LINKS.map((link) => (
+              <NavTextLink key={link.href} href={link.href} variant="inverse" prefetch={false}>
+                {link.label}
+              </NavTextLink>
+            ))}
+            <NavButton href={CTA.href} size="sm" prefetch={false}>
+              {CTA.label}
+            </NavButton>
+          </nav>
+        </HeaderFilterSwap>
         <MobileNavDrawer>
           {NAV_LINKS.map((link) => (
             <NavTextLink key={link.href} href={link.href} variant="inverse" prefetch={false} className="text-lg text-foreground">

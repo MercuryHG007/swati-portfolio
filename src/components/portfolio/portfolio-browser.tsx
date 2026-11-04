@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useHeaderFilter } from "@/components/header-filter";
 import { PortfolioFilterBar } from "@/components/portfolio/portfolio-filter-bar";
+
 import { PortfolioGrid } from "@/components/portfolio/portfolio-grid";
 import {
   EMPTY_PORTFOLIO_FILTERS,
@@ -16,6 +18,8 @@ import {
 const BASE_PATH = "/portfolio";
 const RETURN_KEY = "portfolio-return";
 const RETURN_TTL_MS = 30 * 60 * 1000;
+const TITLE_ID = "portfolio";
+const ARTWORKS_ID = "portfolio-artworks";
 
 type ReturnRecord = { index: number; slug: string; query: string; savedAt: number };
 
@@ -24,6 +28,14 @@ let arrivedByHistory = false;
 if (typeof window !== "undefined") {
   window.addEventListener("popstate", () => {
     arrivedByHistory = true;
+  });
+}
+
+// Deferred a frame so a mobile drawer has unlocked the page before scrolling.
+function scrollToSection(id: string) {
+  requestAnimationFrame(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById(id)?.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
   });
 }
 
@@ -76,6 +88,7 @@ type PortfolioBrowserProps = {
 };
 
 export function PortfolioBrowser({ initialFilters, initialFacets, initialPage }: PortfolioBrowserProps) {
+  const { active: headerFilterActive } = useHeaderFilter();
   const [filters, setFilters] = useState(initialFilters);
   const [facets, setFacets] = useState(initialFacets);
   const [items, setItems] = useState(initialPage.items);
@@ -172,9 +185,12 @@ export function PortfolioBrowser({ initialFilters, initialFacets, initialPage }:
       clearReturnRecord();
       setStatus("loading");
       void loadFrom(next);
+      // While the desktop header shows the filter, scrolling up to the title would bring the chip row back under the header and close it. Scroll to the artworks instead.
+      scrollToSection(headerFilterActive ? ARTWORKS_ID : TITLE_ID);
     },
-    [loadFrom]
+    [loadFrom, headerFilterActive]
   );
+
 
   const loadMore = useCallback(async () => {
     if (controllerRef.current || !listRef.current.hasMore) return;
@@ -261,17 +277,19 @@ export function PortfolioBrowser({ initialFilters, initialFacets, initialPage }:
   return (
     <div className="flex flex-col gap-8">
       <PortfolioFilterBar filters={filters} facets={facets} total={total} onChange={onChange} />
-      <PortfolioGrid
-        items={items}
-        hasMore={hasMore}
-        status={status}
-        total={total}
-        filters={filters}
-        onLoadMore={loadMore}
-        onRetry={onRetry}
-        onSelect={rememberArtwork}
-        onClearFilters={onClearFilters}
-      />
+      <div id={ARTWORKS_ID} className="scroll-mt-24">
+        <PortfolioGrid
+          items={items}
+          hasMore={hasMore}
+          status={status}
+          total={total}
+          filters={filters}
+          onLoadMore={loadMore}
+          onRetry={onRetry}
+          onSelect={rememberArtwork}
+          onClearFilters={onClearFilters}
+        />
+      </div>
     </div>
   );
 }
