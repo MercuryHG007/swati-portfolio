@@ -95,7 +95,7 @@ export function GridCarousel({ heading, body, ctaLabel, ctaHref, items }: GridCa
         ref={trackRef}
         className="order-2 mx-6 flex min-w-0 snap-x snap-mandatory gap-4 overflow-x-auto pb-1 [scrollbar-width:none] xl:order-none xl:col-start-2 xl:row-start-2 xl:mx-0 xl:mr-6 [&::-webkit-scrollbar]:hidden"
       >
-        {items.map((item) => (
+        {items.map((item, index) => (
           <li key={item.href} className="w-[clamp(260px,70vw,340px)] shrink-0 snap-start xl:w-[31vw]">
             <Link href={item.href} className="group flex flex-col gap-3">
               <span className="relative block aspect-[4/3] overflow-hidden rounded-md bg-surface">
@@ -107,6 +107,8 @@ export function GridCarousel({ heading, body, ctaLabel, ctaHref, items }: GridCa
                     crop="fill"
                     gravity="auto"
                     sizes="(min-width: 1280px) 31vw, 70vw"
+                    // The first three tiles are above the fold on desktop, so they must not be lazy-loaded.
+                    loading={index < 3 ? "eager" : "lazy"}
                     className="scale-[1.05] object-cover transition duration-500 ease-out group-hover:scale-100 group-focus-visible:scale-100 motion-reduce:scale-100 motion-reduce:transition-none"
                   />
                 ) : null}
