@@ -27,7 +27,7 @@ export default async function ExhibitionDetailPage({
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-6 py-16">
-      <Breadcrumbs items={[{ label: "About", href: "/about" }, { label: exhibition.title }]} />
+      <Breadcrumbs items={[{ label: "Exhibitions", href: "/exhibitions" }, { label: exhibition.title }]} />
       <header className="flex flex-col gap-4">
         <p className="text-xs uppercase tracking-widest text-muted">
           {exhibition.type === "solo" ? "Solo exhibition" : "Group exhibition"}

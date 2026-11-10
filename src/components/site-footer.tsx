@@ -21,6 +21,7 @@ export async function SiteFooter() {
         </p>
         <nav aria-label="Footer" className="order-1 flex flex-col gap-2 md:order-none md:col-start-2 md:row-start-1 md:justify-self-center">
           <TextLink href="/portfolio" variant="inverse" className="w-fit">Portfolio</TextLink>
+          <TextLink href="/exhibitions" variant="inverse" className="w-fit">Exhibitions</TextLink>
           <TextLink href="/about" variant="inverse" className="w-fit">About</TextLink>
           <TextLink href="/contact" variant="inverse" className="w-fit">Get in touch</TextLink>
         </nav>
