@@ -8,6 +8,7 @@ import { GridCarousel } from "@/components/grid-carousel/grid-carousel";
 import { PortfolioBrowser } from "@/components/portfolio/portfolio-browser";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { parsePortfolioFilters, portfolioSearchParams } from "@/lib/portfolio-filters";
+import { dailySeed } from "@/lib/portfolio-order";
 
 type PortfolioPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -18,7 +19,7 @@ export default async function PortfolioPage({ searchParams }: PortfolioPageProps
   const [featuredSeries, seriesSettings, firstPage, facets] = await Promise.all([
     getCachedFeaturedSeriesCards(),
     getCachedSeriesSettings(),
-    getCachedPortfolioPage(filters, 1),
+    getCachedPortfolioPage(filters, 1, dailySeed()),
     getCachedPortfolioFacets(filters),
   ]);
 

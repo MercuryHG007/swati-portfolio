@@ -25,8 +25,8 @@ export type PortfolioFilters = Record<FilterKey, string[]>;
 export type PortfolioCard = {
   slug: string;
   title: string;
-  year: number | null;
-  image: { publicId: string; alt?: string } | null;
+  // Dimensions are optional so responses cached before they were sent still render (see heightRatio).
+  image: { publicId: string; alt?: string; width?: number; height?: number } | null;
 };
 
 export type PortfolioPageResponse = {
@@ -34,6 +34,8 @@ export type PortfolioPageResponse = {
   page: number;
   hasMore: boolean;
   total: number;
+  // The order seed these items were drawn with. Later pages must use the same seed.
+  seed: string;
 };
 
 export type FacetOption = {
