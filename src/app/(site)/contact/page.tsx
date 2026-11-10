@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
 import { Button } from "@/components/button/button";
+import { TrackClickButton } from "@/components/analytics/track-click-button";
+import { TrackOnMount } from "@/components/analytics/track-on-mount";
+import { ContactAttributionField } from "@/components/analytics/contact-attribution-field";
 import { connectToDatabase } from "@/lib/mongodb";
 import { ContactMessage } from "@/models";
 import { sendContactNotification } from "@/lib/email";
 import { getAbout } from "@/lib/queries";
+import { parseArtworkSlug, parseAttribution } from "@/lib/lead-source";
 
 export const revalidate = 60;
 
@@ -36,7 +40,11 @@ async function submitMessage(formData: FormData) {
     redirect("/contact?error=rate_limited");
   }
 
-  await ContactMessage.create({ name, email, message });
+  const artworkSlug = parseArtworkSlug(formData.get("artwork"));
+  const attribution = parseAttribution(formData.get("attribution"));
+  const source = artworkSlug || attribution ? { ...attribution, artworkSlug } : undefined;
+
+  await ContactMessage.create({ name, email, message, ...(source && { source }) });
   await sendContactNotification({ name, email, message });
 
   redirect("/contact?sent=1");
@@ -45,9 +53,10 @@ async function submitMessage(formData: FormData) {
 export default async function ContactPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; error?: string }>;
+  searchParams: Promise<{ sent?: string; error?: string; artwork?: string }>;
 }) {
-  const { sent, error } = await searchParams;
+  const { sent, error, artwork } = await searchParams;
+  const artworkSlug = parseArtworkSlug(artwork);
   const about = await getAbout();
 
   return (
@@ -58,15 +67,24 @@ export default async function ContactPage({
       </p>
 
       {about?.socials?.instagram ? (
-        <Button href={about.socials.instagram} variant="inverse" size="md">
+        <TrackClickButton
+          href={about.socials.instagram}
+          event="contact_click"
+          params={{ channel: "instagram", location: "contact_page" }}
+          variant="inverse"
+          size="md"
+        >
           Send a DM on Instagram
-        </Button>
+        </TrackClickButton>
       ) : null}
 
       {sent ? (
-        <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-foreground">
-          Thanks — your message has been sent.
-        </p>
+        <>
+          <TrackOnMount event="generate_lead" params={{ lead_source: "contact_form" }} />
+          <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-foreground">
+            Thanks — your message has been sent.
+          </p>
+        </>
       ) : (
         <form action={submitMessage} className="flex flex-col gap-4">
           {error === "invalid" ? (
@@ -87,6 +105,8 @@ export default async function ContactPage({
             className="hidden"
             aria-hidden="true"
           />
+          <input type="hidden" name="artwork" value={artworkSlug} readOnly />
+          <ContactAttributionField />
 
           <label className="flex flex-col gap-1 text-sm text-foreground">
             Name

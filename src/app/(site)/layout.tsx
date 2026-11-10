@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/site-header";
 import { HeaderFilterProvider } from "@/components/header-filter";
 import { SiteFooter } from "@/components/site-footer";
 import { ScrollToTop } from "@/components/scroll-to-top";
+import { SiteAnalytics } from "@/components/analytics/site-analytics";
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import "../globals.css";
 
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SiteFooter />
         </HeaderFilterProvider>
         <ScrollToTop />
+        <SiteAnalytics />
         <SpeedInsights />
       </body>
     </html>

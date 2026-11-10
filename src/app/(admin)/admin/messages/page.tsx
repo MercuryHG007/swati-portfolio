@@ -4,6 +4,7 @@ import { markMessageRead, deleteMessage } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { ActionIcon, buttonClass, cardClass } from "@/components/admin/ui";
 import { ToastOnLoad } from "@/components/admin/toast-on-load";
+import { describeLeadSource } from "@/lib/lead-source";
 
 // Pinned so the admin sees the same time on every server; the server default is UTC.
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -62,6 +63,9 @@ export default async function AdminMessagesPage() {
               </div>
             </div>
             <p className="whitespace-pre-wrap text-sm text-foreground">{message.message}</p>
+            {message.source && describeLeadSource(message.source) ? (
+              <p className="text-xs text-muted">{describeLeadSource(message.source)}</p>
+            ) : null}
           </div>
         ))}
         {messages.length === 0 ? <p className="text-muted">No messages yet.</p> : null}

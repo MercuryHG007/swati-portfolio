@@ -17,6 +17,7 @@ const ADMIN_LINKS = [
   { href: "/admin/exhibitions", label: "Exhibitions" },
   { href: "/admin/about", label: "About" },
   { href: "/admin/messages", label: "Messages" },
+  { href: "/admin/analytics", label: "Analytics" },
 ];
 
 export async function AdminNav() {

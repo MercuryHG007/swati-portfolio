@@ -37,6 +37,10 @@ Open [http://localhost:3000](http://localhost:3000) for the public site, and
 | `NEXTAUTH_URL` | yes in dev | `http://localhost:3000` locally; not required on Vercel since `trustHost: true` trusts the request host |
 | `RESEND_API_KEY` / `CONTACT_TO_EMAIL` | optional | Contact form still saves to Mongo without these; email notification is just skipped |
 | `RESEND_FROM_EMAIL` | optional | Defaults to Resend's sandbox sender until a custom domain is verified |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | optional | GA4 measurement ID (`G-…`). Loads gtag on the public site only; no consent banner yet |
+| `GA4_PROPERTY_ID` / `GA4_CLIENT_EMAIL` / `GA4_PRIVATE_KEY` | optional | Read-only GA4 Data API service account for `/admin/analytics`. Grant the service account Viewer on the GA4 property. Keep the key newlines as `\n` |
+| `GEMINI_API_KEY` | optional | Enables the admin "Suggest details with AI" button on artwork forms. Server-only |
+| `GEMINI_ARTWORK_MODELS` | optional | Comma-separated Gemini model IDs to try in order. Defaults to `gemini-3.7-flash,gemini-3.1-flash-lite` |
 
 ### Useful scripts
 
