@@ -2,10 +2,11 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
 export type ButtonVariant = "primary" | "inverse" | "danger";
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 // Label size and padding scale together. Line height is fixed so the height comes from the padding.
 const sizeClass: Record<ButtonSize, string> = {
+  xs: "px-3 py-1 text-xs leading-4",
   sm: "px-4 py-2 text-sm leading-5",
   md: "px-5 py-2 text-[15px] leading-5",
   lg: "px-6 py-3 text-base leading-6",

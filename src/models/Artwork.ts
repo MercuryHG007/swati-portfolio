@@ -22,6 +22,8 @@ const artworkSchema = new Schema(
     series: { type: Schema.Types.ObjectId, ref: "Series", default: null },
     dimensions: dimensionsSchema,
     description: { type: String, default: "" },
+    // Search-result summary; the public page falls back to `description` when this is blank.
+    seoDescription: { type: String, default: "", trim: true },
     order: { type: Number, default: 0 },
     // Position within its series' artwork list, independent of the site-wide `order`.
     seriesOrder: { type: Number, default: 0 },

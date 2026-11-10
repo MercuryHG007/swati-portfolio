@@ -1,4 +1,6 @@
 import { Fragment, type ReactNode } from "react";
+import type { Metadata } from "next";
+import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
 import { notFound } from "next/navigation";
 import {
@@ -11,6 +13,7 @@ import { Breadcrumbs, type BreadcrumbItem } from "@/components/breadcrumbs";
 import { Pill } from "@/components/pill/pill";
 import { PrevNextNav } from "@/components/prev-next-nav";
 import { ArtworkGallery } from "@/components/artwork-gallery";
+import { TrackOnMount } from "@/components/analytics/track-on-mount";
 import { getPrevNext } from "@/lib/prev-next";
 import { formatDateRange, getYear } from "@/lib/format";
 
@@ -21,6 +24,33 @@ function formatDimensions(dimensions?: { height?: number; width?: number; unit?:
   const { height, width, unit = "cm" } = dimensions;
   const unitLabel = unit === "in" ? "inch" : unit;
   return `${height} × ${width} ${unitLabel}`;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const artwork = await getArtworkBySlug(slug);
+  if (!artwork) return {};
+
+  const description = artwork.seoDescription || artwork.description || undefined;
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const cover = artwork.images?.[0];
+  const image = cloudName && cover
+    ? `https://res.cloudinary.com/${cloudName}/image/upload/c_limit,w_1200/${cover.publicId}`
+    : undefined;
+
+  return {
+    title: `${artwork.title} — Swati Garg`,
+    description,
+    openGraph: {
+      title: artwork.title,
+      description,
+      ...(image && { images: [{ url: image, alt: cover?.alt || artwork.title }] }),
+    },
+  };
 }
 
 export default async function ArtworkDetailPage({
@@ -57,6 +87,7 @@ export default async function ArtworkDetailPage({
   const siblings = getPrevNext(siblingArtworks, currentIndex);
 
   const exhibitions = await getExhibitionsForArtwork(artwork._id);
+  const enquireHref = `/contact?artwork=${encodeURIComponent(artwork.slug)}`;
 
   const breadcrumbItems: BreadcrumbItem[] = [{ label: "Portfolio", href: "/portfolio" }];
   if (artwork.series) {
@@ -69,11 +100,29 @@ export default async function ArtworkDetailPage({
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-6 py-16">
+      <TrackOnMount
+        event="view_item"
+        params={{
+          items: [{
+            item_id: artwork.slug,
+            item_name: artwork.title,
+            item_category: artwork.medium?.name,
+            item_category2: artwork.series?.title,
+          }],
+        }}
+      />
       <Breadcrumbs items={breadcrumbItems} />
       <ArtworkGallery images={artwork.images ?? []} title={artwork.title} />
 
       <div className="flex flex-col gap-3">
-        <h1 className="text-2xl font-medium text-foreground">{artwork.title}</h1>
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+          <h1 className="text-2xl font-medium text-foreground">{artwork.title}</h1>
+          <div className="hidden sm:block">
+            <Button href={enquireHref} size="sm" variant="inverse" className="shrink-0">
+              Enquire about this work
+            </Button>
+          </div>
+        </div>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
           {metaParts.map((part, index) => (
             <Fragment key={index}>
@@ -126,6 +175,12 @@ export default async function ArtworkDetailPage({
             </ul>
           </div>
         ) : null}
+
+        <div className="sm:hidden">
+          <Button href={enquireHref} size="sm" variant="inverse">
+            Enquire about this work
+          </Button>
+        </div>
       </div>
 
       <PrevNextNav

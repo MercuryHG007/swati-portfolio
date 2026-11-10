@@ -9,9 +9,10 @@ Each guide lists the accounts to create, the values to copy, and where each valu
 | [Cloudinary](./cloudinary.md) | Image hosting and uploads. **Required** |
 | [Resend](./resend.md) | Contact-form email notifications. Optional |
 | [Google Analytics 4](./ga4.md) | Website tracking, the admin analytics page, and the contact-form lead source. Optional |
+| [Gemini](./gemini.md) | The AI artwork assistant on the admin artwork form. Optional |
 
-Set up in this order: MongoDB, then Cloudinary, then Resend and GA4. The app won't start without
-MongoDB and Cloudinary, and the admin can't sign in until a first admin exists.
+Set up in this order: MongoDB, then Cloudinary, then Resend, GA4 and Gemini. The app won't start
+without MongoDB and Cloudinary, and the admin can't sign in until a first admin exists.
 
 ## Required app variables (NextAuth)
 

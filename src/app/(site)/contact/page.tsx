@@ -6,7 +6,7 @@ import { ContactAttributionField } from "@/components/analytics/contact-attribut
 import { connectToDatabase } from "@/lib/mongodb";
 import { ContactMessage } from "@/models";
 import { sendContactNotification } from "@/lib/email";
-import { getAbout } from "@/lib/queries";
+import { getAbout, getArtworkBySlug } from "@/lib/queries";
 import { parseArtworkSlug, parseAttribution } from "@/lib/lead-source";
 
 export const revalidate = 60;
@@ -25,8 +25,13 @@ async function submitMessage(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().slice(0, 320);
   const message = String(formData.get("message") ?? "").trim().slice(0, 5000);
 
+  // Error redirects reload the form, so the artwork context has to travel with them.
+  const artworkSlug = parseArtworkSlug(formData.get("artwork"));
+  const errorUrl = (error: string) =>
+    `/contact?error=${error}${artworkSlug ? `&artwork=${artworkSlug}` : ""}`;
+
   if (!name || !email || !message || !EMAIL_RE.test(email)) {
-    redirect("/contact?error=invalid");
+    redirect(errorUrl("invalid"));
   }
 
   await connectToDatabase();
@@ -37,10 +42,9 @@ async function submitMessage(formData: FormData) {
     createdAt: { $gte: new Date(Date.now() - 60_000) },
   });
   if (recent) {
-    redirect("/contact?error=rate_limited");
+    redirect(errorUrl("rate_limited"));
   }
 
-  const artworkSlug = parseArtworkSlug(formData.get("artwork"));
   const attribution = parseAttribution(formData.get("attribution"));
   const source = artworkSlug || attribution ? { ...attribution, artworkSlug } : undefined;
 
@@ -57,7 +61,14 @@ export default async function ContactPage({
 }) {
   const { sent, error, artwork } = await searchParams;
   const artworkSlug = parseArtworkSlug(artwork);
-  const about = await getAbout();
+  const [about, enquiredArtwork] = await Promise.all([
+    getAbout(),
+    artworkSlug ? getArtworkBySlug(artworkSlug) : null,
+  ]);
+  // Only published artworks resolve here, so an unpublished slug just leaves the message blank.
+  const messagePrefill = enquiredArtwork
+    ? `Hi Swati, I'd like to enquire about "${enquiredArtwork.title}". `
+    : undefined;
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-16">
@@ -135,6 +146,7 @@ export default async function ContactPage({
               required
               maxLength={5000}
               rows={5}
+              defaultValue={messagePrefill}
               className="rounded-md border border-border bg-surface px-3 py-2"
             />
           </label>

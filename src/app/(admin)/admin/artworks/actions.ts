@@ -7,7 +7,7 @@ import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Artwork, Exhibition } from "@/models";
 import { slugify } from "@/lib/slugify";
-import { withAltFallback } from "@/lib/image-alt";
+import { withAltFallback, withSuggestedAlt } from "@/lib/image-alt";
 import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 import { readImageList } from "@/lib/form-fields";
 
@@ -28,17 +28,19 @@ function readFields(formData: FormData) {
   const seriesRaw = String(formData.get("series") ?? "");
   const series = seriesRaw || null;
   const description = String(formData.get("description") ?? "").trim();
+  const seoDescription = String(formData.get("seoDescription") ?? "").trim().slice(0, 160);
+  const aiAltText = String(formData.get("aiAltText") ?? "").trim().slice(0, 200);
   const status = formData.get("status") === "published" ? "published" : "hidden";
   const featured = formData.get("featured") === "on";
   // undefined when the form didn't send the field: the stored images are then left alone.
   const submittedImages = readImageList(formData, "images");
-  const images = submittedImages && withAltFallback(submittedImages, title);
+  const images = submittedImages && withAltFallback(withSuggestedAlt(submittedImages, aiAltText), title);
   const dimensions = {
     height: formData.get("height") ? Number(formData.get("height")) : undefined,
     width: formData.get("width") ? Number(formData.get("width")) : undefined,
     unit: formData.get("unit") === "in" ? "in" : "cm",
   };
-  return { title, slug, dateMade, medium, subjects, series, description, status, featured, images, dimensions };
+  return { title, slug, dateMade, medium, subjects, series, description, seoDescription, status, featured, images, dimensions };
 }
 
 export async function createArtwork(formData: FormData) {

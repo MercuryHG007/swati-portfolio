@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAllMediums, getAllSubjects, getAllSeries } from "@/lib/admin-queries";
 import { ImageUploader } from "@/components/admin/image-uploader";
+import { AiArtworkAssist } from "@/components/admin/ai-artwork-assist";
 import { Field, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
 
 function toDateInputValue(date?: Date | string) {
@@ -24,6 +25,7 @@ export async function ArtworkForm({
     series: unknown;
     dimensions?: { height?: number; width?: number; unit?: string };
     description: string;
+    seoDescription?: string;
     status: string;
     featured: boolean;
   };
@@ -38,11 +40,6 @@ export async function ArtworkForm({
   return (
     <form action={action} className="flex flex-col gap-4">
       {artwork ? <input type="hidden" name="id" value={String(artwork._id)} /> : null}
-
-      <Field label="Title">
-        <input name="title" defaultValue={artwork?.title} required className={inputClass} />
-      </Field>
-      <input type="hidden" name="slug" defaultValue={artwork?.slug} />
       <Field label="Images">
         <ImageUploader
           name="images"
@@ -51,11 +48,23 @@ export async function ArtworkForm({
           multiple
         />
       </Field>
-      <Field label="Date made">
-        <input
-          name="dateMade"
-          type="date"
-          defaultValue={toDateInputValue(artwork?.dateMade)}
+      <AiArtworkAssist
+        mediums={mediums.map((medium) => ({ id: String(medium._id), name: medium.name }))}
+        subjects={subjects.map((subject) => ({ id: String(subject._id), name: subject.name }))}
+      />
+      <Field label="Title">
+        <input name="title" defaultValue={artwork?.title} required className={inputClass} />
+      </Field>
+      <input type="hidden" name="slug" defaultValue={artwork?.slug} />
+      <Field label="Description">
+        <textarea name="description" defaultValue={artwork?.description} rows={4} className={inputClass} />
+      </Field>
+      <Field label="SEO description (shown in search results, up to 160 characters)">
+        <textarea
+          name="seoDescription"
+          defaultValue={artwork?.seoDescription}
+          rows={2}
+          maxLength={160}
           className={inputClass}
         />
       </Field>
@@ -84,6 +93,14 @@ export async function ArtworkForm({
           ))}
         </div>
       </Field>
+      <Field label="Date made">
+        <input
+          name="dateMade"
+          type="date"
+          defaultValue={toDateInputValue(artwork?.dateMade)}
+          className={inputClass}
+        />
+      </Field>
       <Field label="Series (leave blank for standalone)">
         <Select name="series" defaultValue={selectedSeriesId}>
           <option value="">Standalone</option>
@@ -110,9 +127,6 @@ export async function ArtworkForm({
         </Field>
       </div>
 
-      <Field label="Description">
-        <textarea name="description" defaultValue={artwork?.description} rows={4} className={inputClass} />
-      </Field>
       <Field label="Status">
         <Select name="status" defaultValue={artwork?.status ?? "hidden"}>
           <option value="hidden">Hidden</option>
