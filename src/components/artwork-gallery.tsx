@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Lightbox from "yet-another-react-lightbox";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import Counter from "yet-another-react-lightbox/plugins/counter";
@@ -19,16 +19,7 @@ function cloudinaryUrl(publicId: string) {
 }
 
 export function ArtworkGallery({ images, title }: { images: GalleryImage[]; title: string }) {
-  const [isMobile, setIsMobile] = useState(false);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    const query = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsMobile(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
 
   if (images.length === 0) return null;
 
@@ -40,17 +31,16 @@ export function ArtworkGallery({ images, title }: { images: GalleryImage[]; titl
         <button
           key={image.publicId}
           type="button"
-          disabled={!isMobile}
           onClick={() => setOpenIndex(index)}
           aria-label={`Zoom into image ${index + 1} of ${images.length}`}
-          className={`block w-full border-0 bg-transparent p-0 text-left ${isMobile ? "cursor-zoom-in" : "cursor-default"}`}
+          className="block w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
         >
           <ProtectedImage
             src={image.publicId}
             alt={image.alt || title}
             width={image.width}
             height={image.height}
-            sizes="(min-width: 768px) 768px, 100vw"
+            sizes="(min-width: 1152px) 1104px, 100vw"
             className="h-auto w-full rounded-md"
             // First image is the above-the-fold LCP element on this page; Next 16 recommends
             // `loading="eager"` here instead of the deprecated `priority` prop.
@@ -70,7 +60,7 @@ export function ArtworkGallery({ images, title }: { images: GalleryImage[]; titl
           height: image.height,
         }))}
         plugins={hasMultiple ? [Zoom, Counter] : [Zoom]}
-        zoom={{ maxZoomPixelRatio: 3 }}
+        zoom={{ maxZoomPixelRatio: 3, scrollToZoom: true }}
         render={hasMultiple ? undefined : { buttonPrev: () => null, buttonNext: () => null }}
       />
     </div>
