@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Artwork, Exhibition } from "@/models";
+import { Artwork, Exhibition, Subject } from "@/models";
 import { slugify } from "@/lib/slugify";
+import { normalizeSubjectName } from "@/lib/subject-names";
 import { withAltFallback, withSuggestedAlt } from "@/lib/image-alt";
 import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 import { readImageList } from "@/lib/form-fields";
@@ -28,7 +29,6 @@ function readFields(formData: FormData) {
   const seriesRaw = String(formData.get("series") ?? "");
   const series = seriesRaw || null;
   const description = String(formData.get("description") ?? "").trim();
-  const seoDescription = String(formData.get("seoDescription") ?? "").trim().slice(0, 160);
   const aiAltText = String(formData.get("aiAltText") ?? "").trim().slice(0, 200);
   const status = formData.get("status") === "published" ? "published" : "hidden";
   const featured = formData.get("featured") === "on";
@@ -40,7 +40,33 @@ function readFields(formData: FormData) {
     width: formData.get("width") ? Number(formData.get("width")) : undefined,
     unit: formData.get("unit") === "in" ? "in" : "cm",
   };
-  return { title, slug, dateMade, medium, subjects, series, description, seoDescription, status, featured, images, dimensions };
+  return { title, slug, dateMade, medium, subjects, series, description, status, featured, images, dimensions };
+}
+
+function readNewSubjects(formData: FormData): string[] {
+  return formData
+    .getAll("newSubjects")
+    .slice(0, 20)
+    .map((value) => normalizeSubjectName(String(value)))
+    .filter(Boolean);
+}
+
+// Creates any ticked new subjects and returns the ids to attach. The upsert on slug reuses a subject
+// that already exists under the same name, so a repeat or a case-only difference creates nothing.
+async function resolveSubjectIds(existingIds: string[], newNames: string[]): Promise<string[]> {
+  const createdIds: string[] = [];
+  for (const name of newNames) {
+    const slug = slugify(name);
+    if (!slug) continue;
+    const subject = await Subject.findOneAndUpdate(
+      { slug },
+      { $setOnInsert: { name, slug } },
+      { upsert: true, new: true },
+    ).lean<{ _id: unknown }>();
+    if (subject) createdIds.push(String(subject._id));
+  }
+  if (createdIds.length) revalidatePath("/admin/subjects");
+  return [...new Set([...existingIds, ...createdIds])];
 }
 
 export async function createArtwork(formData: FormData) {
@@ -49,9 +75,10 @@ export async function createArtwork(formData: FormData) {
   if (!fields.title || !fields.slug || !fields.medium) redirect("/admin/artworks/new?error=invalid");
 
   await connectToDatabase();
+  const subjects = await resolveSubjectIds(fields.subjects, readNewSubjects(formData));
   const order = await Artwork.countDocuments();
   const seriesOrder = fields.series ? await Artwork.countDocuments({ series: fields.series }) : 0;
-  await Artwork.create({ ...fields, images: fields.images ?? [], order, seriesOrder });
+  await Artwork.create({ ...fields, subjects, images: fields.images ?? [], order, seriesOrder });
   refresh(fields.slug);
   redirect("/admin/artworks?saved=1");
 }
@@ -71,9 +98,11 @@ export async function updateArtwork(formData: FormData) {
     fields.series && String(existing?.series ?? "") !== fields.series
       ? await Artwork.countDocuments({ series: fields.series })
       : undefined;
+  const subjects = await resolveSubjectIds(fields.subjects, readNewSubjects(formData));
   const { images, ...rest } = fields;
   await Artwork.findByIdAndUpdate(id, {
     ...rest,
+    subjects,
     ...(images !== undefined && { images }),
     ...(seriesOrder !== undefined && { seriesOrder }),
   });

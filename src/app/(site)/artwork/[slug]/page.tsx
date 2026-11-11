@@ -16,6 +16,7 @@ import { ArtworkGallery } from "@/components/artwork-gallery";
 import { TrackOnMount } from "@/components/analytics/track-on-mount";
 import { getPrevNext } from "@/lib/prev-next";
 import { formatDateRange, getYear } from "@/lib/format";
+import { toMetaDescription } from "@/lib/meta-description";
 
 export const revalidate = 60;
 
@@ -35,7 +36,7 @@ export async function generateMetadata({
   const artwork = await getArtworkBySlug(slug);
   if (!artwork) return {};
 
-  const description = artwork.seoDescription || artwork.description || undefined;
+  const description = toMetaDescription(artwork.description);
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const cover = artwork.images?.[0];
   const image = cloudName && cover

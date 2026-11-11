@@ -2,6 +2,9 @@
 
 import { useState, type MouseEvent } from "react";
 import { toast } from "sonner";
+import { newSubjectNames } from "@/lib/subject-names";
+import { readPublicId, setTextIfEmpty } from "@/components/admin/ai-form";
+import { useAiArtwork } from "@/components/admin/ai-artwork-context";
 import { secondaryButtonClass } from "@/components/admin/ui";
 
 interface Option {
@@ -12,37 +15,20 @@ interface Option {
 interface Suggestion {
   title: string;
   description: string;
-  seoDescription: string;
   altText: string;
   medium: string;
   subjects: string[];
-}
-
-function firstImagePublicId(form: HTMLFormElement): string | null {
-  const field = form.elements.namedItem("images") as HTMLInputElement | null;
-  try {
-    const images: unknown = JSON.parse(field?.value || "[]");
-    const first = Array.isArray(images) ? images[0] : null;
-    const publicId = first && typeof first === "object" ? (first as { publicId?: unknown }).publicId : null;
-    return typeof publicId === "string" ? publicId : null;
-  } catch {
-    return null;
-  }
+  newSubjects: string[];
+  seriesId: string;
+  seriesTitle: string;
+  seriesReason: string;
 }
 
 // Only empty fields are filled, so anything the admin has already written is kept.
 function applySuggestion(form: HTMLFormElement, suggestion: Suggestion, mediums: Option[], subjects: Option[]): string[] {
   const filled: string[] = [];
-
-  const fillText = (name: string, label: string, value: string) => {
-    const field = form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | null;
-    if (!field || field.value.trim() || !value) return;
-    field.value = value;
-    filled.push(label);
-  };
-  fillText("title", "title", suggestion.title);
-  fillText("description", "description", suggestion.description);
-  fillText("seoDescription", "SEO description", suggestion.seoDescription);
+  if (setTextIfEmpty(form, "title", suggestion.title)) filled.push("title");
+  if (setTextIfEmpty(form, "description", suggestion.description)) filled.push("description");
 
   const medium = form.elements.namedItem("medium") as HTMLSelectElement | null;
   const mediumId = mediums.find((option) => option.name === suggestion.medium)?.id;
@@ -63,17 +49,31 @@ function applySuggestion(form: HTMLFormElement, suggestion: Suggestion, mediums:
   }
   if (subjectsChecked) filled.push("subjects");
 
+  const series = form.elements.namedItem("series") as HTMLSelectElement | null;
+  if (series && !series.value && suggestion.seriesId) {
+    series.value = suggestion.seriesId;
+    filled.push("series");
+  }
+
   return filled;
+}
+
+function describeSeries(suggestion: Suggestion, applied: boolean): string {
+  if (!suggestion.seriesId) return "";
+  const reason = suggestion.seriesReason ? ` ${suggestion.seriesReason}` : "";
+  return applied
+    ? `Series set to "${suggestion.seriesTitle}".${reason}`
+    : `Possible series: "${suggestion.seriesTitle}". The series field was already set, so it was left unchanged.${reason}`;
 }
 
 export function AiArtworkAssist({ mediums, subjects }: { mediums: Option[]; subjects: Option[] }) {
   const [busy, setBusy] = useState(false);
-  const [altText, setAltText] = useState("");
+  const { altText, setAltText, setSeriesNote, setProposed } = useAiArtwork();
 
   async function suggest(event: MouseEvent<HTMLButtonElement>) {
     const form = event.currentTarget.form;
     if (!form) return;
-    const publicId = firstImagePublicId(form);
+    const publicId = readPublicId(form, "images");
     if (!publicId) {
       toast.error("Upload an image first.");
       return;
@@ -84,11 +84,7 @@ export function AiArtworkAssist({ mediums, subjects }: { mediums: Option[]; subj
       const response = await fetch("/api/admin/artwork-assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          publicId,
-          mediums: mediums.map((option) => option.name),
-          subjects: subjects.map((option) => option.name),
-        }),
+        body: JSON.stringify({ publicId }),
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.suggestion) {
@@ -99,6 +95,12 @@ export function AiArtworkAssist({ mediums, subjects }: { mediums: Option[]; subj
       const suggestion = payload.suggestion as Suggestion;
       const filled = applySuggestion(form, suggestion, mediums, subjects);
       setAltText(suggestion.altText);
+      setSeriesNote(describeSeries(suggestion, filled.includes("series")));
+      setProposed((current) => [
+        ...current,
+        ...newSubjectNames(suggestion.newSubjects, [...subjects, ...current].map((item) => item.name))
+          .map((name) => ({ name, checked: false })),
+      ]);
       toast.success(
         filled.length
           ? `Filled in: ${filled.join(", ")}. Review before saving.`
@@ -121,3 +123,11 @@ export function AiArtworkAssist({ mediums, subjects }: { mediums: Option[]; subj
     </div>
   );
 }
+
+// Rendered under the Series field, so the note sits beside the value it describes.
+export function AiSeriesNote() {
+  const { seriesNote } = useAiArtwork();
+  if (!seriesNote) return null;
+  return <p className="text-xs text-muted">{seriesNote}</p>;
+}
+

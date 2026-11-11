@@ -1,8 +1,10 @@
 # Gemini setup
 
-Gemini powers the **AI artwork assistant** on the admin artwork form. The "Suggest details with AI"
-button reads the first uploaded image and proposes a title, description, SEO description, alt text,
-medium and subjects. The admin reviews everything before saving.
+Gemini powers the **AI assistants** in the admin. The "Suggest details with AI" buttons on the artwork
+form read the first uploaded image and propose a title, description, alt text, medium, subjects, and
+a matching series. New subjects appear as checkboxes, and the admin ticks the ones to keep. The series
+form's button reads the cover image and proposes a title, description and alt text. The admin reviews
+everything before saving.
 
 The feature is optional. Without a key, the button shows "The AI assistant is not configured" and
 the rest of the admin works as normal.
@@ -11,17 +13,20 @@ the rest of the admin works as normal.
 
 | Variable | Used by | Public? |
 | --- | --- | --- |
-| `GEMINI_API_KEY` | `src/app/api/admin/artwork-assist/route.ts` (via `src/lib/artwork-assist.ts`) | **No. Secret.** |
-| `GEMINI_ARTWORK_MODELS` | Same route. Optional, comma-separated, tried in order | No |
-| `CLOUDINARY_CLOUD_NAME` | Same route, to fetch the image. Already required by [Cloudinary](./cloudinary.md) | No |
+| `GEMINI_API_KEY` | `src/app/api/admin/artwork-assist/route.ts` and `src/app/api/admin/series-assist/route.ts` (shared client in `src/lib/gemini.ts`) | **No. Secret.** |
+| `GEMINI_ARTWORK_MODELS` | Both routes. Optional, comma-separated, tried in order | No |
+| `CLOUDINARY_CLOUD_NAME` | Both routes, to fetch the image. Already required by [Cloudinary](./cloudinary.md) | No |
 
 Notes:
 
-- The route requires an admin session. Only signed-in admins can call it.
+- The routes require an admin session. Only signed-in admins can call them.
 - The key is sent in the `x-goog-api-key` header on the server. It never reaches the browser, so
   do not add a `NEXT_PUBLIC_` prefix.
+- The routes load mediums, subjects and series from the database. The browser sends only the image ID.
 - When `GEMINI_ARTWORK_MODELS` is blank, the app uses `gemini-3.7-flash` and then
   `gemini-3.1-flash-lite`.
+- Images and the titles of existing series and subjects are sent to Google. On the free tier, Google
+  may use this data to improve its products, so use a billed project for real artwork.
 
 ---
 

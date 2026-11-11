@@ -33,6 +33,17 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
+// Use for a group of controls, such as checkboxes or an uploader. A <label> must not wrap several
+// controls: clicking its text would activate the first one.
+export function FieldSet({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <fieldset className="flex flex-col gap-1 text-sm text-foreground">
+      <legend className="mb-1">{label}</legend>
+      {children}
+    </fieldset>
+  );
+}
+
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div className="relative">

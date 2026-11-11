@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { ArtworkMultiSelect } from "@/components/admin/artwork-multi-select";
-import { Field, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
+import { Field, FieldSet, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
 import { getAllArtworks } from "@/lib/admin-queries";
 import { getYear } from "@/lib/format";
 
@@ -66,39 +66,41 @@ export async function ExhibitionForm({
           <option value="solo">Solo</option>
         </Select>
       </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Start (month)">
-          <input
-            name="startDate"
-            type="month"
-            defaultValue={toDateInputValue(exhibition?.startDate)}
-            required
-            className={inputClass}
-          />
-        </Field>
-        <Field label="End (month, optional)">
-          <input
-            name="endDate"
-            type="month"
-            defaultValue={toDateInputValue(exhibition?.endDate)}
-            className={inputClass}
-          />
-        </Field>
-      </div>
+      <FieldSet label="Dates">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Start (month)">
+            <input
+              name="startDate"
+              type="month"
+              defaultValue={toDateInputValue(exhibition?.startDate)}
+              required
+              className={inputClass}
+            />
+          </Field>
+          <Field label="End (month, optional)">
+            <input
+              name="endDate"
+              type="month"
+              defaultValue={toDateInputValue(exhibition?.endDate)}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+      </FieldSet>
       <Field label="Description">
         <textarea name="description" defaultValue={exhibition?.description} rows={4} className={inputClass} />
       </Field>
-      <Field label="Images">
+      <FieldSet label="Images">
         <ImageUploader
           name="images"
           folder="swati-portfolio/exhibitions"
           initial={exhibition?.images ?? []}
           multiple
         />
-      </Field>
-      <Field label="Artworks shown at this exhibition">
+      </FieldSet>
+      <FieldSet label="Artworks shown at this exhibition">
         <ArtworkMultiSelect name="artworks" options={artworkOptions} initialSelectedIds={initialSelectedIds} />
-      </Field>
+      </FieldSet>
       <Field label="Status">
         <Select name="status" defaultValue={exhibition?.status ?? "hidden"}>
           <option value="hidden">Hidden</option>
