@@ -35,7 +35,7 @@ Events the site sends (check these in GA4 after setup):
 
 ## Part 1: Create the GA4 property and web stream
 
-Do this once. It gives you the **Measurement ID**.
+Do this once for production (`www`). Part 6 repeats it for UAT. It gives you the **Measurement ID**.
 
 1. Open [analytics.google.com](https://analytics.google.com) and sign in with the Google account
    that should own the analytics.
@@ -47,9 +47,9 @@ Do this once. It gives you the **Measurement ID**.
    - Complete the business questions. Choose the options that match the site.
 5. Choose **Web** as the platform.
 6. Enter the **Website URL**:
-   - Use the dropdown for the scheme (`https://`) and type only the host in the text box, for
-     example `swatigargportfolio.vercel.app`. Entering `https://` in both places causes a
-     "Valid website URL is required" error.
+   - Use the dropdown for the scheme (`https://`) and type only the host in the text box:
+     `www.artistswatigarg.com`. Entering `https://` in both places causes a
+     "Valid website URL is required" error. Use the `www` host so it matches the canonical site.
    - Stream name: `swatigargportfolio PROD`.
 7. Click **Create and continue**.
 8. On the stream details page, copy the **Measurement ID** (starts with `G-`). This is the value
@@ -111,7 +111,7 @@ repository, in Downloads, or in cloud sync folders.
 Without this step, the admin page shows a 403 error.
 
 1. Go to [analytics.google.com](https://analytics.google.com), and select the property
-   **swatigargportfolio** in the property picker at the top left. Admin shows property settings
+   **swatigargportfolio** (production) in the property picker at the top left. Admin shows property settings
    only when a property is selected.
 2. Click **Admin**.
 3. In the **Property** column (middle column), click **Property access management**.
@@ -125,6 +125,8 @@ Without this step, the admin page shows a 403 error.
 The Property ID is shown in **Admin → Property column → Property details**. Copy the **numeric**
 value (for example `123456789`), not the `G-` Measurement ID. This is `GA4_PROPERTY_ID`.
 
+Repeat this part for the UAT property (Part 6). The same service account is used for both properties.
+
 ---
 
 ## Part 4: Put the values in `.env.local`
@@ -133,7 +135,9 @@ Edit `.env.local` in the project root. The file is git-ignored. Copy from
 [`.env.local.example`](../../.env.local.example) if the file doesn't exist.
 
 ```bash
-NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+# Leave blank locally so your own visits aren't counted (Part 6).
+NEXT_PUBLIC_GA_MEASUREMENT_ID=
+# Use the UAT numeric Property ID locally (Part 6).
 GA4_PROPERTY_ID=123456789
 GA4_CLIENT_EMAIL=swati-ga4-reader@your-project-id.iam.gserviceaccount.com
 GA4_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nPASTE_THE_REST_OF_THE_KEY_ON_ONE_LINE\n-----END PRIVATE KEY-----\n"
@@ -155,20 +159,62 @@ npm run dev
 
 ---
 
-## Part 5: Add the same values to Vercel (production)
+## Part 5: Add the values to Vercel (Production and Preview)
 
 Local `.env.local` values are not uploaded to Vercel.
 
 1. Open the project in [vercel.com](https://vercel.com) → **Settings** → **Environment Variables**.
-2. Add each of the four variables above. Set **Environment** to **Production** (and **Preview** if
-   you want previews to track too).
+2. Add the four variables for **Production** with the production values. Add them again for
+   **Preview** with the UAT values (Part 6). Leave **Development** empty.
 3. For `GA4_PRIVATE_KEY`, paste the same one-line quoted value.
 4. Redeploy. `NEXT_PUBLIC_GA_MEASUREMENT_ID` is built into the JavaScript, so changing it has no
    effect until a new deployment is built.
 
 ---
 
-## Part 6: Verify
+## Part 6: Production and UAT (separate properties)
+
+Use one GA4 property for production and one for UAT. Test traffic then stays out of the production
+reports, and `/admin/analytics` on each deployment shows only its own data.
+
+Don't add a second web stream to the production property instead. Every report, and the admin page,
+would mix UAT and production traffic.
+
+### 6.1 Create the UAT property
+
+1. Repeat Part 1 with these changes:
+   - Property name: `swatigargportfolio UAT`.
+   - Website URL: the host you attached to the UAT branch in Vercel, for example
+     `uat.artistswatigarg.com`. Type it without `https://`, as in production.
+   - Stream name: `swatigargportfolio UAT`.
+2. Copy the **UAT** Measurement ID (`G-…`) and the **UAT** numeric Property ID from the UAT property.
+   Don't reuse the production values.
+3. Repeat Part 3 with the UAT property selected, and add the same service account as **Viewer**.
+   You don't need a new key.
+
+### 6.2 Vercel values
+
+| Variable | Production | Preview (UAT) |
+| --- | --- | --- |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | production `G-…` | UAT `G-…` |
+| `GA4_PROPERTY_ID` | production numeric ID | UAT numeric ID |
+| `GA4_CLIENT_EMAIL` | service account email | same |
+| `GA4_PRIVATE_KEY` | same one-line value | same |
+
+Don't restrict the Preview rows to a Git branch. Branch names change (for example `v4-develop` to a
+new version number), and a restricted variable would silently stop applying. As a result, every
+preview deployment reports to the UAT property. That's acceptable, because previews are for testing.
+
+Redeploy both the production deployment and the UAT deployment after changing these values.
+
+### 6.3 Local development
+
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID` stays blank in `.env.local`, so your own visits aren't counted.
+- `GA4_PROPERTY_ID` is the UAT numeric ID, so the local admin page reads the test property.
+
+---
+
+## Part 7: Verify
 
 ### Website tracking
 
@@ -179,6 +225,8 @@ Local `.env.local` values are not uploaded to Vercel.
 3. Open an artwork page. The **Event count by event name** card should show `view_item`.
 4. Submit the contact form (use a test message). The card should show `generate_lead`.
 5. Click through two pages. Each click should show a `page_view` for the new path.
+6. Repeat on the UAT site, then check the **UAT** property's Realtime report. The production
+   Realtime report should not show that visit.
 
 If nothing appears:
 
@@ -207,12 +255,14 @@ If the page shows an error, match the message to the table below.
 
 ## Common issues
 
-Errors on `/admin/analytics` are listed in Part 6. These cover the rest.
+Errors on `/admin/analytics` are listed in Part 7. These cover the rest.
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | Realtime shows nothing | `NEXT_PUBLIC_GA_MEASUREMENT_ID` is not set in the running environment. Or an ad blocker or privacy extension blocks `googletagmanager.com`. Or the page is `/admin`, which is never tracked | Check the variable, restart the dev server (or redeploy), then test in a private window with extensions off |
 | Realtime shows your own visits from `localhost` | `.env.local` has the production Measurement ID | Expected if the ID is set locally. Leave it blank locally, or use a separate dev stream |
+| UAT visits show in the production property | A Preview variable has the production `G-` or numeric ID, or UAT wasn't redeployed after the change | Set the Preview rows to the UAT values (Part 6), then redeploy UAT |
+| Production admin page shows UAT numbers | The Production `GA4_PROPERTY_ID` is the UAT numeric ID | Set the production numeric ID, then redeploy production |
 | Two `page_view` events per navigation | "Page changes based on browser history events" is still on | Turn it off (Part 1) |
 | Events appear in Realtime but not in the standard reports | Standard reports can lag by 24 to 48 hours | Wait. Realtime is the reliable check during setup |
 | `generate_lead` counts more than real enquiries | Refreshing `/contact?sent=1` fires it again, and so do bot submissions caught by the honeypot (they also redirect to `sent=1`) | Known gap, not yet fixed in the code |
@@ -227,7 +277,7 @@ Errors on `/admin/analytics` are listed in Part 6. These cover the rest.
 Admin → Data streams → click your web stream. The stream details page shows **Measurement ID**, which starts with `G-`.
 
 **"Valid website URL is required" appears when I create the stream. Why?**
-The scheme is already chosen in the dropdown next to the field. Type only the host (`swatigargportfolio.vercel.app`) in the text box.
+The scheme is already chosen in the dropdown next to the field. type only the host (`www.artistswatigarg.com`) in the text box.
 
 **I can't find "Property access management".**
 It's in Admin, in the **Property** column (the middle column), when the correct property is selected at the top left. It is not in the Google Cloud console, and it is not **Account access management** in the Account column. You need the **Administrator** role on the property to see it. If it's still missing, check which property is selected, then ask the owner to check your role.
@@ -252,6 +302,10 @@ Yes, once the values are in `.env.local` and Vercel. Deleting the local file doe
 
 **Will my own testing show up in reports?**
 Yes, unless you leave `NEXT_PUBLIC_GA_MEASUREMENT_ID` blank locally. The site has no internal-traffic filter yet (see Notes).
+
+**Why not one property with two web streams?**
+Each stream has its own Measurement ID, but all streams share one property. Every report, and the
+admin page (which reads one property), would mix UAT and production traffic. Separate properties avoid that.
 
 **Do I need a cookie or consent banner?**
 Yes if you have EU or UK visitors. The site shows a banner with Google Consent Mode v2. GA4 sets no cookies and attribution is not captured until the visitor accepts. See the consent note under Notes below.
@@ -281,7 +335,9 @@ Yes if you have EU or UK visitors. The site shows a banner with Google Consent M
 - [ ] Google Analytics Data API enabled in the Google Cloud project
 - [ ] Service account created, and JSON key downloaded
 - [ ] Service account given **Viewer** on the GA4 property
-- [ ] `.env.local` contains the four GA4 variables
-- [ ] Same variables set in Vercel, and the project redeployed
+- [ ] UAT property and web stream created with the UAT host; its IDs copied
+- [ ] Service account given **Viewer** on the UAT property
+- [ ] `.env.local` contains the GA4 variables (Measurement ID blank, UAT property ID)
+- [ ] Production and Preview variables set in Vercel; production and UAT redeployed
 - [ ] Realtime shows page views and `view_item` / `generate_lead`
 - [ ] JSON key file deleted from the computer
