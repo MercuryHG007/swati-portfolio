@@ -6,11 +6,8 @@ export function withSuggestedAlt<T extends ImageLike>(images: T[], suggestedAlt:
   return [{ ...images[0], alt: suggestedAlt }, ...images.slice(1)];
 }
 
-// Numbered ("Title 1", "Title 2", ...) when there's more than one image, otherwise just the title.
+// Uses the bare title. Index suffixes ("Title 1") read as noise to screen readers.
 export function withAltFallback<T extends ImageLike>(images: T[], title: string): T[] {
   if (!title) return images;
-  return images.map((image, index) => ({
-    ...image,
-    alt: image.alt || (images.length > 1 ? `${title} ${index + 1}` : title),
-  }));
+  return images.map((image) => ({ ...image, alt: image.alt || title }));
 }

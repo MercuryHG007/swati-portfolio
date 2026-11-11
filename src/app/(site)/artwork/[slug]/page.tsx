@@ -17,6 +17,14 @@ import { TrackOnMount } from "@/components/analytics/track-on-mount";
 import { getPrevNext } from "@/lib/prev-next";
 import { formatDateRange, getYear } from "@/lib/format";
 import { toMetaDescription } from "@/lib/meta-description";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbJsonLd, cloudinaryImageUrl, pageMetadata, visualArtworkJsonLd } from "@/lib/seo";
+import type { AvailabilityStatus } from "@/models/shared";
+
+const AVAILABILITY_TEXT: Record<AvailabilityStatus, string> = {
+  available: "Available",
+  sold: "Sold",
+};
 
 export const revalidate = 60;
 
@@ -36,22 +44,16 @@ export async function generateMetadata({
   const artwork = await getArtworkBySlug(slug);
   if (!artwork) return {};
 
-  const description = toMetaDescription(artwork.description);
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const cover = artwork.images?.[0];
-  const image = cloudName && cover
-    ? `https://res.cloudinary.com/${cloudName}/image/upload/c_limit,w_1200/${cover.publicId}`
-    : undefined;
-
-  return {
+  const coverUrl = cover ? cloudinaryImageUrl(cover.publicId) : undefined;
+  // Fallback for works without a description, so each page still gets a distinct snippet.
+  const fallbackDescription = `${artwork.title}${artwork.medium ? `, ${artwork.medium.name.toLowerCase()}` : ""} by Swati Garg.`;
+  return pageMetadata({
     title: `${artwork.title} — Swati Garg`,
-    description,
-    openGraph: {
-      title: artwork.title,
-      description,
-      ...(image && { images: [{ url: image, alt: cover?.alt || artwork.title }] }),
-    },
-  };
+    description: toMetaDescription(artwork.description) ?? fallbackDescription,
+    path: `/artwork/${slug}`,
+    image: coverUrl ? { url: coverUrl, alt: cover?.alt || artwork.title } : undefined,
+  });
 }
 
 export default async function ArtworkDetailPage({
@@ -89,6 +91,10 @@ export default async function ArtworkDetailPage({
 
   const exhibitions = await getExhibitionsForArtwork(artwork._id);
   const enquireHref = `/contact?artwork=${encodeURIComponent(artwork.slug)}`;
+  const enquireLabel = artwork.availability === "sold" ? "Enquire about a similar work" : "Enquire about this work";
+  const availabilityText = artwork.availability
+    ? AVAILABILITY_TEXT[artwork.availability as AvailabilityStatus]
+    : "Ask about availability";
 
   const breadcrumbItems: BreadcrumbItem[] = [{ label: "Portfolio", href: "/portfolio" }];
   if (artwork.series) {
@@ -101,6 +107,30 @@ export default async function ArtworkDetailPage({
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-6 py-16">
+      <JsonLd
+        data={visualArtworkJsonLd({
+          title: artwork.title,
+          slug: artwork.slug,
+          description: artwork.description,
+          mediumName: artwork.medium?.name,
+          year,
+          size: dimensions ?? undefined,
+          imagePublicIds: (artwork.images ?? []).map((image: { publicId: string }) => image.publicId),
+          series: artwork.series
+            ? { title: artwork.series.title, slug: artwork.series.slug, linkable: seriesIsLinkable }
+            : undefined,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Home", path: "/" },
+          { name: "Portfolio", path: "/portfolio" },
+          ...(artwork.series && seriesIsLinkable
+            ? [{ name: artwork.series.title, path: `/portfolio/series/${artwork.series.slug}` }]
+            : []),
+          { name: artwork.title, path: `/artwork/${artwork.slug}` },
+        ])}
+      />
       <TrackOnMount
         event="view_item"
         params={{
@@ -120,7 +150,7 @@ export default async function ArtworkDetailPage({
           <h1 className="text-2xl font-medium text-foreground">{artwork.title}</h1>
           <div className="hidden sm:block">
             <Button href={enquireHref} size="sm" variant="inverse" className="shrink-0">
-              Enquire about this work
+              {enquireLabel}
             </Button>
           </div>
         </div>
@@ -132,6 +162,7 @@ export default async function ArtworkDetailPage({
             </Fragment>
           ))}
         </div>
+        <p className="text-sm font-medium text-foreground">{availabilityText}</p>
 
         {artwork.subjects?.length > 0 ? (
           <div className="flex flex-wrap gap-2">
@@ -179,7 +210,7 @@ export default async function ArtworkDetailPage({
 
         <div className="sm:hidden">
           <Button href={enquireHref} size="sm" variant="inverse">
-            Enquire about this work
+            {enquireLabel}
           </Button>
         </div>
       </div>

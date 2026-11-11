@@ -1,10 +1,19 @@
+import type { Metadata } from "next";
 import { getCldImageUrl } from "next-cloudinary";
 import { FeaturedCarousel, type CarouselItem } from "@/components/featured-carousel";
 import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
+import { JsonLd } from "@/components/json-ld";
 import { getFeaturedArtworks, getMediumsWithWork } from "@/lib/queries";
+import { artistJsonLd, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = pageMetadata({
+  title: "Swati Garg — Watercolor Artist",
+  description: "Portfolio of watercolor, acrylic, pencil and oil works by Swati Garg.",
+  path: "/",
+});
 
 const PLACEHOLDER_WIDTH = 32;
 
@@ -39,9 +48,10 @@ export default async function Home() {
   });
 
   return (
-    <main className="flex flex-1 flex-col gap-24 py-16">
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6">
-        <h1 className="max-w-4xl text-5xl font-medium leading-[1.02] tracking-tight text-foreground md:text-7xl">
+    <main className="flex flex-1 flex-col gap-16 py-10 md:gap-24 md:py-16">
+      <JsonLd data={artistJsonLd()} />
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 md:gap-8">
+        <h1 className="max-w-4xl text-4xl font-medium leading-[1.02] tracking-tight text-foreground sm:text-5xl md:text-7xl">
           Swati Garg. Paintings exploring light, landscape and quiet moments.
         </h1>
         <Button href="/portfolio" size="lg">

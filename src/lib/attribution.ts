@@ -51,6 +51,14 @@ export function captureAttribution(now = Date.now()): void {
   }
 }
 
+export function clearAttribution(): void {
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Nothing to clear if storage is unavailable.
+  }
+}
+
 export function readAttribution(now = Date.now()): LeadAttribution | null {
   if (typeof window === "undefined") return null;
   const stored = readStored(now);

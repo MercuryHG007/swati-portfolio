@@ -267,6 +267,17 @@ export async function getAbout() {
   return About.findOne().lean();
 }
 
+// Published URLs for sitemap.xml. Only the fields needed for each URL and its lastModified date are selected.
+export async function getSitemapEntries() {
+  await connectToDatabase();
+  const [artworks, series, exhibitions] = await Promise.all([
+    Artwork.find({ status: "published" }).select("slug updatedAt").lean<{ slug: string; updatedAt: Date }[]>(),
+    Series.find({ status: "published" }).select("slug updatedAt").lean<{ slug: string; updatedAt: Date }[]>(),
+    Exhibition.find({ status: "published" }).select("slug updatedAt").lean<{ slug: string; updatedAt: Date }[]>(),
+  ]);
+  return { artworks, series, exhibitions };
+}
+
 // Cached copies of everything the /portfolio page reads. The page depends on searchParams, so it
 // can't be prerendered; caching the queries keeps it from hitting MongoDB on every visit. Admin
 // actions call updateTag(PORTFOLIO_CACHE_TAG) so edits show up immediately, and the time-based

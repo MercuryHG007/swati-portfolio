@@ -24,6 +24,7 @@ export async function SiteFooter() {
           <TextLink href="/exhibitions" variant="inverse" className="w-fit">Exhibitions</TextLink>
           <TextLink href="/about" variant="inverse" className="w-fit">About</TextLink>
           <TextLink href="/contact" variant="inverse" className="w-fit">Get in touch</TextLink>
+          <TextLink href="/privacy" variant="inverse" className="w-fit">Privacy</TextLink>
         </nav>
         <div className="order-2 flex flex-col gap-2 md:order-none md:col-start-3 md:row-start-1 md:justify-self-end">
           {email ? (

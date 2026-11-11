@@ -7,3 +7,4 @@ export { default as About } from "./About";
 export { default as SeriesSettings } from "./SeriesSettings";
 export { default as ContactMessage } from "./ContactMessage";
 export { default as AdminUser } from "./AdminUser";
+export { default as SubmissionThrottle } from "./SubmissionThrottle";

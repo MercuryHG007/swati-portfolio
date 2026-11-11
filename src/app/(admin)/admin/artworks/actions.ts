@@ -6,6 +6,7 @@ import { requireAdminSession } from "@/lib/require-admin";
 import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Artwork, Exhibition, Subject } from "@/models";
+import { AVAILABILITY_STATUS } from "@/models/shared";
 import { slugify } from "@/lib/slugify";
 import { normalizeSubjectName } from "@/lib/subject-names";
 import { withAltFallback, withSuggestedAlt } from "@/lib/image-alt";
@@ -31,6 +32,8 @@ function readFields(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const aiAltText = String(formData.get("aiAltText") ?? "").trim().slice(0, 200);
   const status = formData.get("status") === "published" ? "published" : "hidden";
+  const availabilityRaw = String(formData.get("availability") ?? "");
+  const availability = AVAILABILITY_STATUS.find((value) => value === availabilityRaw) ?? null;
   const featured = formData.get("featured") === "on";
   // undefined when the form didn't send the field: the stored images are then left alone.
   const submittedImages = readImageList(formData, "images");
@@ -40,7 +43,7 @@ function readFields(formData: FormData) {
     width: formData.get("width") ? Number(formData.get("width")) : undefined,
     unit: formData.get("unit") === "in" ? "in" : "cm",
   };
-  return { title, slug, dateMade, medium, subjects, series, description, status, featured, images, dimensions };
+  return { title, slug, dateMade, medium, subjects, series, description, status, availability, featured, images, dimensions };
 }
 
 function readNewSubjects(formData: FormData): string[] {

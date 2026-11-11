@@ -28,6 +28,7 @@ export async function ArtworkForm({
     dimensions?: { height?: number; width?: number; unit?: string };
     description: string;
     status: string;
+    availability?: string | null;
     featured: boolean;
   };
   action: (formData: FormData) => void;
@@ -128,6 +129,13 @@ export async function ArtworkForm({
           <Select name="status" defaultValue={artwork?.status ?? "hidden"}>
             <option value="hidden">Hidden</option>
             <option value="published">Published</option>
+          </Select>
+        </Field>
+        <Field label="Availability">
+          <Select name="availability" defaultValue={artwork?.availability ?? ""}>
+            <option value="">Not set (visitors are invited to ask)</option>
+            <option value="available">Available</option>
+            <option value="sold">Sold</option>
           </Select>
         </Field>
         <label className="flex items-center gap-2">

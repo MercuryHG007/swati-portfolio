@@ -1,5 +1,5 @@
 import { Schema, model, models } from "mongoose";
-import { cloudinaryImageSchema, PUBLICATION_STATUS } from "./shared";
+import { AVAILABILITY_STATUS, cloudinaryImageSchema, PUBLICATION_STATUS } from "./shared";
 
 const dimensionsSchema = new Schema(
   {
@@ -26,6 +26,7 @@ const artworkSchema = new Schema(
     // Position within its series' artwork list, independent of the site-wide `order`.
     seriesOrder: { type: Number, default: 0 },
     status: { type: String, enum: PUBLICATION_STATUS, default: "hidden" },
+    availability: { type: String, enum: AVAILABILITY_STATUS, default: null },
     // Curated by the admin for the homepage "Featured work" section — not every artwork should show there.
     featured: { type: Boolean, default: false },
   },

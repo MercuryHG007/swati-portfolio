@@ -254,15 +254,17 @@ Yes, once the values are in `.env.local` and Vercel. Deleting the local file doe
 Yes, unless you leave `NEXT_PUBLIC_GA_MEASUREMENT_ID` blank locally. The site has no internal-traffic filter yet (see Notes).
 
 **Do I need a cookie or consent banner?**
-Not for the code to run, but it's a decision to make before launch. GA4 currently loads for every visitor, and the site has no consent banner. See the consent note under Notes below.
+Yes if you have EU or UK visitors. The site shows a banner with Google Consent Mode v2. GA4 sets no cookies and attribution is not captured until the visitor accepts. See the consent note under Notes below.
 
 ## Notes
 
 - **Your own visits are counted.** The site has no internal-traffic filter yet. To keep your
   testing out of reports, use the Realtime report only for checks, or create a separate test
   property for development.
-- **Consent**: there is no cookie or consent banner yet. GA4 loads for every visitor. Before
-  launch, decide whether a banner is needed for your audience.
+- **Consent**: the public site shows a cookie banner (`src/components/analytics/cookie-consent.tsx`)
+  that uses Google Consent Mode v2. The default is `denied`, so GA4 sets no cookies until the visitor
+  accepts. Rejecting stops attribution capture. The banner text is generic and does not name GA4;
+  the purpose is described on the privacy page. Visitors can reopen the banner from the privacy page.
 - **Key rotation**: a service account key does not expire by default. If you rotate it, create a new
   key, update `GA4_PRIVATE_KEY` locally and on Vercel, redeploy, then delete the old key under the
   service account's **Keys** tab.

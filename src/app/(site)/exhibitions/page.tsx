@@ -1,8 +1,15 @@
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ExhibitionList } from "@/components/exhibition-list";
 import { getPublishedExhibitions } from "@/lib/queries";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata = pageMetadata({
+  title: "Exhibitions — Swati Garg",
+  description: "Solo and group exhibitions featuring paintings by Swati Garg.",
+  path: "/exhibitions",
+});
 
 export default async function ExhibitionsPage() {
   const exhibitions = await getPublishedExhibitions();
