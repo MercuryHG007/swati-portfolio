@@ -67,7 +67,38 @@ new deployment.
 
 ---
 
-## Part 4: Verify
+## Part 4: Use a separate account for UAT
+
+Production and UAT should use different Cloudinary accounts. Otherwise a delete in UAT can remove
+a live image (see the Q&A below).
+
+1. Use one account for production and a different one for UAT. Create the second account with a
+   different email address, such as a `+uat` alias.
+2. Repeat Parts 2 and 3 for that account. Use its cloud name and API credentials in:
+   - the **Preview** rows in Vercel, and
+   - `.env.local` for local work.
+3. Keep each account's values in its own rows only: production values under **Production**, UAT values
+   under **Preview** and in `.env.local`.
+4. Redeploy production and UAT after changing the variables.
+
+Images uploaded to UAT stay in the UAT account. Images already in production stay in production.
+Copy any images you need to test with by re-uploading them through the UAT admin.
+
+### If production moves to a new account
+
+Each image URL includes the cloud name, so records created on the old account keep pointing at it.
+Once production uses a new account, either:
+
+- re-upload the images for each existing artwork, series, exhibition and About record to the new
+  account, or
+- delete those records (in the admin, or directly in Atlas) and create them again.
+
+Don't point UAT or local work at the old account while any database still refers to it. A delete in
+one environment removes the image from the account it points to.
+
+---
+
+## Part 5: Verify
 
 1. Start the app (`npm run dev`).
 2. Open [http://localhost:3000/api/health/cloudinary](http://localhost:3000/api/health/cloudinary).
@@ -123,6 +154,18 @@ Yes, if your Cloudinary account offers a way to regenerate it. If the secret lea
 **Does deleting an artwork delete its images from Cloudinary?**
 Yes. The app deletes the assets when you delete an artwork, or remove an image from one. Deleted images can't be recovered from the app.
 
+**Can UAT use the old production account?**
+No, not while any database refers to it. UAT's delete would remove images that production records still
+use. Keep the old account as an archive, or delete it once no record refers to it.
+
+**Can I use the same Cloudinary account for UAT?**
+You can, but don't. Deleting an artwork or image in the admin calls Cloudinary's delete on its public
+ID. If UAT's database holds the same IDs as production, deleting in UAT removes the live image.
+Use a separate account (Part 4).
+
+**Do I need a Cloudinary upload preset for UAT?**
+No. The same signed-upload rules apply to every account.
+
 ## Checklist
 
 - [ ] Cloud name, API key, and API secret copied
@@ -130,3 +173,4 @@ Yes. The app deletes the assets when you delete an artwork, or remove an image f
 - [ ] Same variables set in Vercel, and redeployed
 - [ ] `/api/health/cloudinary` returns `"ok":true`
 - [ ] Test upload appears in the admin and on the public site
+- [ ] UAT uses its own Cloudinary account (Part 4)

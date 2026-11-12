@@ -69,11 +69,12 @@ paid plan with static outbound IPs and list only those addresses.
    named `test`:
 
    ```
-   mongodb+srv://swati-app:PASSWORD@cluster0.xxxxx.mongodb.net/swati-portfolio?retryWrites=true&w=majority&appName=swati-portfolio
+   mongodb+srv://swati-app:PASSWORD@cluster0.xxxxx.mongodb.net/swati_portfolio?retryWrites=true&w=majority&appName=swati-portfolio
    ```
 
-Use the same database name everywhere. Changing it later means your existing data is in a
-different database.
+Use the database name for each environment: `swati_portfolio_prod` for production, and
+`swati_portfolio` for UAT and local (see the [environment table](./README.md)). Changing a name later
+points the app at a different database, which is empty unless data already exists there.
 
 ---
 
@@ -82,11 +83,11 @@ different database.
 Add it to `.env.local` in the project root:
 
 ```bash
-MONGODB_URI=mongodb+srv://swati-app:PASSWORD@cluster0.xxxxx.mongodb.net/swati-portfolio?retryWrites=true&w=majority&appName=swati-portfolio
+MONGODB_URI=mongodb+srv://swati-app:PASSWORD@cluster0.xxxxx.mongodb.net/swati_portfolio?retryWrites=true&w=majority&appName=swati-portfolio
 ```
 
-Also add it in **Vercel → Project → Settings → Environment Variables** for Production (and Preview,
-if you use it). Redeploy afterwards.
+Also add it in **Vercel → Project → Settings → Environment Variables**. Use `swati_portfolio_prod` for
+Production and `swati_portfolio` for Preview (UAT). Redeploy afterwards.
 
 ---
 
@@ -111,7 +112,7 @@ and sign in.
 ## Part 7: Verify
 
 1. Open [http://localhost:3000/api/health/db](http://localhost:3000/api/health/db). Expected output:
-   `{"ok":true,"readyState":1,"db":"swati-portfolio"}`. `readyState: 1` means connected, and `db`
+   `{"ok":true,"readyState":1,"db":"swati_portfolio"}`. `readyState: 1` means connected, and `db`
    shows which database the app is using. Check that it matches your database name.
 2. Sign in to `/admin`. The dashboard shows counts for each section.
 
@@ -142,10 +143,13 @@ database name. It never shows the connection string or password.
 ## Questions and answers
 
 **Can I use a local MongoDB instead of Atlas?**
-Yes. Set `MONGODB_URI=mongodb://127.0.0.1:27017/swati-portfolio`. Use `127.0.0.1` rather than `localhost`, because Node.js can resolve `localhost` to IPv6 and fail to connect. Atlas Network Access rules don't apply to a local database.
+Yes. Set `MONGODB_URI=mongodb://127.0.0.1:27017/swati_portfolio_dev`. Use `127.0.0.1` rather than `localhost`, because Node.js can resolve `localhost` to IPv6 and fail to connect. Atlas Network Access rules don't apply to a local database.
 
 **Should local and production use the same database?**
-Better not. Use different database names in the URI, for example `swati-portfolio-dev` locally and `swati-portfolio` in production. Then local testing can't change live content.
+Never for production. Production is `swati_portfolio_prod`, which is separate. In this setup, local
+and UAT both use `swati_portfolio`, so local edits show up in UAT. To keep local work apart, set
+`MONGODB_URI` in `.env.local` to a `swati_portfolio_dev` database. Then local testing can't change
+UAT content.
 
 **How do I create an admin login for production?**
 `npm run create-admin` reads `.env.local`, which points at your local database. For production, put the production URI in a separate file and run the script with it:
