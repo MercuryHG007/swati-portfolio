@@ -154,6 +154,9 @@ Yes, if your Cloudinary account offers a way to regenerate it. If the secret lea
 **Does deleting an artwork delete its images from Cloudinary?**
 Yes. The app deletes the assets when you delete an artwork, or remove an image from one. Deleted images can't be recovered from the app.
 
+**What happens to images I upload and then don't save?**
+The admin deletes them when you leave the form (Cancel, another page, or closing the tab) or remove them from the form. A browser crash or a dropped connection can skip this, so those images may remain in the Media Library. Delete them there by hand.
+
 **Can UAT use the old production account?**
 No, not while any database refers to it. UAT's delete would remove images that production records still
 use. Keep the old account as an archive, or delete it once no record refers to it.
