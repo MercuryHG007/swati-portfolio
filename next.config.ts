@@ -9,7 +9,8 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://res.cloudinary.com https://*.google-analytics.com https://*.googletagmanager.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.doubleclick.net https://challenges.cloudflare.com",
+  // Turnstile fetches a data: URL internally, so data: is needed here or the widget logs a violation.
+  "connect-src 'self' data: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.doubleclick.net https://challenges.cloudflare.com",
   "media-src 'self' https://res.cloudinary.com",
   "frame-src https://challenges.cloudflare.com",
   "object-src 'none'",

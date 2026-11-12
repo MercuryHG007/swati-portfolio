@@ -278,6 +278,23 @@ export async function getSitemapEntries() {
   return { artworks, series, exhibitions };
 }
 
+// Published series and exhibitions for llms.txt, plus the artist's own statement.
+export async function getLlmsContent() {
+  await connectToDatabase();
+  const [series, exhibitions, about] = await Promise.all([
+    Series.find({ status: "published" })
+      .sort({ order: 1 })
+      .select("title slug description")
+      .lean<{ title: string; slug: string; description: string }[]>(),
+    Exhibition.find({ status: "published" })
+      .sort({ startDate: -1 })
+      .select("title slug venue city country type startDate endDate")
+      .lean<{ title: string; slug: string; venue: string; city: string; country: string; type: string; startDate: Date; endDate?: Date }[]>(),
+    About.findOne().select("statement").lean<{ statement?: string } | null>(),
+  ]);
+  return { series, exhibitions, statement: about?.statement ?? "" };
+}
+
 // Cached copies of everything the /portfolio page reads. The page depends on searchParams, so it
 // can't be prerendered; caching the queries keeps it from hitting MongoDB on every visit. Admin
 // actions call updateTag(PORTFOLIO_CACHE_TAG) so edits show up immediately, and the time-based

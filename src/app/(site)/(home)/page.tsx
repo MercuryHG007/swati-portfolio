@@ -5,15 +5,21 @@ import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
 import { JsonLd } from "@/components/json-ld";
 import { getFeaturedArtworks, getMediumsWithWork } from "@/lib/queries";
-import { artistJsonLd, pageMetadata } from "@/lib/seo";
+import { artistJsonLd, cloudinaryImageUrl, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = pageMetadata({
-  title: "Swati Garg — Watercolor Artist",
-  description: "Portfolio of watercolor, acrylic, pencil and oil works by Swati Garg.",
-  path: "/",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const [cover] = await getFeaturedArtworks(1);
+  const image = cover?.images?.[0];
+  const url = image ? cloudinaryImageUrl(image.publicId) : undefined;
+  return pageMetadata({
+    title: "Swati Garg — Watercolor Artist",
+    description: "Portfolio of watercolor, acrylic, pencil and oil works by Swati Garg.",
+    path: "/",
+    image: url && cover ? { url, alt: `${cover.title} by Swati Garg` } : undefined,
+  });
+}
 
 const PLACEHOLDER_WIDTH = 32;
 
