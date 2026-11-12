@@ -18,6 +18,7 @@ const ADMIN_LINKS = [
   { href: "/admin/about", label: "About" },
   { href: "/admin/messages", label: "Messages" },
   { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/ai-assistant", label: "AI assistant" },
 ];
 
 export async function AdminNav() {

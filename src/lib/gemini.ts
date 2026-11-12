@@ -42,6 +42,33 @@ export async function requestGeminiSuggestion<T>({
   schema: unknown;
   parse: (raw: unknown) => T | null;
 }): Promise<{ suggestion: T; model: string }> {
+  const { value, model } = await generateWithFallback(
+    apiKey,
+    {
+      parts: [{ text: prompt }, { inline_data: { mime_type: image.mimeType, data: image.data } }],
+      generationConfig: { temperature: 0.2, responseMimeType: "application/json", responseSchema: schema },
+    },
+    (output) => parseOutput(output, parse),
+  );
+  return { suggestion: value, model };
+}
+
+// Text-only generation, used for drafts the artist reviews before anything is saved.
+export async function requestGeminiText({ apiKey, prompt }: { apiKey: string; prompt: string }): Promise<string> {
+  const { value } = await generateWithFallback(
+    apiKey,
+    { parts: [{ text: prompt }], generationConfig: { temperature: 0.4 } },
+    (output) => output.trim() || null,
+  );
+  return value;
+}
+
+// Model output is untrusted, so a model whose output `parse` rejects falls through to the next model.
+async function generateWithFallback<T>(
+  apiKey: string,
+  request: { parts: unknown[]; generationConfig: Record<string, unknown> },
+  parse: (output: string) => T | null,
+): Promise<{ value: T; model: string }> {
   const failures: string[] = [];
 
   for (const model of GEMINI_MODELS) {
@@ -54,15 +81,8 @@ export async function requestGeminiSuggestion<T>({
           signal: AbortSignal.timeout(30_000),
           cache: "no-store",
           body: JSON.stringify({
-            contents: [{
-              role: "user",
-              parts: [{ text: prompt }, { inline_data: { mime_type: image.mimeType, data: image.data } }],
-            }],
-            generationConfig: {
-              temperature: 0.2,
-              responseMimeType: "application/json",
-              responseSchema: schema,
-            },
+            contents: [{ role: "user", parts: request.parts }],
+            generationConfig: request.generationConfig,
           }),
         },
       );
@@ -72,15 +92,15 @@ export async function requestGeminiSuggestion<T>({
       }
       const payload = await response.json();
       const output = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
-      const suggestion = typeof output === "string" ? parseOutput(output, parse) : null;
-      if (suggestion) return { suggestion, model };
+      const value = typeof output === "string" ? parse(output) : null;
+      if (value) return { value, model };
       failures.push(`${model} returned an unusable response`);
     } catch {
       failures.push(`${model} could not be reached`);
     }
   }
 
-  throw new Error(`No model produced a suggestion: ${failures.join("; ")}`);
+  throw new Error(`No model produced a response: ${failures.join("; ")}`);
 }
 
 function parseOutput<T>(output: string, parse: (raw: unknown) => T | null): T | null {

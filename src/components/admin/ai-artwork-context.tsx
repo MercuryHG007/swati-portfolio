@@ -10,6 +10,8 @@ export interface ProposedSubject {
 interface AiArtworkState {
   altText: string;
   setAltText: (value: string) => void;
+  suggestionId: string;
+  setSuggestionId: (value: string) => void;
   proposed: ProposedSubject[];
   setProposed: Dispatch<SetStateAction<ProposedSubject[]>>;
   seriesNote: string;
@@ -22,11 +24,12 @@ const AiArtworkContext = createContext<AiArtworkState | null>(null);
 // render beside the field it belongs to.
 export function AiArtworkProvider({ children }: { children: ReactNode }) {
   const [altText, setAltText] = useState("");
+  const [suggestionId, setSuggestionId] = useState("");
   const [proposed, setProposed] = useState<ProposedSubject[]>([]);
   const [seriesNote, setSeriesNote] = useState("");
   const value = useMemo(
-    () => ({ altText, setAltText, proposed, setProposed, seriesNote, setSeriesNote }),
-    [altText, proposed, seriesNote],
+    () => ({ altText, setAltText, suggestionId, setSuggestionId, proposed, setProposed, seriesNote, setSeriesNote }),
+    [altText, suggestionId, proposed, seriesNote],
   );
   return <AiArtworkContext.Provider value={value}>{children}</AiArtworkContext.Provider>;
 }

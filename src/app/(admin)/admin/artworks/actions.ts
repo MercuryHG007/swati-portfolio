@@ -12,6 +12,7 @@ import { normalizeSubjectName } from "@/lib/subject-names";
 import { withAltFallback, withSuggestedAlt } from "@/lib/image-alt";
 import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 import { readImageList } from "@/lib/form-fields";
+import { recordSavedDescription } from "@/lib/artist-voice";
 
 function refresh(slug?: string) {
   revalidatePath("/");
@@ -54,6 +55,18 @@ function readNewSubjects(formData: FormData): string[] {
     .filter(Boolean);
 }
 
+// Records what the artist kept from an AI suggestion. Only set when the form received a suggestion's
+// description, so an artwork she wrote herself is never treated as a correction.
+async function recordAiFeedback(formData: FormData, artworkId: string, fields: { title: string; description: string }) {
+  const suggestionId = String(formData.get("aiSuggestionId") ?? "");
+  if (!suggestionId) return;
+  try {
+    await recordSavedDescription(suggestionId, artworkId, { title: fields.title, description: fields.description });
+  } catch (error) {
+    console.error("Could not record AI feedback:", error instanceof Error ? error.message : error);
+  }
+}
+
 // Creates any ticked new subjects and returns the ids to attach. The upsert on slug reuses a subject
 // that already exists under the same name, so a repeat or a case-only difference creates nothing.
 async function resolveSubjectIds(existingIds: string[], newNames: string[]): Promise<string[]> {
@@ -81,7 +94,8 @@ export async function createArtwork(formData: FormData) {
   const subjects = await resolveSubjectIds(fields.subjects, readNewSubjects(formData));
   const order = await Artwork.countDocuments();
   const seriesOrder = fields.series ? await Artwork.countDocuments({ series: fields.series }) : 0;
-  await Artwork.create({ ...fields, subjects, images: fields.images ?? [], order, seriesOrder });
+  const created = await Artwork.create({ ...fields, subjects, images: fields.images ?? [], order, seriesOrder });
+  await recordAiFeedback(formData, String(created._id), fields);
   refresh(fields.slug);
   redirect("/admin/artworks?saved=1");
 }
@@ -109,6 +123,7 @@ export async function updateArtwork(formData: FormData) {
     ...(images !== undefined && { images }),
     ...(seriesOrder !== undefined && { seriesOrder }),
   });
+  await recordAiFeedback(formData, id, fields);
   if (images !== undefined) await destroyCloudinaryAssets(removedPublicIds(existing?.images ?? [], images));
   refresh(fields.slug);
   redirect("/admin/artworks?saved=1");

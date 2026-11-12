@@ -8,3 +8,5 @@ export { default as SeriesSettings } from "./SeriesSettings";
 export { default as ContactMessage } from "./ContactMessage";
 export { default as AdminUser } from "./AdminUser";
 export { default as SubmissionThrottle } from "./SubmissionThrottle";
+export { default as ArtworkAssistSettings } from "./ArtworkAssistSettings";
+export { default as AiSuggestion } from "./AiSuggestion";

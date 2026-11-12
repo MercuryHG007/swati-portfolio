@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getAllMediums, getAllSeries, getAllSubjects } from "@/lib/admin-queries";
+import { loadArtworkContext, onlyObjectIds, recordSuggestion } from "@/lib/artist-voice";
 import {
   ARTWORK_SUGGESTION_SCHEMA,
   buildArtworkPrompt,
@@ -10,6 +11,10 @@ import {
 import { fetchCloudinaryImage, isValidPublicId, requestGeminiSuggestion } from "@/lib/gemini";
 
 export const runtime = "nodejs";
+
+const MAX_NOTE_LENGTH = 500;
+const MAX_EXAMPLES = 6;
+const MAX_SUBJECTS = 20;
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -29,7 +34,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
-  const publicId = (body as { publicId?: unknown } | null)?.publicId;
+  const { publicId, note, artworkId, mediumId, subjectIds } = (body ?? {}) as Record<string, unknown>;
   if (!isValidPublicId(publicId)) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
@@ -41,16 +46,32 @@ export async function POST(request: NextRequest) {
       subjects: subjects.map((subject) => subject.name),
       series: series.map((item) => ({ id: String(item._id), title: item.title, description: item.description ?? "" })),
     };
+    const context = await loadArtworkContext({
+      note: typeof note === "string" ? note.trim().slice(0, MAX_NOTE_LENGTH) : "",
+      artworkId: onlyObjectIds([artworkId], 1)[0],
+      mediumId: onlyObjectIds([mediumId], 1)[0],
+      subjectIds: onlyObjectIds(subjectIds, MAX_SUBJECTS),
+      examples: MAX_EXAMPLES,
+    });
     const image = await fetchCloudinaryImage(cloudName, publicId);
     const { suggestion, model } = await requestGeminiSuggestion({
       apiKey,
-      prompt: buildArtworkPrompt(options),
+      prompt: buildArtworkPrompt(options, context),
       image,
       schema: ARTWORK_SUGGESTION_SCHEMA,
       parse: (raw) => parseArtworkSuggestion(raw, options),
     });
-    return NextResponse.json({ suggestion, model });
 
+    // Feedback is best-effort: a logging failure must not hide a suggestion the model already produced.
+    const suggestionId = await recordSuggestion(
+      { title: suggestion.title, description: suggestion.description, altText: suggestion.altText },
+      onlyObjectIds([artworkId], 1)[0],
+    ).catch((error: unknown) => {
+      console.error("Could not record artwork suggestion:", error instanceof Error ? error.message : error);
+      return null;
+    });
+
+    return NextResponse.json({ suggestion, model, suggestionId });
   } catch (error) {
     console.error("Artwork assistant failed:", error instanceof Error ? error.message : error);
     return NextResponse.json(

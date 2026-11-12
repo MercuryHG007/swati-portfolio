@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { newSubjectNames } from "@/lib/subject-names";
 import { readPublicId, setTextIfEmpty } from "@/components/admin/ai-form";
 import { useAiArtwork } from "@/components/admin/ai-artwork-context";
-import { secondaryButtonClass } from "@/components/admin/ui";
+import { Field, inputClass, secondaryButtonClass } from "@/components/admin/ui";
 
 interface Option {
   id: string;
@@ -66,9 +66,21 @@ function describeSeries(suggestion: Suggestion, applied: boolean): string {
     : `Possible series: "${suggestion.seriesTitle}". The series field was already set, so it was left unchanged.${reason}`;
 }
 
+// The artist's current choices go with the request, so examples match this artwork's medium and subjects.
+function readCurrentChoices(form: HTMLFormElement) {
+  const artworkId = (form.elements.namedItem("id") as HTMLInputElement | null)?.value ?? "";
+  const mediumId = (form.elements.namedItem("medium") as HTMLSelectElement | null)?.value ?? "";
+  const subjectIds = Array.from(
+    form.querySelectorAll<HTMLInputElement>('input[type="checkbox"][name="subjects"]:checked'),
+    (box) => box.value,
+  );
+  return { artworkId, mediumId, subjectIds };
+}
+
 export function AiArtworkAssist({ mediums, subjects }: { mediums: Option[]; subjects: Option[] }) {
   const [busy, setBusy] = useState(false);
-  const { altText, setAltText, setSeriesNote, setProposed } = useAiArtwork();
+  const [note, setNote] = useState("");
+  const { altText, setAltText, suggestionId, setSuggestionId, setSeriesNote, setProposed } = useAiArtwork();
 
   async function suggest(event: MouseEvent<HTMLButtonElement>) {
     const form = event.currentTarget.form;
@@ -84,7 +96,7 @@ export function AiArtworkAssist({ mediums, subjects }: { mediums: Option[]; subj
       const response = await fetch("/api/admin/artwork-assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicId }),
+        body: JSON.stringify({ publicId, note: note.trim(), ...readCurrentChoices(form) }),
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.suggestion) {
@@ -94,6 +106,9 @@ export function AiArtworkAssist({ mediums, subjects }: { mediums: Option[]; subj
 
       const suggestion = payload.suggestion as Suggestion;
       const filled = applySuggestion(form, suggestion, mediums, subjects);
+      // Only a description the artist received from the AI is tracked. Corrections to anything else
+      // would not reflect how the AI wrote.
+      setSuggestionId(filled.includes("description") && typeof payload.suggestionId === "string" ? payload.suggestionId : "");
       setAltText(suggestion.altText);
       setSeriesNote(describeSeries(suggestion, filled.includes("series")));
       setProposed((current) => [
@@ -118,8 +133,19 @@ export function AiArtworkAssist({ mediums, subjects }: { mediums: Option[]; subj
       <button type="button" onClick={suggest} disabled={busy} className={`${secondaryButtonClass} w-fit disabled:opacity-60`}>
         {busy ? "Suggesting…" : "Suggest details with AI"}
       </button>
+      <Field label="Note for the AI (optional, used for this suggestion only)">
+        <textarea
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          maxLength={500}
+          rows={2}
+          placeholder="e.g. loose watercolour study, painted outdoors, warm evening light"
+          className={inputClass}
+        />
+      </Field>
       <p className="text-xs text-muted">Reads the first image and fills empty fields. Review everything before saving.</p>
       <input type="hidden" name="aiAltText" value={altText} readOnly />
+      <input type="hidden" name="aiSuggestionId" value={suggestionId} readOnly />
     </div>
   );
 }
