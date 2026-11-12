@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Toaster } from "sonner";
 import { sans } from "@/lib/fonts";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import "../globals.css";
 
@@ -15,7 +16,10 @@ export default function AdminRootLayout({ children }: { children: React.ReactNod
     <html lang="en" className={`${sans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
         <AdminNav />
-        <div className="flex flex-1 flex-col">{children}</div>
+        <div className="flex flex-1">
+          <AdminSidebar />
+          <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+        </div>
         <SpeedInsights />
         <Toaster richColors position="top-center" />
       </body>
