@@ -285,12 +285,12 @@ export function GridCarousel({ heading, body, ctaLabel, ctaHref, items }: GridCa
         {tiles.map(({ copy, index, item }) => (
           <li
             key={`${copy}-${item.href}`}
-            // Only the primary copy is exposed. The others exist so the row can loop.
+            // Clones stay tappable: a tap on any visible copy must open the series, and the row can be
+            // resting on a clone on load. They are hidden from assistive tech and the tab order instead.
             aria-hidden={copy !== primaryCopy || undefined}
-            inert={copy !== primaryCopy}
             className="w-[clamp(260px,70vw,340px)] shrink-0 snap-start xl:w-[31vw]"
           >
-            <Link href={item.href} className="group flex flex-col gap-3">
+            <Link href={item.href} tabIndex={copy !== primaryCopy ? -1 : undefined} className="group flex flex-col gap-3">
               <span className="relative block aspect-[4/3] overflow-hidden rounded-md bg-surface">
                 {item.image ? (
                   <ProtectedImage
