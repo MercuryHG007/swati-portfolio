@@ -1,108 +1,149 @@
 import { cardClass } from "@/components/admin/ui";
-import { getAnalyticsOverview, getGa4Config } from "@/lib/ga4";
+import {
+  AnalyticsHeader,
+  AnalyticsUnavailable,
+} from "@/components/admin/analytics/analytics-header";
+import {
+  BreakdownCard,
+  formatCount,
+  Group,
+  HighlightCard,
+  StatCard,
+  TrendChart,
+} from "@/components/admin/analytics/analytics-ui";
+import { AnalyticsSummary } from "@/components/admin/analytics/analytics-summary";
+import { getCachedSummary, type CachedSummary } from "@/lib/analytics-cache";
+import {
+  parseRangeDays,
+  type AnalyticsDashboard,
+  type Count,
+  type RangeDays,
+} from "@/lib/analytics-dashboard";
+import { loadAnalyticsPage } from "@/lib/analytics-page-data";
+import type { RealtimeSnapshot } from "@/lib/ga4";
 
-const numberFormatter = new Intl.NumberFormat("en-IN");
-
-export default async function AdminAnalyticsPage() {
-  const config = getGa4Config();
-  let overview: Awaited<ReturnType<typeof getAnalyticsOverview>> | null = null;
-  let error = "";
-
-  if (config) {
-    try {
-      overview = await getAnalyticsOverview(config);
-    } catch (caught) {
-      console.error("GA4 overview failed:", caught instanceof Error ? caught.message : caught);
-      error = "Analytics could not be loaded from Google Analytics. Check the GA4 settings and try again.";
-    }
-  }
+export default async function AdminAnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>;
+}) {
+  const days = parseRangeDays((await searchParams).range);
+  const data = await loadAnalyticsPage(days, true);
+  const summary = data.status === "ready" ? await getCachedSummary(days) : null;
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-6 py-16">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold text-foreground">Analytics</h1>
-        <p className="text-sm text-muted">Last 28 days, from Google Analytics.</p>
-      </div>
-
-      {!config ? (
-        <p className={`${cardClass} text-sm text-muted`}>
-          Google Analytics is not connected. Set GA4_PROPERTY_ID, GA4_CLIENT_EMAIL and GA4_PRIVATE_KEY to see reports here.
-        </p>
-      ) : null}
-
-      {error ? <p className={`${cardClass} text-sm text-red-600`}>{error}</p> : null}
-
-      {overview ? (
-        <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Stat label="Active users" value={overview.totals.activeUsers} />
-            <Stat label="Sessions" value={overview.totals.sessions} />
-            <Stat label="Page views" value={overview.totals.pageViews} />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Table
-              title="Top pages"
-              empty="No page views yet."
-              header="Page"
-              rows={overview.topPages.map((page) => ({ label: page.path, value: page.views }))}
-            />
-            <Table
-              title="Enquiry and artwork events"
-              empty="No events yet."
-              header="Event"
-              rows={overview.topEvents.map((event) => ({ label: event.name, value: event.count }))}
-            />
-          </div>
-        </>
-      ) : null}
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-16">
+      <AnalyticsHeader section="overview" days={days} />
+      {data.status === "ready" ? (
+        <Overview days={days} dashboard={data.dashboard} realtime={data.realtime} summary={summary} />
+      ) : (
+        <AnalyticsUnavailable status={data.status} />
+      )}
     </main>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Overview({
+  days,
+  dashboard,
+  realtime,
+  summary,
+}: {
+  days: RangeDays;
+  dashboard: AnalyticsDashboard;
+  realtime: RealtimeSnapshot | null;
+  summary: CachedSummary | null;
+}) {
   return (
-    <div className={cardClass}>
-      <p className="text-2xl font-semibold text-foreground">{numberFormatter.format(value)}</p>
-      <p className="text-sm text-muted">{label}</p>
-    </div>
+    <>
+      <AnalyticsSummary key={days} days={days} initial={summary} />
+
+      {realtime ? (
+        <section className={`${cardClass} grid gap-4 md:grid-cols-[auto_1fr] md:items-start`}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-semibold tabular-nums text-foreground">{formatCount(realtime.activeUsers)}</p>
+            <p className="text-sm text-muted">Visitors on the site right now (last 30 minutes)</p>
+          </div>
+          <BreakdownCard
+            title="Live pages"
+            labelHeader="Page"
+            rows={realtime.screens.map((screen) => ({ label: screen.label || "Not set", value: screen.value }))}
+            empty="No one is on the site right now."
+          />
+        </section>
+      ) : null}
+
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+            {dashboard.kpis.map((kpi) => (
+              <StatCard key={kpi.label} kpi={kpi} />
+            ))}
+          </div>
+
+          <section className={`${cardClass} flex flex-col gap-4`}>
+            <h2 className="text-sm font-medium text-foreground">Daily trend</h2>
+            <TrendChart points={dashboard.trend} />
+          </section>
+
+          <Group title="Key highlights" columns="md:grid-cols-3">
+            {buildHighlights(dashboard, days).map((highlight) => (
+              <HighlightCard key={highlight.label} {...highlight} />
+            ))}
+          </Group>
+    </>
   );
 }
 
-function Table({
-  title,
-  header,
-  empty,
-  rows,
-}: {
-  title: string;
-  header: string;
-  empty: string;
-  rows: { label: string; value: number }[];
-}) {
-  return (
-    <section className={`${cardClass} flex flex-col gap-3`}>
-      <h2 className="text-sm font-medium text-foreground">{title}</h2>
-      {rows.length === 0 ? (
-        <p className="text-sm text-muted">{empty}</p>
-      ) : (
-        <table className="w-full text-sm">
-          <thead className="text-left text-muted">
-            <tr>
-              <th className="py-1 font-normal">{header}</th>
-              <th className="py-1 text-right font-normal">Count</th>
-            </tr>
-          </thead>
-          <tbody className="text-foreground">
-            {rows.map((row) => (
-              <tr key={row.label} className="border-t border-border">
-                <td className="max-w-0 truncate py-2 pr-3">{row.label}</td>
-                <td className="py-2 text-right tabular-nums">{numberFormatter.format(row.value)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </section>
-  );
+function shareOf(rows: Count[], row: Count): number {
+  const total = rows.reduce((sum, item) => sum + item.value, 0);
+  return total > 0 ? Math.round((row.value / total) * 100) : 0;
+}
+
+function buildHighlights(dashboard: AnalyticsDashboard, days: RangeDays) {
+  const channel = dashboard.channels[0];
+  const landingPage = dashboard.landingPages[0];
+  const artwork = dashboard.topArtworks[0];
+  const enquirySource = dashboard.enquiries.bySource[0];
+  const device = dashboard.devices[0];
+  const base = `/admin/analytics`;
+
+  return [
+    {
+      label: "Top channel",
+      value: channel?.label ?? "No traffic yet",
+      detail: channel
+        ? `${formatCount(channel.value)} sessions · ${shareOf(dashboard.channels, channel)}% of traffic`
+        : "Appears once visitors arrive",
+      href: `${base}/traffic?range=${days}`,
+    },
+    {
+      label: "Top landing page",
+      value: landingPage?.label ?? "No landing pages yet",
+      detail: landingPage ? `${formatCount(landingPage.value)} sessions started here` : "Appears once visitors arrive",
+      href: `${base}/traffic?range=${days}`,
+    },
+    {
+      label: "Most viewed artwork",
+      value: artwork?.title ?? "No artwork views yet",
+      detail: artwork ? `${formatCount(artwork.views)} views · ${artwork.enquiries} enquiries` : "Appears once artworks are viewed",
+      href: `${base}/artworks?range=${days}`,
+    },
+    {
+      label: "Top enquiry source",
+      value: enquirySource?.label ?? "No enquiries yet",
+      detail: enquirySource ? `${formatCount(enquirySource.value)} enquiries in this period` : "Appears once someone enquires",
+      href: `${base}/enquiries?range=${days}`,
+    },
+    {
+      label: "Top device",
+      value: device?.label ?? "No data yet",
+      detail: device ? `${shareOf(dashboard.devices, device)}% of visitors` : "Appears once visitors arrive",
+      href: `${base}/audience?range=${days}`,
+    },
+    {
+      label: "Viewed, no enquiry",
+      value: `${formatCount(dashboard.viewedNotEnquired.length)} artworks`,
+      detail: "Published, not sold, and viewed with no enquiry yet",
+      href: `${base}/artworks?range=${days}`,
+    },
+  ];
 }

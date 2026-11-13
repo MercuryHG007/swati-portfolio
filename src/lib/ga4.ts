@@ -4,9 +4,19 @@ const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const DATA_API_URL = "https://analyticsdata.googleapis.com/v1beta";
 const SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 
+// The Data API accepts up to 5 reports per batch call.
+const MAX_BATCH_SIZE = 5;
+
 // Only our own events; GA4's automatic events would crowd out what we track.
-const TRACKED_EVENTS = ["view_item", "generate_lead"];
-const DATE_RANGES = [{ startDate: "28daysAgo", endDate: "today" }];
+export const TRACKED_EVENTS = ["view_item", "contact_click", "generate_lead"];
+
+export interface DateRange {
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+
+export type ReportBody = Record<string, unknown>;
 
 export interface Ga4Config {
   propertyId: string;
@@ -14,15 +24,26 @@ export interface Ga4Config {
   privateKey: string;
 }
 
-export interface AnalyticsOverview {
-  totals: { activeUsers: number; sessions: number; pageViews: number };
-  topPages: { path: string; views: number }[];
-  topEvents: { name: string; count: number }[];
-}
-
-interface ReportRow {
+export interface ReportRow {
   dimensions: string[];
   metrics: number[];
+}
+
+export interface RealtimeSnapshot {
+  activeUsers: number;
+  screens: { label: string; value: number }[];
+}
+
+// The current period and the period of equal length before it, for "vs previous" comparisons.
+export function reportRanges(days: number): { current: DateRange; previous: DateRange } {
+  return {
+    current: { name: "current", startDate: `${days - 1}daysAgo`, endDate: "today" },
+    previous: { name: "previous", startDate: `${days * 2 - 1}daysAgo`, endDate: `${days}daysAgo` },
+  };
+}
+
+export function named(...names: string[]): { name: string }[] {
+  return names.map((name) => ({ name }));
 }
 
 export function getGa4Config(): Ga4Config | null {
@@ -72,20 +93,27 @@ async function getAccessToken(config: Ga4Config): Promise<string> {
   return payload.access_token;
 }
 
-async function runReport(config: Ga4Config, body: Record<string, unknown>): Promise<ReportRow[]> {
+async function postDataApi(config: Ga4Config, action: string, body: unknown): Promise<unknown> {
   const token = await getAccessToken(config);
-  const response = await fetch(`${DATA_API_URL}/properties/${encodeURIComponent(config.propertyId)}:runReport`, {
+  const response = await fetch(`${DATA_API_URL}/properties/${encodeURIComponent(config.propertyId)}:${action}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ dateRanges: DATE_RANGES, ...body }),
+    body: JSON.stringify(body),
     cache: "no-store",
   });
-  const payload = await response.json().catch(() => null);
+  const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(`Google Analytics report failed (HTTP ${response.status}).`);
+    const detail = (payload as { error?: { message?: unknown } } | null)?.error?.message;
+    throw new Error(
+      `Google Analytics report failed (HTTP ${response.status})${typeof detail === "string" ? `: ${detail}` : "."}`,
+    );
   }
+  return payload;
+}
 
-  const rows: unknown[] = Array.isArray(payload?.rows) ? payload.rows : [];
+function toRows(payload: unknown): ReportRow[] {
+  const rows = (payload as { rows?: unknown } | null)?.rows;
+  if (!Array.isArray(rows)) return [];
   return rows.map((row) => {
     const record = row as {
       dimensionValues?: { value?: string }[];
@@ -98,32 +126,36 @@ async function runReport(config: Ga4Config, body: Record<string, unknown>): Prom
   });
 }
 
-export async function getAnalyticsOverview(config: Ga4Config): Promise<AnalyticsOverview> {
-  const [totalRows, pageRows, eventRows] = await Promise.all([
-    runReport(config, {
-      metrics: [{ name: "activeUsers" }, { name: "sessions" }, { name: "screenPageViews" }],
+// Runs reports in batches of up to MAX_BATCH_SIZE, so the batches stay within GA4's concurrency limit.
+export async function runReports(config: Ga4Config, bodies: ReportBody[]): Promise<ReportRow[][]> {
+  const batches: ReportBody[][] = [];
+  for (let index = 0; index < bodies.length; index += MAX_BATCH_SIZE) {
+    batches.push(bodies.slice(index, index + MAX_BATCH_SIZE));
+  }
+  const results = await Promise.all(
+    batches.map(async (requests) => {
+      const payload = await postDataApi(config, "batchRunReports", { requests });
+      const reports = (payload as { reports?: unknown } | null)?.reports;
+      return Array.isArray(reports) ? reports.map(toRows) : [];
     }),
-    runReport(config, {
-      dimensions: [{ name: "pagePath" }],
-      metrics: [{ name: "screenPageViews" }],
-      orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
-      limit: 10,
-    }),
-    runReport(config, {
-      dimensions: [{ name: "eventName" }],
-      metrics: [{ name: "eventCount" }],
-      dimensionFilter: {
-        filter: { fieldName: "eventName", inListFilter: { values: TRACKED_EVENTS } },
-      },
-      orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
-      limit: 10,
-    }),
-  ]);
+  );
+  return results.flat();
+}
 
-  const [activeUsers = 0, sessions = 0, pageViews = 0] = totalRows[0]?.metrics ?? [];
+export async function getRealtimeSnapshot(config: Ga4Config): Promise<RealtimeSnapshot> {
+  const [totalRows, screenRows] = await Promise.all([
+    postDataApi(config, "runRealtimeReport", { metrics: named("activeUsers") }).then(toRows),
+    postDataApi(config, "runRealtimeReport", {
+      dimensions: named("unifiedScreenName"),
+      metrics: named("activeUsers"),
+      limit: 5,
+    }).then(toRows),
+  ]);
   return {
-    totals: { activeUsers, sessions, pageViews },
-    topPages: pageRows.map((row) => ({ path: row.dimensions[0] ?? "", views: row.metrics[0] ?? 0 })),
-    topEvents: eventRows.map((row) => ({ name: row.dimensions[0] ?? "", count: row.metrics[0] ?? 0 })),
+    activeUsers: totalRows[0]?.metrics[0] ?? 0,
+    screens: screenRows
+      .map((row) => ({ label: row.dimensions[0] ?? "", value: row.metrics[0] ?? 0 }))
+      .sort((a, b) => b.value - a.value),
   };
 }
+
