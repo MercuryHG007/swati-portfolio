@@ -14,13 +14,9 @@ export async function SiteFooter() {
 
   return (
     <footer className="border-t border-border">
-      {/* Desktop: logo on the left, privacy and contacts on the right, copyright under the logo. Mobile: stacked, copyright last. */}
-      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-6 py-12 text-sm text-foreground md:grid-cols-2 md:items-start md:gap-x-10 md:gap-y-4">
-        <p className={`order-3 text-xs text-muted md:order-none md:col-start-1 ${logo ? "md:row-start-2" : "md:row-start-1"}`}>
-          © {new Date().getFullYear()} Swati Garg. All rights reserved.
-        </p>
+      {/* Top row: logo on the left, contacts on the right. Mobile: contacts first, then logo. */}
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-6 pt-12 pb-8 text-sm text-foreground md:grid-cols-2 md:items-start md:gap-x-10">
         <div className="order-1 flex flex-col gap-2 md:order-none md:col-start-2 md:row-start-1 md:justify-self-end">
-          <TextLink href="/privacy" variant="inverse" className="w-fit">Privacy</TextLink>
           {email ? (
             <TextLink href={`mailto:${email}`} variant="primary" className="w-fit">
               {email}
@@ -49,6 +45,12 @@ export async function SiteFooter() {
             />
         </BrandLink>
         ) : null}
+      </div>
+      {/* Legal row: copyright and Privacy, bottom left, clear of the fixed back-to-top button. */}
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-6 py-3 text-xs text-muted">
+        <p>© {new Date().getFullYear()} Swati Garg. All rights reserved.</p>
+        <span aria-hidden="true">·</span>
+        <TextLink href="/privacy" variant="inverse" className="text-xs text-muted">Privacy</TextLink>
       </div>
     </footer>
   );
