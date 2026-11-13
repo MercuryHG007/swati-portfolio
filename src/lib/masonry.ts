@@ -8,6 +8,11 @@ export const DESKTOP_MIN_WIDTH = 1024;
 export const DESKTOP_MAX_COLUMNS = 5;
 export const MASONRY_GUTTER = 16;
 
+// Columns drift against the scroll. The outermost columns move this fraction of the travel, the innermost move the least.
+export const DRIFT_SPREAD = 0.06;
+// Scroll distance past the grid's top edge over which the drift builds up. Beyond this the columns stop moving.
+export const DRIFT_TRAVEL = 600;
+
 // Height ÷ width. Keeps very narrow or very wide works from producing extreme tiles.
 const MIN_HEIGHT_RATIO = 0.5;
 const MAX_HEIGHT_RATIO = 2;
@@ -23,6 +28,13 @@ export function columnCountFor(containerWidth: number) {
 
 export function columnWidthFor(containerWidth: number, count: number) {
   return Math.max(0, (containerWidth - (count - 1) * MASONRY_GUTTER) / count);
+}
+
+// Signed multiplier of the drift travel for one column. Negative on the left, positive on the right, zero at the centre.
+export function driftFactor(index: number, count: number) {
+  if (count < 2) return 0;
+  const center = (count - 1) / 2;
+  return (DRIFT_SPREAD * (index - center)) / center;
 }
 
 export function heightRatio(artwork: Pick<PortfolioCard, "image">) {
