@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink as Link } from "@/components/app-link";
 import { ProtectedImage } from "@/components/cloudinary-image";
 import { getPublishedSeries } from "@/lib/queries";
 import { CardTitle } from "@/components/card-title/card-title";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink as Link } from "@/components/app-link";
 import type { ReactNode } from "react";
 
 // Small outline chip for browsing and filtering. Separate from Button, which is for calls to action.

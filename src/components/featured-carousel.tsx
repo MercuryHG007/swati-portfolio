@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink as Link } from "@/components/app-link";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type Ref } from "react";
 import { ProtectedImage } from "@/components/cloudinary-image";
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { skipCurrentPageClick } from "@/components/current-page-click";
 
 type NavLink = { href: string; label: string };
 type NavGroup = { label?: string; links: NavLink[] };
@@ -61,6 +62,8 @@ export function AdminNavLinks() {
                 href={link.href}
                 prefetch={false}
                 aria-current={active ? "page" : undefined}
+                // Exact match: on a sub-page, the section link should still navigate back to its main page.
+                onClick={skipCurrentPageClick(pathname === link.href)}
                 className={`rounded-md py-2 pr-3 text-sm transition-colors ${
                   group.label ? "pl-6" : "px-3"
                 } ${

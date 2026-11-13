@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+import { AppLink } from "@/components/app-link";
 
 export type ButtonVariant = "primary" | "inverse" | "danger";
 export type ButtonSize = "xs" | "sm" | "md" | "lg";
@@ -38,6 +38,7 @@ type ButtonLinkProps = CommonProps &
   Omit<ComponentProps<"a">, "href" | "children" | "className"> & {
     href: string;
     prefetch?: boolean;
+    current?: boolean;
   };
 
 type ButtonNativeProps = CommonProps &
@@ -52,14 +53,14 @@ export function Button({ variant = "primary", size = "md", className = "", ...pr
   const classes = `${buttonClasses({ variant, size })} w-fit ${className}`.trim();
 
   if (props.href !== undefined) {
-    const { href, prefetch, children, ...anchorProps } = props;
+    const { href, prefetch, current, children, ...anchorProps } = props;
     const isInternal = href.startsWith("/") && !href.startsWith("//");
 
     if (isInternal) {
       return (
-        <Link href={href} prefetch={prefetch} className={classes} {...anchorProps}>
+        <AppLink href={href} prefetch={prefetch} current={current} className={classes} {...anchorProps}>
           {children}
-        </Link>
+        </AppLink>
       );
     }
 

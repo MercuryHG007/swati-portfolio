@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { serif, sans } from "@/lib/fonts";
 import { SiteHeader } from "@/components/site-header";
 import { HeaderFilterProvider } from "@/components/header-filter";
 import { SiteFooter } from "@/components/site-footer";
 import { ScrollToTop } from "@/components/scroll-to-top";
+import { NavigationLockRelease } from "@/components/navigation-lock-release";
 import { SiteAnalytics } from "@/components/analytics/site-analytics";
 import { CookieConsent } from "@/components/analytics/cookie-consent";
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -28,6 +30,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className="site-public min-h-full flex flex-col bg-background text-foreground font-sans">
+        <Suspense fallback={null}>
+          <NavigationLockRelease />
+        </Suspense>
         <HeaderFilterProvider>
           <SiteHeader />
           <div className="flex flex-1 flex-col">{children}</div>

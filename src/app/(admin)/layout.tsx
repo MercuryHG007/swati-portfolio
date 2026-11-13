@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
 import { sans } from "@/lib/fonts";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { NavigationLockRelease } from "@/components/navigation-lock-release";
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import "../globals.css";
 
@@ -15,6 +17,9 @@ export default function AdminRootLayout({ children }: { children: React.ReactNod
   return (
     <html lang="en" className={`${sans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
+        <Suspense fallback={null}>
+          <NavigationLockRelease />
+        </Suspense>
         <AdminNav />
         <div className="flex flex-1">
           <AdminSidebar />

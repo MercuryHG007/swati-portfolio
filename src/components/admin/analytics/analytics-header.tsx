@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { cardClass } from "@/components/admin/ui";
-import { RangeSelector } from "@/components/admin/analytics/analytics-ui";
-import type { RangeDays } from "@/lib/analytics-dashboard";
+import { AnalyticsTabs, RangeSelector } from "@/components/admin/analytics/analytics-nav";
+import { RANGE_DAYS, type RangeDays } from "@/lib/analytics-dashboard";
 
 export const ANALYTICS_SECTIONS = [
   { key: "overview", label: "Overview", href: "/admin/analytics" },
@@ -25,22 +24,9 @@ export function AnalyticsHeader({ section, days }: { section: AnalyticsSection; 
             Last {days} days, compared with the {days} days before. Times in India.
           </p>
         </div>
-        <RangeSelector current={days} basePath={active.href} />
+        <RangeSelector current={days} basePath={active.href} ranges={RANGE_DAYS} />
       </div>
-      <nav aria-label="Analytics sections" className="flex flex-wrap gap-2 border-b border-border pb-3 text-sm">
-        {ANALYTICS_SECTIONS.map((item) => (
-          <Link
-            key={item.key}
-            href={`${item.href}?range=${days}`}
-            aria-current={item.key === active.key ? "page" : undefined}
-            className={`rounded-md px-3 py-1.5 ${
-              item.key === active.key ? "bg-accent text-accent-foreground" : "text-muted hover:text-foreground"
-            }`}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <AnalyticsTabs tabs={ANALYTICS_SECTIONS} activeKey={active.key} days={days} />
     </div>
   );
 }

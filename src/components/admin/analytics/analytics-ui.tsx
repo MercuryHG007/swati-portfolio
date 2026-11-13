@@ -4,11 +4,9 @@ import { cardClass } from "@/components/admin/ui";
 import {
   describeChange,
   formatDayLabel,
-  RANGE_DAYS,
   type ArtworkStat,
   type Count,
   type Kpi,
-  type RangeDays,
   type TrendPoint,
 } from "@/lib/analytics-dashboard";
 
@@ -21,25 +19,6 @@ export function formatCount(value: number): string {
 export function formatKpi(kpi: Kpi): string {
   if (kpi.format === "percent") return `${(kpi.value * 100).toFixed(1)}%`;
   return formatCount(kpi.value);
-}
-
-export function RangeSelector({ current, basePath }: { current: RangeDays; basePath: string }) {
-  return (
-    <nav aria-label="Date range" className="flex gap-1 rounded-md border border-border bg-surface p-1 text-sm">
-      {RANGE_DAYS.map((days) => (
-        <Link
-          key={days}
-          href={`${basePath}?range=${days}`}
-          aria-current={days === current ? "page" : undefined}
-          className={`rounded px-3 py-1.5 ${
-            days === current ? "bg-accent text-accent-foreground" : "text-muted hover:text-foreground"
-          }`}
-        >
-          {days} days
-        </Link>
-      ))}
-    </nav>
-  );
 }
 
 export function Group({
