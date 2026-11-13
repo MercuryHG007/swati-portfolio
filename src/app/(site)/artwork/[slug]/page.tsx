@@ -78,6 +78,10 @@ export default async function ArtworkDetailPage({
     );
   }
   if (dimensions) metaParts.push(<span>{dimensions}</span>);
+  const availabilityText = artwork.availability
+    ? AVAILABILITY_TEXT[artwork.availability as AvailabilityStatus]
+    : null;
+  if (availabilityText) metaParts.push(<span>{availabilityText}</span>);
   // A series only has a public page while it's published — don't link to a 404.
   const seriesIsLinkable = artwork.series?.status === "published";
 
@@ -92,9 +96,6 @@ export default async function ArtworkDetailPage({
   const exhibitions = await getExhibitionsForArtwork(artwork._id);
   const enquireHref = `/contact?artwork=${encodeURIComponent(artwork.slug)}`;
   const enquireLabel = artwork.availability === "sold" ? "Enquire about a similar work" : "Enquire about this work";
-  const availabilityText = artwork.availability
-    ? AVAILABILITY_TEXT[artwork.availability as AvailabilityStatus]
-    : "Ask about availability";
 
   const breadcrumbItems: BreadcrumbItem[] = [{ label: "Portfolio", href: "/portfolio" }];
   if (artwork.series) {
@@ -148,11 +149,9 @@ export default async function ArtworkDetailPage({
       <div className="flex flex-col gap-3">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
           <h1 className="text-2xl font-medium text-foreground">{artwork.title}</h1>
-          <div className="hidden sm:block">
-            <Button href={enquireHref} size="sm" variant="inverse" className="shrink-0">
-              {enquireLabel}
-            </Button>
-          </div>
+          <Button href={enquireHref} size="sm" variant="inverse" className="shrink-0">
+            {enquireLabel}
+          </Button>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
           {metaParts.map((part, index) => (
@@ -162,7 +161,6 @@ export default async function ArtworkDetailPage({
             </Fragment>
           ))}
         </div>
-        <p className="text-sm font-medium text-foreground">{availabilityText}</p>
 
         {artwork.subjects?.length > 0 ? (
           <div className="flex flex-wrap gap-2">
@@ -208,11 +206,6 @@ export default async function ArtworkDetailPage({
           </div>
         ) : null}
 
-        <div className="sm:hidden">
-          <Button href={enquireHref} size="sm" variant="inverse">
-            {enquireLabel}
-          </Button>
-        </div>
       </div>
 
       <PrevNextNav

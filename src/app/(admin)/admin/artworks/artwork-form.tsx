@@ -133,7 +133,7 @@ export async function ArtworkForm({
         </Field>
         <Field label="Availability">
           <Select name="availability" defaultValue={artwork?.availability ?? ""}>
-            <option value="">Not set (visitors are invited to ask)</option>
+            <option value="">Not set (visitors are invited to enquire)</option>
             <option value="available">Available</option>
             <option value="sold">Sold</option>
           </Select>

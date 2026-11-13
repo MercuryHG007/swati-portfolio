@@ -14,6 +14,6 @@ export const cloudinaryImageSchema = new Schema(
 export const PUBLICATION_STATUS = ["published", "hidden"] as const;
 export type PublicationStatus = (typeof PUBLICATION_STATUS)[number];
 
-// Unset (null) means not yet recorded; the site then invites visitors to ask about availability.
+// Unset (null) means not yet recorded; the site then invites visitors to enquire.
 export const AVAILABILITY_STATUS = ["available", "sold"] as const;
 export type AvailabilityStatus = (typeof AVAILABILITY_STATUS)[number];
