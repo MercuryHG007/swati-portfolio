@@ -13,6 +13,7 @@ import { Breadcrumbs, type BreadcrumbItem } from "@/components/breadcrumbs";
 import { Pill } from "@/components/pill/pill";
 import { PrevNextNav } from "@/components/prev-next-nav";
 import { ArtworkGallery } from "@/components/artwork-gallery";
+import { ShareButton } from "@/components/share-button";
 import { TrackOnMount } from "@/components/analytics/track-on-mount";
 import { getPrevNext } from "@/lib/prev-next";
 import { formatDateRange, getYear } from "@/lib/format";
@@ -147,11 +148,16 @@ export default async function ArtworkDetailPage({
       <ArtworkGallery images={artwork.images ?? []} title={artwork.title} />
 
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
-          <h1 className="text-2xl font-medium text-foreground">{artwork.title}</h1>
-          <Button href={enquireHref} size="sm" variant="inverse" className="shrink-0">
-            {enquireLabel}
-          </Button>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="min-w-0 text-2xl font-medium text-foreground">{artwork.title}</h1>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="hidden sm:block">
+              <Button href={enquireHref} size="sm" variant="inverse">
+                {enquireLabel}
+              </Button>
+            </div>
+            <ShareButton title={artwork.title} />
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
           {metaParts.map((part, index) => (
@@ -206,6 +212,11 @@ export default async function ArtworkDetailPage({
           </div>
         ) : null}
 
+        <div className="sm:hidden">
+          <Button href={enquireHref} size="sm" variant="inverse">
+            {enquireLabel}
+          </Button>
+        </div>
       </div>
 
       <PrevNextNav
