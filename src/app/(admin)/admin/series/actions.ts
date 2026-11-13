@@ -8,7 +8,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Series, Artwork, SeriesSettings } from "@/models";
 import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
 import { slugify } from "@/lib/slugify";
-import { withAltFallback } from "@/lib/image-alt";
+import { withAltFallback, withSuggestedAlt } from "@/lib/image-alt";
 import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
 import { readSingleImage } from "@/lib/form-fields";
 
@@ -28,7 +28,10 @@ function readFields(formData: FormData) {
   const featured = formData.get("featured") === "on";
   // null clears the cover; undefined means the form didn't send it and the stored cover is left alone.
   const coverImageRaw = readSingleImage(formData, "coverImage");
-  const coverImage = coverImageRaw ? withAltFallback([coverImageRaw], title)[0] : coverImageRaw;
+  const aiAltText = String(formData.get("aiAltText") ?? "").trim().slice(0, 200);
+  const coverImage = coverImageRaw
+    ? withAltFallback(withSuggestedAlt([coverImageRaw], aiAltText), title)[0]
+    : coverImageRaw;
   return { title, slug, description, status, featured, coverImage };
 }
 

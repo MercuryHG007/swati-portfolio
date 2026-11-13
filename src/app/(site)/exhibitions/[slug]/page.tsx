@@ -1,14 +1,34 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { ProtectedImage } from "@/components/cloudinary-image";
 import { getExhibitionBySlug, getPublishedExhibitions } from "@/lib/queries";
 import { formatDateRange } from "@/lib/format";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { JsonLd } from "@/components/json-ld";
 import { PrevNextNav } from "@/components/prev-next-nav";
 import { getPrevNext } from "@/lib/prev-next";
 import { ArtworkCard } from "@/components/artwork-card";
 import { getYear } from "@/lib/format";
+import { toMetaDescription } from "@/lib/meta-description";
+import { breadcrumbJsonLd, cloudinaryImageUrl, exhibitionJsonLd, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const exhibition = await getExhibitionBySlug(slug);
+  if (!exhibition) return {};
+
+  const cover = exhibition.images?.[0];
+  const coverUrl = cover ? cloudinaryImageUrl(cover.publicId) : undefined;
+  const place = exhibition.city ? `${exhibition.venue}, ${exhibition.city}` : exhibition.venue;
+  return pageMetadata({
+    title: `${exhibition.title} — Swati Garg`,
+    description: toMetaDescription(exhibition.description) ?? `${exhibition.title} at ${place}.`,
+    path: `/exhibitions/${slug}`,
+    image: coverUrl ? { url: coverUrl, alt: cover?.alt || exhibition.title } : undefined,
+  });
+}
 
 export default async function ExhibitionDetailPage({
   params,
@@ -27,7 +47,15 @@ export default async function ExhibitionDetailPage({
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-6 py-16">
-      <Breadcrumbs items={[{ label: "About", href: "/about" }, { label: exhibition.title }]} />
+      <JsonLd data={exhibitionJsonLd(exhibition)} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Home", path: "/" },
+          { name: "Exhibitions", path: "/exhibitions" },
+          { name: exhibition.title, path: `/exhibitions/${slug}` },
+        ])}
+      />
+      <Breadcrumbs items={[{ label: "Exhibitions", href: "/exhibitions" }, { label: exhibition.title }]} />
       <header className="flex flex-col gap-4">
         <p className="text-xs uppercase tracking-widest text-muted">
           {exhibition.type === "solo" ? "Solo exhibition" : "Group exhibition"}

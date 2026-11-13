@@ -2,31 +2,29 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
 import { ProtectedImage } from "@/components/cloudinary-image";
+import { ExhibitionList } from "@/components/exhibition-list";
 import { getAbout, getPublishedExhibitions } from "@/lib/queries";
-import { formatDateRange, getYear } from "@/lib/format";
+import { JsonLd } from "@/components/json-ld";
+import { artistJsonLd, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
 
-type CvEntry = { title: string; detail?: string; date?: string };
+export const metadata = pageMetadata({
+  title: "About — Swati Garg",
+  description: "About Swati Garg, a watercolor and mixed media artist: education, exhibitions and awards.",
+  path: "/about",
+});
 
-type ExhibitionItem = {
-  slug: string;
-  title: string;
-  venue: string;
-  city?: string;
-  country?: string;
-  startDate: Date | string;
-  endDate?: Date | string | null;
-};
+type CvEntry = { title: string; detail?: string; date?: string };
 
 export default async function AboutPage() {
   const [about, exhibitions] = await Promise.all([getAbout(), getPublishedExhibitions()]);
 
   const location = about?.location;
-  const exhibitionsByYear = groupByYear(exhibitions);
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-16 px-6 py-16">
+      <JsonLd data={artistJsonLd(about?.socials?.instagram ? [about.socials.instagram] : [])} />
       <header className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-3">
           <h1 className="text-5xl font-medium leading-none tracking-tight text-foreground md:text-7xl">
@@ -70,36 +68,16 @@ export default async function AboutPage() {
             </Section>
           ) : null}
 
-          {exhibitionsByYear.length > 0 ? (
-            <Section title="Exhibitions">
-              <ul className="flex flex-col gap-10">
-                {exhibitionsByYear.map(([year, items]) => (
-                  <li key={year} className="grid gap-1 md:grid-cols-[8rem_1fr]">
-                    <p className="text-sm text-muted">{year}</p>
-                    <ul className="flex flex-col gap-5">
-                      {items.map((exhibition) => {
-                        const venueLine = [exhibition.venue, exhibition.city, exhibition.country]
-                          .filter(Boolean)
-                          .join(", ");
-                        return (
-                          <li key={exhibition.slug} className="flex flex-col gap-1">
-                            <TextLink
-                              href={`/exhibitions/${exhibition.slug}`}
-                              variant="inverse"
-                              className="w-fit text-foreground"
-                            >
-                              {exhibition.title}
-                            </TextLink>
-                            <p className="text-sm text-muted">
-                              {venueLine} · {formatDateRange(exhibition.startDate, exhibition.endDate)}
-                            </p>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </li>
-                ))}
-              </ul>
+          {exhibitions.length > 0 ? (
+            <Section
+              title="Exhibitions"
+              action={
+                <TextLink href="/exhibitions" variant="primary" className="text-sm text-foreground">
+                  View all
+                </TextLink>
+              }
+            >
+              <ExhibitionList exhibitions={exhibitions} />
             </Section>
           ) : null}
 
@@ -145,10 +123,13 @@ export default async function AboutPage() {
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-6 border-t border-border pt-6">
-      <h2 className="text-xs uppercase tracking-widest font-sans text-muted">{title}</h2>
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="text-xs uppercase tracking-widest font-sans text-muted">{title}</h2>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -168,15 +149,4 @@ function EntryList({ entries }: { entries: CvEntry[] }) {
       ))}
     </ul>
   );
-}
-
-// Input is already sorted newest-first by getPublishedExhibitions, so insertion order is kept within a year.
-function groupByYear(items: ExhibitionItem[]): [number, ExhibitionItem[]][] {
-  const groups = new Map<number, ExhibitionItem[]>();
-  for (const item of items) {
-    const year = getYear(item.startDate);
-    if (!year) continue;
-    groups.set(year, [...(groups.get(year) ?? []), item]);
-  }
-  return [...groups.entries()].sort(([a], [b]) => b - a);
 }

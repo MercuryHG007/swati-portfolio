@@ -2,7 +2,8 @@
 
 import { useCallback, useState } from "react";
 import { ImageUploader } from "@/components/admin/image-uploader";
-import { Field, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
+import { AiSeriesAssist } from "@/components/admin/ai-series-assist";
+import { Field, FieldSet, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
 import Link from "next/link";
 
 export function SeriesForm({
@@ -28,20 +29,21 @@ export function SeriesForm({
     <form action={action} className="flex flex-col gap-4">
       {series ? <input type="hidden" name="id" value={String(series._id)} /> : null}
 
-      <Field label="Title">
-        <input name="title" defaultValue={series?.title} required className={inputClass} />
-      </Field>
-      <input type="hidden" name="slug" defaultValue={series?.slug} />
-      <Field label="Description">
-        <textarea name="description" defaultValue={series?.description} rows={4} className={inputClass} />
-      </Field>
-      <Field label="Cover image">
+      <FieldSet label="Cover image">
         <ImageUploader
           name="coverImage"
           folder="swati-portfolio/series"
           initial={series?.coverImage ? [series.coverImage] : []}
           onCountChange={handleImageCount}
         />
+      </FieldSet>
+      <AiSeriesAssist seriesId={series ? String(series._id) : undefined} />
+      <Field label="Title">
+        <input name="title" defaultValue={series?.title} required className={inputClass} />
+      </Field>
+      <input type="hidden" name="slug" defaultValue={series?.slug} />
+      <Field label="Description">
+        <textarea name="description" defaultValue={series?.description} rows={4} className={inputClass} />
       </Field>
       <Field label="Status">
         <Select name="status" defaultValue={series?.status ?? "hidden"}>

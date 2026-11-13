@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink as Link } from "@/components/app-link";
 
 type PrevNextItem = { href: string; label: string } | null;
 

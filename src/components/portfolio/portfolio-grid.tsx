@@ -1,8 +1,22 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArtworkCard } from "@/components/artwork-card";
+import { columnCountFor, columnWidthFor, distributeIntoColumns, heightRatio } from "@/lib/masonry";
 import { hasPortfolioFilters, type PortfolioCard, type PortfolioFilters } from "@/lib/portfolio-filters";
+
+// Rounds the sizes hint up to this step so it only changes when the column width crosses a step.
+const SIZES_STEP = 40;
+const DEFAULT_SIZES = "50vw";
+
+// The first card whose bottom edge is on screen. Used to keep the reader's place when the column count changes.
+function findTopCard(root: HTMLElement) {
+  for (const link of root.querySelectorAll<HTMLAnchorElement>("a[data-index]")) {
+    const rect = link.getBoundingClientRect();
+    if (rect.bottom > 0) return { id: link.id, top: rect.top };
+  }
+  return null;
+}
 
 type PortfolioGridProps = {
   items: PortfolioCard[];
@@ -46,6 +60,66 @@ export function PortfolioGrid({
     return () => observer.disconnect();
   }, [hasMore, onLoadMore, items.length]);
 
+  // Column count follows the grid's own width (the page padding and any side nav are excluded).
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  const [layout, setLayout] = useState({ count: 2, sizes: DEFAULT_SIZES });
+  const countRef = useRef(2);
+  // Sampled only when positions are settled. During a count change the DOM is mid-reflow, so reading it there gives wrong positions.
+  const topCardRef = useRef<{ id: string; top: number } | null>(null);
+  const pendingAnchorRef = useRef<{ id: string; top: number } | null>(null);
+
+  useEffect(() => {
+    if (!container) return;
+    let frame = 0;
+    const sample = () => {
+      frame = 0;
+      topCardRef.current = findTopCard(container);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(sample);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [container]);
+
+  useEffect(() => {
+    if (!container) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      const count = columnCountFor(width);
+      const sizes = `${Math.ceil(columnWidthFor(width, count) / SIZES_STEP) * SIZES_STEP}px`;
+      if (count !== countRef.current) {
+        countRef.current = count;
+        pendingAnchorRef.current = topCardRef.current;
+      } else {
+        topCardRef.current = findTopCard(container);
+      }
+      setLayout((prev) => (prev.count === count && prev.sizes === sizes ? prev : { count, sizes }));
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [container]);
+
+  // After a count change the cards have moved. Put the card the reader was looking at back where it was.
+  useLayoutEffect(() => {
+    const anchor = pendingAnchorRef.current;
+    pendingAnchorRef.current = null;
+    const node = anchor && document.getElementById(anchor.id);
+    if (anchor && node) {
+      const delta = node.getBoundingClientRect().top - anchor.top;
+      if (delta) window.scrollBy(0, delta);
+    }
+    if (container) topCardRef.current = findTopCard(container);
+  }, [layout.count, container]);
+
+  const columns = useMemo(
+    () => distributeIntoColumns(items, layout.count, heightRatio),
+    [items, layout.count]
+  );
+
   if (items.length === 0 && !isLoading) {
     return (
       <div className="flex flex-col gap-3 py-10 text-center">
@@ -81,7 +155,8 @@ export function PortfolioGrid({
   return (
     <div className="flex flex-col gap-10">
       <div
-        className="grid grid-cols-2 gap-6 md:grid-cols-3 xl:grid-cols-4"
+        ref={setContainer}
+        className="flex gap-4"
         aria-busy={isLoading}
         onClickCapture={(event) => {
           const link = (event.target as HTMLElement).closest<HTMLAnchorElement>("a[data-index]");
@@ -91,23 +166,33 @@ export function PortfolioGrid({
           if (artwork) onSelect(index, artwork.slug);
         }}
       >
-        {items.map((artwork, index) => (
-          <ArtworkCard
-            key={artwork.slug}
-            id={`artwork-${artwork.slug}`}
-            dataIndex={index}
-            slug={artwork.slug}
-            title={artwork.title}
-            year={artwork.year}
-            image={artwork.image}
-            priority={index === 0}
-          />
+        {columns.map((column, columnIndex) => (
+          <div key={columnIndex} className="flex min-w-0 flex-1 flex-col gap-4">
+            {column.map(({ item: artwork, index }) => (
+              <ArtworkCard
+                key={artwork.slug}
+                id={`artwork-${artwork.slug}`}
+                dataIndex={index}
+                slug={artwork.slug}
+                title={artwork.title}
+                image={artwork.image}
+                priority={index === 0}
+                aspectRatio={1 / heightRatio(artwork)}
+                sizes={layout.sizes}
+                showCaption={false}
+                fadeIn
+              />
+            ))}
+          </div>
         ))}
-        {isLoading &&
-          Array.from({ length: 4 }, (_, index) => (
-            <div key={`placeholder-${index}`} aria-hidden="true" className="aspect-[4/5] animate-pulse rounded-md bg-surface" />
-          ))}
       </div>
+      {isLoading && (
+        <div className="flex gap-4" aria-hidden="true">
+          {Array.from({ length: layout.count }, (_, index) => (
+            <div key={`placeholder-${index}`} className="aspect-[4/5] min-w-0 flex-1 animate-pulse rounded-md bg-surface" />
+          ))}
+        </div>
+      )}
 
       <div ref={sentinelRef} aria-hidden="true" />
 

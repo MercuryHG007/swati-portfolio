@@ -8,6 +8,15 @@ import { GridCarousel } from "@/components/grid-carousel/grid-carousel";
 import { PortfolioBrowser } from "@/components/portfolio/portfolio-browser";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { parsePortfolioFilters, portfolioSearchParams } from "@/lib/portfolio-filters";
+import { dailySeed } from "@/lib/portfolio-order";
+import { pageMetadata } from "@/lib/seo";
+
+// Filter and sort parameters share this canonical URL, so each filtered view isn't indexed separately.
+export const metadata = pageMetadata({
+  title: "Portfolio — Swati Garg",
+  description: "Browse watercolor, acrylic, pencil and oil works by Swati Garg, filtered by medium and subject.",
+  path: "/portfolio",
+});
 
 type PortfolioPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -18,7 +27,7 @@ export default async function PortfolioPage({ searchParams }: PortfolioPageProps
   const [featuredSeries, seriesSettings, firstPage, facets] = await Promise.all([
     getCachedFeaturedSeriesCards(),
     getCachedSeriesSettings(),
-    getCachedPortfolioPage(filters, 1),
+    getCachedPortfolioPage(filters, 1, dailySeed()),
     getCachedPortfolioFacets(filters),
   ]);
 

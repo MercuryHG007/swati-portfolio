@@ -1,10 +1,17 @@
-import Link from "next/link";
+import { AppLink as Link } from "@/components/app-link";
 import { ProtectedImage } from "@/components/cloudinary-image";
 import { getPublishedSeries } from "@/lib/queries";
 import { CardTitle } from "@/components/card-title/card-title";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata = pageMetadata({
+  title: "Series — Swati Garg",
+  description: "Series of paintings by Swati Garg.",
+  path: "/series",
+});
 
 export default async function SeriesIndexPage() {
   const series = await getPublishedSeries();

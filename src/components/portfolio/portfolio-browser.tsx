@@ -39,9 +39,15 @@ function scrollToSection(id: string) {
   });
 }
 
-async function fetchPage(filters: PortfolioFilters, page: number, signal: AbortSignal): Promise<PortfolioPageResponse> {
+async function fetchPage(
+  filters: PortfolioFilters,
+  page: number,
+  signal: AbortSignal,
+  seed: string
+): Promise<PortfolioPageResponse> {
   const params = portfolioSearchParams(filters);
   params.set("page", String(page));
+  params.set("seed", seed);
   const response = await fetch(`/api/portfolio/artworks?${params.toString()}`, { signal });
   if (!response.ok) throw new Error(`Request failed with ${response.status}`);
   return response.json();
@@ -104,6 +110,8 @@ export function PortfolioBrowser({ initialFilters, initialFacets, initialPage }:
     hasMore: initialPage.hasMore,
   });
   const controllerRef = useRef<AbortController | null>(null);
+  // Fixed for this visit so every page comes from the same order.
+  const seedRef = useRef(initialPage.seed);
   const failedFilterRef = useRef(false);
   const mountedRef = useRef(false);
   const syncStartedRef = useRef(false);
@@ -143,7 +151,7 @@ export function PortfolioBrowser({ initialFilters, initialFacets, initialPage }:
       const controller = begin();
       try {
         const [first, nextFacets] = await Promise.all([
-          fetchPage(next, 1, controller.signal),
+          fetchPage(next, 1, controller.signal, seedRef.current),
           fetchFacets(next, controller.signal),
         ]);
         let loaded = first.items;
@@ -151,7 +159,7 @@ export function PortfolioBrowser({ initialFilters, initialFacets, initialPage }:
         let more = first.hasMore;
         if (restore) {
           while (loaded.length <= restore.index && more) {
-            const data = await fetchPage(next, page + 1, controller.signal);
+            const data = await fetchPage(next, page + 1, controller.signal, seedRef.current);
             page = data.page;
             loaded = appendUnique(loaded, data.items);
             more = data.hasMore;
@@ -199,7 +207,7 @@ export function PortfolioBrowser({ initialFilters, initialFacets, initialPage }:
     const nextPage = current.page + 1;
     setStatus("loading");
     try {
-      const data = await fetchPage(current.filters, nextPage, controller.signal);
+      const data = await fetchPage(current.filters, nextPage, controller.signal, seedRef.current);
       if (controller.signal.aborted) return;
       failedFilterRef.current = false;
       commitList({

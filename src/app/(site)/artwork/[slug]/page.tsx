@@ -1,4 +1,6 @@
 import { Fragment, type ReactNode } from "react";
+import type { Metadata } from "next";
+import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
 import { notFound } from "next/navigation";
 import {
@@ -11,8 +13,19 @@ import { Breadcrumbs, type BreadcrumbItem } from "@/components/breadcrumbs";
 import { Pill } from "@/components/pill/pill";
 import { PrevNextNav } from "@/components/prev-next-nav";
 import { ArtworkGallery } from "@/components/artwork-gallery";
+import { ShareButton } from "@/components/share-button";
+import { TrackOnMount } from "@/components/analytics/track-on-mount";
 import { getPrevNext } from "@/lib/prev-next";
 import { formatDateRange, getYear } from "@/lib/format";
+import { toMetaDescription } from "@/lib/meta-description";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbJsonLd, cloudinaryImageUrl, pageMetadata, visualArtworkJsonLd } from "@/lib/seo";
+import type { AvailabilityStatus } from "@/models/shared";
+
+const AVAILABILITY_TEXT: Record<AvailabilityStatus, string> = {
+  available: "Available",
+  sold: "Sold",
+};
 
 export const revalidate = 60;
 
@@ -21,6 +34,27 @@ function formatDimensions(dimensions?: { height?: number; width?: number; unit?:
   const { height, width, unit = "cm" } = dimensions;
   const unitLabel = unit === "in" ? "inch" : unit;
   return `${height} × ${width} ${unitLabel}`;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const artwork = await getArtworkBySlug(slug);
+  if (!artwork) return {};
+
+  const cover = artwork.images?.[0];
+  const coverUrl = cover ? cloudinaryImageUrl(cover.publicId) : undefined;
+  // Fallback for works without a description, so each page still gets a distinct snippet.
+  const fallbackDescription = `${artwork.title}${artwork.medium ? `, ${artwork.medium.name.toLowerCase()}` : ""} by Swati Garg.`;
+  return pageMetadata({
+    title: `${artwork.title} — Swati Garg`,
+    description: toMetaDescription(artwork.description) ?? fallbackDescription,
+    path: `/artwork/${slug}`,
+    image: coverUrl ? { url: coverUrl, alt: cover?.alt || artwork.title } : undefined,
+  });
 }
 
 export default async function ArtworkDetailPage({
@@ -45,6 +79,10 @@ export default async function ArtworkDetailPage({
     );
   }
   if (dimensions) metaParts.push(<span>{dimensions}</span>);
+  const availabilityText = artwork.availability
+    ? AVAILABILITY_TEXT[artwork.availability as AvailabilityStatus]
+    : null;
+  if (availabilityText) metaParts.push(<span>{availabilityText}</span>);
   // A series only has a public page while it's published — don't link to a 404.
   const seriesIsLinkable = artwork.series?.status === "published";
 
@@ -57,6 +95,8 @@ export default async function ArtworkDetailPage({
   const siblings = getPrevNext(siblingArtworks, currentIndex);
 
   const exhibitions = await getExhibitionsForArtwork(artwork._id);
+  const enquireHref = `/contact?artwork=${encodeURIComponent(artwork.slug)}`;
+  const enquireLabel = artwork.availability === "sold" ? "Enquire about a similar work" : "Enquire about this work";
 
   const breadcrumbItems: BreadcrumbItem[] = [{ label: "Portfolio", href: "/portfolio" }];
   if (artwork.series) {
@@ -69,11 +109,56 @@ export default async function ArtworkDetailPage({
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-6 py-16">
+      <JsonLd
+        data={visualArtworkJsonLd({
+          title: artwork.title,
+          slug: artwork.slug,
+          description: artwork.description,
+          mediumName: artwork.medium?.name,
+          year,
+          size: dimensions ?? undefined,
+          imagePublicIds: (artwork.images ?? []).map((image: { publicId: string }) => image.publicId),
+          series: artwork.series
+            ? { title: artwork.series.title, slug: artwork.series.slug, linkable: seriesIsLinkable }
+            : undefined,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Home", path: "/" },
+          { name: "Portfolio", path: "/portfolio" },
+          ...(artwork.series && seriesIsLinkable
+            ? [{ name: artwork.series.title, path: `/portfolio/series/${artwork.series.slug}` }]
+            : []),
+          { name: artwork.title, path: `/artwork/${artwork.slug}` },
+        ])}
+      />
+      <TrackOnMount
+        event="view_item"
+        params={{
+          items: [{
+            item_id: artwork.slug,
+            item_name: artwork.title,
+            item_category: artwork.medium?.name,
+            item_category2: artwork.series?.title,
+          }],
+        }}
+      />
       <Breadcrumbs items={breadcrumbItems} />
       <ArtworkGallery images={artwork.images ?? []} title={artwork.title} />
 
       <div className="flex flex-col gap-3">
-        <h1 className="text-2xl font-medium text-foreground">{artwork.title}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="min-w-0 text-2xl font-medium text-foreground">{artwork.title}</h1>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="hidden sm:block">
+              <Button href={enquireHref} size="sm" variant="inverse">
+                {enquireLabel}
+              </Button>
+            </div>
+            <ShareButton title={artwork.title} />
+          </div>
+        </div>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
           {metaParts.map((part, index) => (
             <Fragment key={index}>
@@ -126,6 +211,12 @@ export default async function ArtworkDetailPage({
             </ul>
           </div>
         ) : null}
+
+        <div className="sm:hidden">
+          <Button href={enquireHref} size="sm" variant="inverse">
+            {enquireLabel}
+          </Button>
+        </div>
       </div>
 
       <PrevNextNav

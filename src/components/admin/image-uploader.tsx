@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -41,6 +41,24 @@ function thumbUrl(publicId: string) {
 
 function withUid(image: CloudinaryImageValue): ImageItem {
   return { ...image, uid: crypto.randomUUID() };
+}
+
+const DISCARD_URL = "/api/admin/upload/discard";
+
+// Destroys uploads the admin never saved. The server skips anything a saved record still references.
+function discardUploads(publicIds: string[], viaBeacon = false) {
+  if (publicIds.length === 0) return;
+  const body = JSON.stringify({ publicIds });
+  if (viaBeacon) {
+    navigator.sendBeacon(DISCARD_URL, new Blob([body], { type: "application/json" }));
+    return;
+  }
+  fetch(DISCARD_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    keepalive: true,
+  }).catch(() => {});
 }
 
 function SortableThumb({
@@ -99,6 +117,22 @@ export function ImageUploader({ name, folder, initial = [], multiple = false, on
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  // Public ids uploaded during this visit that no save has taken yet. Pre-existing images are never in here.
+  const unsavedRef = useRef(new Set<string>());
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    const unsaved = unsavedRef.current;
+    mountedRef.current = true;
+    const discardOnPageHide = () => discardUploads([...unsaved], true);
+    window.addEventListener("pagehide", discardOnPageHide);
+    return () => {
+      mountedRef.current = false;
+      window.removeEventListener("pagehide", discardOnPageHide);
+      discardUploads([...unsaved]);
+      unsaved.clear();
+    };
+  }, []);
 
   useEffect(() => {
     onCountChange?.(images.length);
@@ -111,6 +145,7 @@ export function ImageUploader({ name, folder, initial = [], multiple = false, on
     try {
       const uploaded: ImageItem[] = [];
       for (const file of Array.from(fileList)) {
+        if (!mountedRef.current) break;
         const formData = new FormData();
         formData.append("file", file);
         formData.append("folder", folder);
@@ -118,6 +153,13 @@ export function ImageUploader({ name, folder, initial = [], multiple = false, on
         const data = await res.json();
         if (!res.ok || !data.ok) {
           throw new Error(data.error ?? "Upload failed");
+        }
+        if (mountedRef.current) {
+          unsavedRef.current.add(data.publicId);
+        } else {
+          // The form was left while this file was uploading, so nothing will clean it up later.
+          discardUploads([data.publicId]);
+          break;
         }
         uploaded.push(withUid({ publicId: data.publicId, width: data.width, height: data.height, alt: "" }));
       }
@@ -134,6 +176,8 @@ export function ImageUploader({ name, folder, initial = [], multiple = false, on
   }
 
   function remove(uid: string) {
+    const target = images.find((img) => img.uid === uid);
+    if (target && unsavedRef.current.delete(target.publicId)) discardUploads([target.publicId]);
     setImages((prev) => prev.filter((img) => img.uid !== uid));
   }
 

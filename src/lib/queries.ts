@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import type { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
-import { getYear } from "@/lib/format";
+import { seededShuffle } from "@/lib/portfolio-order";
 import {
   PORTFOLIO_PAGE_SIZE,
   SIZE_BUCKETS,
@@ -12,8 +12,9 @@ import {
   type PortfolioPageResponse,
   type SizeKey,
 } from "@/lib/portfolio-filters";
-import { Series, Medium, Subject, Artwork, Exhibition, About, SeriesSettings } from "@/models";
+import { Series, Medium, Subject, Artwork, Exhibition, About, SeriesSettings, HomeSettings } from "@/models";
 import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
+import { HOME_SETTINGS_DEFAULTS } from "@/models/HomeSettings";
 
 export async function getPublishedSeries() {
   await connectToDatabase();
@@ -39,6 +40,12 @@ export async function getSeriesSettings() {
   await connectToDatabase();
   const settings = await SeriesSettings.findOne().lean();
   return { ...SERIES_SETTINGS_DEFAULTS, ...settings };
+}
+
+export async function getHomeSettings() {
+  await connectToDatabase();
+  const settings = await HomeSettings.findOne().lean();
+  return { ...HOME_SETTINGS_DEFAULTS, ...settings };
 }
 
 export async function getSeriesBySlug(slug: string) {
@@ -151,36 +158,44 @@ function buildPortfolioMatch(resolved: ResolvedPortfolioFilters) {
   return match;
 }
 
-// Pages are offset-based. The catalogue is small, and the extra row fetched tells us whether another page exists.
+// Every matching id is shuffled with the seed, then one page is loaded. The catalogue is small, so reading all ids
+// per request is cheap. The same seed always gives the same pages, so paging stays consistent.
 export async function getPortfolioPage(
   resolved: ResolvedPortfolioFilters,
   page: number,
+  seed: string,
   pageSize = PORTFOLIO_PAGE_SIZE
 ): Promise<PortfolioPageResponse> {
   await connectToDatabase();
   const match = buildPortfolioMatch(resolved);
-  const [docs, total] = await Promise.all([
-    Artwork.find(match, { title: 1, slug: 1, dateMade: 1, images: { $slice: 1 } })
-      .sort({ order: 1, createdAt: -1, _id: -1 })
-      .skip((page - 1) * pageSize)
-      .limit(pageSize + 1)
-      .lean(),
-    Artwork.countDocuments(match),
-  ]);
-  const hasMore = docs.length > pageSize;
+  const ids = await Artwork.find(match, { _id: 1 }).lean();
+  const ordered = seededShuffle(
+    ids.map((doc) => String(doc._id)),
+    seed,
+    (id) => id
+  );
+  const pageIds = ordered.slice((page - 1) * pageSize, page * pageSize);
+  const docs = await Artwork.find({ _id: { $in: pageIds } }, { title: 1, slug: 1, images: { $slice: 1 } }).lean();
+  const byId = new Map(docs.map((doc) => [String(doc._id), doc]));
   return {
-    items: docs.slice(0, pageSize).map((artwork) => {
+    items: pageIds.flatMap((id) => {
+      const artwork = byId.get(id);
+      if (!artwork) return [];
       const image = artwork.images?.[0];
-      return {
-        slug: artwork.slug,
-        title: artwork.title,
-        year: getYear(artwork.dateMade) ?? null,
-        image: image ? { publicId: image.publicId, alt: image.alt } : null,
-      };
+      return [
+        {
+          slug: artwork.slug,
+          title: artwork.title,
+          image: image
+            ? { publicId: image.publicId, alt: image.alt, width: image.width, height: image.height }
+            : null,
+        },
+      ];
     }),
     page,
-    hasMore,
-    total,
+    hasMore: page * pageSize < ordered.length,
+    total: ordered.length,
+    seed,
   };
 }
 
@@ -259,6 +274,34 @@ export async function getAbout() {
   return About.findOne().lean();
 }
 
+// Published URLs for sitemap.xml. Only the fields needed for each URL and its lastModified date are selected.
+export async function getSitemapEntries() {
+  await connectToDatabase();
+  const [artworks, series, exhibitions] = await Promise.all([
+    Artwork.find({ status: "published" }).select("slug updatedAt").lean<{ slug: string; updatedAt: Date }[]>(),
+    Series.find({ status: "published" }).select("slug updatedAt").lean<{ slug: string; updatedAt: Date }[]>(),
+    Exhibition.find({ status: "published" }).select("slug updatedAt").lean<{ slug: string; updatedAt: Date }[]>(),
+  ]);
+  return { artworks, series, exhibitions };
+}
+
+// Published series and exhibitions for llms.txt, plus the artist's own statement.
+export async function getLlmsContent() {
+  await connectToDatabase();
+  const [series, exhibitions, about] = await Promise.all([
+    Series.find({ status: "published" })
+      .sort({ order: 1 })
+      .select("title slug description")
+      .lean<{ title: string; slug: string; description: string }[]>(),
+    Exhibition.find({ status: "published" })
+      .sort({ startDate: -1 })
+      .select("title slug venue city country type startDate endDate")
+      .lean<{ title: string; slug: string; venue: string; city: string; country: string; type: string; startDate: Date; endDate?: Date }[]>(),
+    About.findOne().select("statement").lean<{ statement?: string } | null>(),
+  ]);
+  return { series, exhibitions, statement: about?.statement ?? "" };
+}
+
 // Cached copies of everything the /portfolio page reads. The page depends on searchParams, so it
 // can't be prerendered; caching the queries keeps it from hitting MongoDB on every visit. Admin
 // actions call updateTag(PORTFOLIO_CACHE_TAG) so edits show up immediately, and the time-based
@@ -290,8 +333,8 @@ export const getCachedSeriesSettings = unstable_cache(
 );
 
 export const getCachedPortfolioPage = unstable_cache(
-  async (filters: PortfolioFilters, page: number) =>
-    getPortfolioPage(await resolvePortfolioFilters(filters), page),
+  async (filters: PortfolioFilters, page: number, seed: string) =>
+    getPortfolioPage(await resolvePortfolioFilters(filters), page, seed),
   ["portfolio-page"],
   portfolioCacheOptions
 );

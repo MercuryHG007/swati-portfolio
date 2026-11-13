@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink as Link } from "@/components/app-link";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type Ref } from "react";
 import { ProtectedImage } from "@/components/cloudinary-image";
 
@@ -266,15 +266,18 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
 function Group({ items, groupRef, hidden = false }: { items: CarouselItem[]; groupRef?: Ref<HTMLDivElement>; hidden?: boolean }) {
   return (
     <div ref={groupRef} aria-hidden={hidden || undefined} className="flex shrink-0 gap-8 pr-8">
-      {items.map((item) => (
-        <Tile key={`${hidden ? "b" : "a"}-${item.href}`} item={item} hidden={hidden} />
+      {items.map((item, index) => (
+        <Tile key={`${hidden ? "b" : "a"}-${item.href}`} item={item} hidden={hidden} eager={!hidden && index < 3} />
       ))}
     </div>
   );
 }
 
-function Tile({ item, hidden }: { item: CarouselItem; hidden: boolean }) {
+function Tile({ item, hidden, eager }: { item: CarouselItem; hidden: boolean; eager: boolean }) {
   const ratio = item.image && item.image.height ? item.image.width / item.image.height : 0.8;
+  // Tile height is 55svh and its width follows the image ratio. The image box is overscanned on both
+  // sides, so the rendered width is larger than the tile. `sizes` needs that real width.
+  const imageSizes = `calc(55svh * ${(ratio * (1 + OVERSCAN * 2)).toFixed(4)})`;
 
   return (
     <Link
@@ -297,10 +300,10 @@ function Tile({ item, hidden }: { item: CarouselItem; hidden: boolean }) {
               fill
               crop="fill"
               gravity="auto"
-              sizes="50vw"
+              sizes={imageSizes}
               draggable={false}
               className="object-cover"
-              loading="eager"
+              loading={eager ? "eager" : "lazy"}
               placeholder={item.placeholder ? "blur" : "empty"}
               blurDataURL={item.placeholder}
             />

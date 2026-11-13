@@ -21,6 +21,13 @@ export default function PortfolioLoading() {
           ))}
         </div>
 
+        <div className="order-2 -mt-4 flex items-center justify-center gap-[14px] xl:order-none xl:col-start-2 xl:row-start-3 xl:mr-6 xl:pt-5">
+          <Bone tone="border" className="h-1.5 w-4 rounded-full" />
+          {Array.from({ length: 7 }, (_, index) => (
+            <Bone key={index} tone="border" className="h-1.5 w-1.5 rounded-full" />
+          ))}
+        </div>
+
         <div className="contents xl:col-start-1 xl:row-start-2 xl:flex xl:flex-col xl:self-stretch">
           <header className="order-1 flex flex-col gap-4 px-6 xl:px-0 xl:pt-10">
             <Line h="h-[38px]" width="w-28" />

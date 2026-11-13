@@ -3,9 +3,9 @@ import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
 import { NavButton, NavTextLink } from "@/components/nav-links";
 import { HeaderFilterSwap } from "@/components/header-filter";
 
-// Exhibitions live on the About page, so they're not a top-level link.
 const NAV_LINKS = [
   { href: "/portfolio", label: "Portfolio" },
+  { href: "/exhibitions", label: "Exhibitions" },
   { href: "/about", label: "About" },
 ];
 
