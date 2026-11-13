@@ -5,6 +5,7 @@ export { default as Artwork } from "./Artwork";
 export { default as Exhibition } from "./Exhibition";
 export { default as About } from "./About";
 export { default as SeriesSettings } from "./SeriesSettings";
+export { default as HomeSettings } from "./HomeSettings";
 export { default as ContactMessage } from "./ContactMessage";
 export { default as AdminUser } from "./AdminUser";
 export { default as SubmissionThrottle } from "./SubmissionThrottle";

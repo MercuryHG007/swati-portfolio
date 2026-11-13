@@ -12,8 +12,9 @@ import {
   type PortfolioPageResponse,
   type SizeKey,
 } from "@/lib/portfolio-filters";
-import { Series, Medium, Subject, Artwork, Exhibition, About, SeriesSettings } from "@/models";
+import { Series, Medium, Subject, Artwork, Exhibition, About, SeriesSettings, HomeSettings } from "@/models";
 import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
+import { HOME_SETTINGS_DEFAULTS } from "@/models/HomeSettings";
 
 export async function getPublishedSeries() {
   await connectToDatabase();
@@ -39,6 +40,12 @@ export async function getSeriesSettings() {
   await connectToDatabase();
   const settings = await SeriesSettings.findOne().lean();
   return { ...SERIES_SETTINGS_DEFAULTS, ...settings };
+}
+
+export async function getHomeSettings() {
+  await connectToDatabase();
+  const settings = await HomeSettings.findOne().lean();
+  return { ...HOME_SETTINGS_DEFAULTS, ...settings };
 }
 
 export async function getSeriesBySlug(slug: string) {
