@@ -28,6 +28,8 @@ const SCROLL_GAIN = 2;
 // A wheel gesture also fires scroll events; ignore those so the impulse isn't applied twice.
 const WHEEL_SCROLL_OVERLAP_MS = 150;
 const DRAG_CLICK_THRESHOLD = 6;
+// A pause this long before release counts as holding still, so the row stops instead of flicking.
+const RELEASE_WINDOW_MS = 80;
 const KEY_IMPULSE = 800;
 const MAX_VELOCITY = 6000;
 const DECAY_PER_FRAME = 0.92;
@@ -98,6 +100,8 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
     if (!viewport || !track || !group) return;
     const s = motion.current;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // True while a pointer holds the row, so the idle drift pauses and the row follows the pointer.
+    let held = false;
 
     // One group is one loop period. Copies must cover the viewport plus one period, otherwise the
     // track runs out at the edge while it wraps and a gap shows.
@@ -123,7 +127,7 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
 
       s.dirNow += (s.dir - s.dirNow) * Math.min(1, dt * DIRECTION_EASE);
       const drift = reduced ? 0 : driftPerSecond(window.innerWidth) * s.dirNow;
-      const speed = drift + s.v;
+      const speed = held ? 0 : drift + s.v;
       s.x = wrap(s.x - speed * dt);
       track.style.transform = `translate3d(${s.x.toFixed(2)}px,0,0)`;
       if (!reduced) applyParallax(track, window.innerWidth);
@@ -171,29 +175,53 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
     };
     window.addEventListener("scroll", onPageScroll, { passive: true });
 
-    // A mouse or pen drag doesn't scroll the page, so read it directly: dragging up acts like
-    // scrolling down. Touch is left to the browser's own pan and handled by the scroll listener.
-    let dragY: number | null = null;
+    // Dragging moves the row with the pointer, sideways for mouse, pen and touch. A mouse or pen drag
+    // also pushes the row vertically, as before (dragging up acts like scrolling down). Touch vertical
+    // movement is left to the browser's own pan and the scroll listener above.
+    let dragId: number | null = null;
+    let dragType = "";
+    let lastPointerX = 0;
+    let lastPointerY = 0;
+    let lastTime = 0;
+    let dragVelocity = 0;
     let dragDistance = 0;
     let dragged = false;
     const onPointerDown = (event: PointerEvent) => {
-      if (event.pointerType === "touch" || event.button !== 0) return;
-      dragY = event.clientY;
+      if (event.button !== 0) return;
+      dragId = event.pointerId;
+      dragType = event.pointerType;
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+      lastTime = event.timeStamp;
+      dragVelocity = 0;
       dragDistance = 0;
       dragged = false;
+      held = true;
+      s.v = 0;
     };
     const onPointerMove = (event: PointerEvent) => {
-      if (dragY === null) return;
-      const dy = dragY - event.clientY;
-      dragY = event.clientY;
-      dragDistance += Math.abs(dy);
+      if (dragId !== event.pointerId) return;
+      const dx = event.clientX - lastPointerX;
+      const scrollDy = lastPointerY - event.clientY;
+      const elapsed = (event.timeStamp - lastTime) / 1000;
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+      lastTime = event.timeStamp;
+      dragDistance += Math.abs(dx) + Math.abs(scrollDy);
       if (dragDistance > DRAG_CLICK_THRESHOLD) dragged = true;
-      if (!s.running || reduced) return;
-      if (Math.abs(dy) > 1) s.dir = dy > 0 ? 1 : -1;
-      s.v = clampVelocity(s.v + dy * SCROLL_GAIN);
+      if (elapsed > 0) dragVelocity = dragVelocity * 0.5 + (dx / elapsed) * 0.5;
+      s.x += dx;
+      if (dragType === "touch" || !s.running || reduced) return;
+      if (Math.abs(scrollDy) > 1) s.dir = scrollDy > 0 ? 1 : -1;
+      s.v = clampVelocity(s.v + scrollDy * SCROLL_GAIN);
     };
-    const onPointerEnd = () => {
-      dragY = null;
+    const onPointerEnd = (event: PointerEvent) => {
+      if (dragId !== event.pointerId) return;
+      dragId = null;
+      held = false;
+      // A cancel means the browser took over for a vertical page scroll, so there is no release momentum.
+      const flick = event.type === "pointerup" && event.timeStamp - lastTime < RELEASE_WINDOW_MS;
+      if (flick && !reduced) s.v = clampVelocity(s.v - dragVelocity);
     };
     // Releasing a drag over a tile would otherwise open it.
     const onClickCapture = (event: MouseEvent) => {
@@ -251,7 +279,7 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
       aria-label={label}
       tabIndex={0}
       onKeyDown={onKeyDown}
-      className="relative w-full touch-pan-y select-none overflow-hidden"
+      className="relative w-full touch-pan-y cursor-grab select-none overflow-hidden active:cursor-grabbing"
       style={{ "--h": "55svh" } as CSSProperties}
     >
       <div ref={trackRef} className="flex w-max will-change-transform">
@@ -284,7 +312,7 @@ function Tile({ item, hidden, eager }: { item: CarouselItem; hidden: boolean; ea
       href={item.href}
       draggable={false}
       tabIndex={hidden ? -1 : undefined}
-      className="group flex shrink-0 flex-col gap-3"
+      className="group flex shrink-0 cursor-grab flex-col gap-3 active:cursor-grabbing"
       style={{ width: `calc(var(--h) * ${ratio.toFixed(4)})` }}
     >
       <span className="relative block h-(--h) w-full overflow-hidden bg-surface">
