@@ -1,16 +1,30 @@
 import { getLlmsContent } from "@/lib/queries";
 import { absoluteUrl, isIndexableDeployment } from "@/lib/seo";
+import { formatDimensions, getYear } from "@/lib/format";
 
-export const revalidate = 60;
+// Rendered per request so new works and exhibitions appear without a redeploy.
+export const dynamic = "force-dynamic";
 
 const oneLine = (value: string) => value.replace(/\s+/g, " ").trim();
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
+const AVAILABILITY_TEXT: Record<string, string> = { available: "Available", sold: "Sold" };
 
 export async function GET() {
   // Matches the sitemap: preview and UAT deployments publish nothing.
   if (!isIndexableDeployment()) return new Response("Not found", { status: 404 });
 
-  const { series, exhibitions, statement } = await getLlmsContent();
+  const { series, exhibitions, artworks, statement } = await getLlmsContent();
+
+  const artworkLines = artworks.map((item) => {
+    const details = [
+      item.medium?.name,
+      getYear(item.dateMade),
+      formatDimensions(item.dimensions),
+      item.availability ? AVAILABILITY_TEXT[item.availability] : undefined,
+    ].filter(Boolean);
+    const suffix = details.length > 0 ? `: ${details.join(", ")}.` : "";
+    return `- [${item.title}](${absoluteUrl(`/artwork/${item.slug}`)})${suffix}`;
+  });
 
   const seriesLines = series.map((item) => {
     const description = item.description ? `: ${oneLine(item.description)}` : "";
@@ -43,10 +57,12 @@ export async function GET() {
     `- [Exhibitions](${absoluteUrl("/exhibitions")}): solo and group exhibitions.`,
     `- [Contact](${absoluteUrl("/contact")}): enquiries about works.`,
     "",
-    "## Works and availability",
+    "## Works",
     "",
-    "Each work has its own page with its title, medium, dimensions and availability. Works marked sold remain listed.",
+    "Each work has its own page. Works marked sold remain listed.",
     "Contact the artist to enquire about a work.",
+    "",
+    ...(artworkLines.length > 0 ? artworkLines : ["No works are published yet."]),
     "",
     "## Series",
     "",

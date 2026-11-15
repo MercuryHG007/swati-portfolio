@@ -285,10 +285,10 @@ export async function getSitemapEntries() {
   return { artworks, series, exhibitions };
 }
 
-// Published series and exhibitions for llms.txt, plus the artist's own statement.
+// Published series, exhibitions and works for llms.txt, plus the artist's own statement.
 export async function getLlmsContent() {
   await connectToDatabase();
-  const [series, exhibitions, about] = await Promise.all([
+  const [series, exhibitions, artworks, about] = await Promise.all([
     Series.find({ status: "published" })
       .sort({ order: 1 })
       .select("title slug description")
@@ -297,9 +297,23 @@ export async function getLlmsContent() {
       .sort({ startDate: -1 })
       .select("title slug venue city country type startDate endDate")
       .lean<{ title: string; slug: string; venue: string; city: string; country: string; type: string; startDate: Date; endDate?: Date }[]>(),
+    Artwork.find({ status: "published" })
+      .sort({ order: 1, createdAt: -1 })
+      .select("title slug dateMade dimensions availability medium")
+      .populate("medium", "name")
+      .lean<
+        {
+          title: string;
+          slug: string;
+          dateMade?: Date;
+          dimensions?: { height?: number; width?: number; unit?: string };
+          availability?: string;
+          medium?: { name: string } | null;
+        }[]
+      >(),
     About.findOne().select("statement").lean<{ statement?: string } | null>(),
   ]);
-  return { series, exhibitions, statement: about?.statement ?? "" };
+  return { series, exhibitions, artworks, statement: about?.statement ?? "" };
 }
 
 // Cached copies of everything the /portfolio page reads. The page depends on searchParams, so it

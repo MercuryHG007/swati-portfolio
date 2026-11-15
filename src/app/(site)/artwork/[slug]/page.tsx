@@ -16,7 +16,7 @@ import { ArtworkGallery } from "@/components/artwork-gallery";
 import { ShareButton } from "@/components/share-button";
 import { TrackOnMount } from "@/components/analytics/track-on-mount";
 import { getPrevNext } from "@/lib/prev-next";
-import { formatDateRange, getYear } from "@/lib/format";
+import { formatDateRange, formatDimensions, getYear } from "@/lib/format";
 import { toMetaDescription } from "@/lib/meta-description";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbJsonLd, cloudinaryImageUrl, pageMetadata, visualArtworkJsonLd } from "@/lib/seo";
@@ -28,13 +28,6 @@ const AVAILABILITY_TEXT: Record<AvailabilityStatus, string> = {
 };
 
 export const revalidate = 60;
-
-function formatDimensions(dimensions?: { height?: number; width?: number; unit?: string } | null) {
-  if (!dimensions?.height || !dimensions?.width) return null;
-  const { height, width, unit = "cm" } = dimensions;
-  const unitLabel = unit === "in" ? "inch" : unit;
-  return `${height} × ${width} ${unitLabel}`;
-}
 
 export async function generateMetadata({
   params,

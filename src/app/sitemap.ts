@@ -2,7 +2,8 @@ import type { MetadataRoute } from "next";
 import { getSitemapEntries } from "@/lib/queries";
 import { absoluteUrl, isIndexableDeployment } from "@/lib/seo";
 
-export const revalidate = 60;
+// Rendered per request so newly published works appear without a redeploy.
+export const dynamic = "force-dynamic";
 
 const STATIC_PATHS = ["/", "/about", "/portfolio", "/series", "/exhibitions", "/contact"];
 
