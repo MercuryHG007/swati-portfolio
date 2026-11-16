@@ -24,7 +24,12 @@ export default async function AboutPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-16 px-6 py-16">
-      <JsonLd data={artistJsonLd(about?.socials?.instagram ? [about.socials.instagram] : [])} />
+      <JsonLd
+        data={artistJsonLd({
+          instagram: about?.socials?.instagram,
+          location: about?.location,
+        })}
+      />
       <header className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-3">
           <h1 className="text-5xl font-medium leading-none tracking-tight text-foreground md:text-7xl">
