@@ -234,6 +234,20 @@ If nothing appears:
   (Vercel). Without it, no tracking code is loaded.
 - Make sure you are not on the `/admin` route. Admin pages never load tracking.
 
+### AI referrals (ChatGPT, Perplexity, Gemini, Claude)
+
+GA4 records visits from AI assistants automatically, with their domain as the source. Check them under
+**Reports → Acquisition → Traffic acquisition**, looking for sources such as `chatgpt.com`,
+`perplexity.ai`, `gemini.google.com` and `claude.ai`. Some AI apps don't send a referrer, so part of
+their traffic shows as **Direct**. Menu names change over time, so check GA4's Help if they don't match.
+
+To report them as one group, add a custom channel group under **Admin → Data display → Channel
+groups**. Create a channel named "AI assistants" whose source matches this regular expression:
+
+`chatgpt\.com|perplexity\.ai|gemini\.google\.com|claude\.ai|copilot\.microsoft\.com`
+
+This is a GA4 setting only. No code change is needed.
+
 ### Admin analytics page
 
 1. Start the app, sign in at `/admin/login`, and open **Analytics** in the admin navigation.

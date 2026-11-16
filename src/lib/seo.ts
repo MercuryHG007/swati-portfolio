@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { AvailabilityStatus } from "@/models/shared";
 
 // Derived from Vercel's system variables, so no domain is hardcoded. VERCEL_PROJECT_PRODUCTION_URL is
 // the project's production domain, so preview and UAT deployments also point canonical links at the live site.
@@ -16,6 +17,8 @@ export function isIndexableDeployment(): boolean {
 }
 
 export function absoluteUrl(path: string): string {
+  // The root has no trailing slash, matching the canonical tag Next renders for the home page.
+  if (path === "/") return getSiteUrl().origin;
   return new URL(path, getSiteUrl()).toString();
 }
 
@@ -68,6 +71,18 @@ export function artistReference() {
   return { "@type": "Person", "@id": absoluteUrl("/#artist"), name: "Swati Garg" };
 }
 
+export function websiteJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": absoluteUrl("/#website"),
+    name: "Swati Garg",
+    url: absoluteUrl("/"),
+    inLanguage: "en",
+    author: artistReference(),
+  };
+}
+
 export function artistJsonLd(sameAs: string[] = []) {
   return {
     "@context": "https://schema.org",
@@ -80,6 +95,12 @@ export function artistJsonLd(sameAs: string[] = []) {
   };
 }
 
+// schema.org offer availability. Works without a status get no offer.
+const OFFER_AVAILABILITY: Partial<Record<AvailabilityStatus, string>> = {
+  available: "https://schema.org/InStock",
+  sold: "https://schema.org/SoldOut",
+};
+
 export function visualArtworkJsonLd(artwork: {
   title: string;
   slug: string;
@@ -87,12 +108,14 @@ export function visualArtworkJsonLd(artwork: {
   mediumName?: string;
   year?: number | null;
   size?: string;
+  availability?: AvailabilityStatus | null;
   imagePublicIds: string[];
   series?: { title: string; slug: string; linkable: boolean };
 }) {
   const images = artwork.imagePublicIds
     .map((publicId) => cloudinaryImageUrl(publicId))
     .filter((url): url is string => Boolean(url));
+  const availability = artwork.availability ? OFFER_AVAILABILITY[artwork.availability] : undefined;
   return {
     "@context": "https://schema.org",
     "@type": "VisualArtwork",
@@ -103,6 +126,14 @@ export function visualArtworkJsonLd(artwork: {
     ...(artwork.mediumName && { artMedium: artwork.mediumName }),
     ...(artwork.year && { dateCreated: String(artwork.year) }),
     ...(artwork.size && { size: artwork.size }),
+    ...(availability && {
+      offers: {
+        "@type": "Offer",
+        availability,
+        url: absoluteUrl(`/artwork/${artwork.slug}`),
+        seller: artistReference(),
+      },
+    }),
     creator: artistReference(),
     ...(artwork.series?.linkable && {
       isPartOf: {
@@ -111,6 +142,18 @@ export function visualArtworkJsonLd(artwork: {
         url: absoluteUrl(`/portfolio/series/${artwork.series.slug}`),
       },
     }),
+  };
+}
+
+export function faqJsonLd(items: { question: string; answer: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
   };
 }
 

@@ -24,6 +24,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
     links: [
       { href: "/admin/home", label: "Home" },
       { href: "/admin/about", label: "About" },
+      { href: "/admin/faq", label: "FAQ" },
       { href: "/admin/messages", label: "Messages" },
     ],
   },

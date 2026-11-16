@@ -5,7 +5,7 @@ import { absoluteUrl, isIndexableDeployment } from "@/lib/seo";
 // Rendered per request so newly published works appear without a redeploy.
 export const dynamic = "force-dynamic";
 
-const STATIC_PATHS = ["/", "/about", "/portfolio", "/series", "/exhibitions", "/contact"];
+const STATIC_PATHS = ["/", "/about", "/faq", "/portfolio", "/series", "/exhibitions", "/contact"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Preview and UAT deployments list nothing, matching their noindex and disallow-all robots rules.

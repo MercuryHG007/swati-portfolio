@@ -1,4 +1,4 @@
-import { getLlmsContent } from "@/lib/queries";
+import { getLlmsContent, getPublishedFaqs } from "@/lib/queries";
 import { absoluteUrl, isIndexableDeployment } from "@/lib/seo";
 import { formatDimensions, getYear } from "@/lib/format";
 
@@ -13,7 +13,10 @@ export async function GET() {
   // Matches the sitemap: preview and UAT deployments publish nothing.
   if (!isIndexableDeployment()) return new Response("Not found", { status: 404 });
 
-  const { series, exhibitions, artworks, statement } = await getLlmsContent();
+  const [{ series, exhibitions, artworks, statement }, faqs] = await Promise.all([
+    getLlmsContent(),
+    getPublishedFaqs(),
+  ]);
 
   const artworkLines = artworks.map((item) => {
     const details = [
@@ -56,6 +59,7 @@ export async function GET() {
     `- [Series](${absoluteUrl("/series")}): works grouped by series.`,
     `- [Exhibitions](${absoluteUrl("/exhibitions")}): solo and group exhibitions.`,
     `- [Contact](${absoluteUrl("/contact")}): enquiries about works.`,
+    `- [FAQ](${absoluteUrl("/faq")}): common questions about the artist and works.`,
     "",
     "## Works",
     "",
@@ -72,6 +76,10 @@ export async function GET() {
     "",
     ...(exhibitionLines.length > 0 ? exhibitionLines : ["No exhibitions are published yet."]),
     "",
+    "## Frequently asked questions",
+    "",
+    ...faqs.flatMap((item) => [`### ${oneLine(item.question)}`, "", item.answer.trim(), ""]),
+    ...(faqs.length === 0 ? ["No questions are published yet.", ""] : []),
   ];
 
   return new Response(lines.join("\n"), {

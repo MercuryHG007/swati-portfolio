@@ -12,7 +12,7 @@ import {
   type PortfolioPageResponse,
   type SizeKey,
 } from "@/lib/portfolio-filters";
-import { Series, Medium, Subject, Artwork, Exhibition, About, SeriesSettings, HomeSettings } from "@/models";
+import { Series, Medium, Subject, Artwork, Exhibition, About, SeriesSettings, HomeSettings, Faq } from "@/models";
 import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
 import { HOME_SETTINGS_DEFAULTS } from "@/models/HomeSettings";
 
@@ -283,6 +283,15 @@ export async function getSitemapEntries() {
     Exhibition.find({ status: "published" }).select("slug updatedAt").lean<{ slug: string; updatedAt: Date }[]>(),
   ]);
   return { artworks, series, exhibitions };
+}
+
+// Published FAQ entries, in the order the artist set in the admin.
+export async function getPublishedFaqs() {
+  await connectToDatabase();
+  return Faq.find({ status: "published" })
+    .sort({ order: 1, createdAt: 1 })
+    .select("question answer")
+    .lean<{ question: string; answer: string }[]>();
 }
 
 // Published series, exhibitions and works for llms.txt, plus the artist's own statement.

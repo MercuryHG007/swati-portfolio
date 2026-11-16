@@ -50,6 +50,8 @@ export async function SiteFooter() {
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-6 py-3 text-xs text-muted">
         <p>© {new Date().getFullYear()} Swati Garg. All rights reserved.</p>
         <span aria-hidden="true">·</span>
+        <TextLink href="/faq" variant="inverse" className="text-xs text-muted">FAQ</TextLink>
+        <span aria-hidden="true">·</span>
         <TextLink href="/privacy" variant="inverse" className="text-xs text-muted">Privacy</TextLink>
       </div>
     </footer>

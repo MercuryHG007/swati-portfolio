@@ -110,6 +110,7 @@ export default async function ArtworkDetailPage({
           mediumName: artwork.medium?.name,
           year,
           size: dimensions ?? undefined,
+          availability: (artwork.availability as AvailabilityStatus | null) ?? null,
           imagePublicIds: (artwork.images ?? []).map((image: { publicId: string }) => image.publicId),
           series: artwork.series
             ? { title: artwork.series.title, slug: artwork.series.slug, linkable: seriesIsLinkable }
