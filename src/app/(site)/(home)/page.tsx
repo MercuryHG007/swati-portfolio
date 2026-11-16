@@ -5,7 +5,7 @@ import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
 import { JsonLd } from "@/components/json-ld";
 import { getFeaturedArtworks, getHomeSettings, getMediumsWithWork } from "@/lib/queries";
-import { artistJsonLd, cloudinaryImageUrl, pageMetadata } from "@/lib/seo";
+import { artistJsonLd, cloudinaryImageUrl, pageMetadata, websiteJsonLd } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -57,6 +57,7 @@ export default async function Home() {
   return (
     <main className="flex flex-1 flex-col gap-16 py-10 md:gap-24 md:py-16">
       <JsonLd data={artistJsonLd()} />
+      <JsonLd data={websiteJsonLd()} />
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 md:gap-8">
         <h1 className="max-w-4xl text-4xl font-medium leading-[1.02] tracking-tight text-foreground sm:text-5xl md:text-7xl">
           {settings.heroHeading}

@@ -12,3 +12,4 @@ export { default as SubmissionThrottle } from "./SubmissionThrottle";
 export { default as ArtworkAssistSettings } from "./ArtworkAssistSettings";
 export { default as AiSuggestion } from "./AiSuggestion";
 export { default as AnalyticsSummary } from "./AnalyticsSummary";
+export { default as Faq } from "./Faq";

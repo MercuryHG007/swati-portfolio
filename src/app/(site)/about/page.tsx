@@ -117,6 +117,13 @@ export default async function AboutPage() {
               Send a message
             </TextLink>
           </div>
+
+          <div className="flex flex-col gap-3 md:items-end">
+            <p className="text-xs uppercase tracking-widest text-muted">Questions</p>
+            <TextLink href="/faq" variant="primary" className="w-fit text-foreground">
+              Frequently asked questions
+            </TextLink>
+          </div>
         </aside>
       </div>
     </main>

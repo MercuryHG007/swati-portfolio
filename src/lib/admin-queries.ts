@@ -1,5 +1,5 @@
 import { connectToDatabase } from "@/lib/mongodb";
-import { Series, Medium, Subject, Artwork, Exhibition, About, ContactMessage } from "@/models";
+import { Series, Medium, Subject, Artwork, Exhibition, About, ContactMessage, Faq } from "@/models";
 
 // Unlike src/lib/queries.ts (public site, published-only), these read every
 // document regardless of status — used by the admin CRUD screens.
@@ -27,6 +27,11 @@ export async function getAllMediums() {
 export async function getAllSubjects() {
   await connectToDatabase();
   return Subject.find().sort({ name: 1 }).lean();
+}
+
+export async function getAllFaqs() {
+  await connectToDatabase();
+  return Faq.find().sort({ order: 1, createdAt: 1 }).lean();
 }
 
 export async function getAllArtworks() {

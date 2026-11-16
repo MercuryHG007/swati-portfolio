@@ -1,21 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import Lightbox from "yet-another-react-lightbox";
-import Zoom from "yet-another-react-lightbox/plugins/zoom";
-import Counter from "yet-another-react-lightbox/plugins/counter";
-import "yet-another-react-lightbox/styles.css";
-import "yet-another-react-lightbox/plugins/counter.css";
 import { ProtectedImage } from "@/components/cloudinary-image";
+import { ArtworkLightbox, type LightboxSlide } from "@/components/artwork-lightbox/artwork-lightbox";
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
 type GalleryImage = { publicId: string; alt?: string; width: number; height: number };
 
-// Lightbox slides need a direct image URL — CldImage/ProtectedImage only build one
-// internally for Next's loader, so the raw delivery URL is constructed here instead.
-function cloudinaryUrl(publicId: string) {
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${publicId}`;
+// Lightbox slides need direct image URLs — CldImage/ProtectedImage only build one
+// internally for Next's loader, so the raw delivery URLs are constructed here instead.
+function cloudinaryUrl(publicId: string, transformations = "f_auto,q_auto") {
+  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${transformations}/${publicId}`;
 }
 
 export function ArtworkGallery({ images, title }: { images: GalleryImage[]; title: string }) {
@@ -23,7 +19,13 @@ export function ArtworkGallery({ images, title }: { images: GalleryImage[]; titl
 
   if (images.length === 0) return null;
 
-  const hasMultiple = images.length > 1;
+  const slides: LightboxSlide[] = images.map((image) => ({
+    src: cloudinaryUrl(image.publicId),
+    thumbSrc: cloudinaryUrl(image.publicId, "f_auto,q_auto,c_fill,w_176,h_120"),
+    alt: image.alt || title,
+    width: image.width,
+    height: image.height,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,20 +51,14 @@ export function ArtworkGallery({ images, title }: { images: GalleryImage[]; titl
         </button>
       ))}
 
-      <Lightbox
-        open={openIndex !== null}
-        close={() => setOpenIndex(null)}
-        index={openIndex ?? 0}
-        slides={images.map((image) => ({
-          src: cloudinaryUrl(image.publicId),
-          alt: image.alt || title,
-          width: image.width,
-          height: image.height,
-        }))}
-        plugins={hasMultiple ? [Zoom, Counter] : [Zoom]}
-        zoom={{ maxZoomPixelRatio: 3, scrollToZoom: true }}
-        render={hasMultiple ? undefined : { buttonPrev: () => null, buttonNext: () => null }}
-      />
+      {openIndex !== null && (
+        <ArtworkLightbox
+          slides={slides}
+          title={title}
+          initialIndex={openIndex}
+          onClose={() => setOpenIndex(null)}
+        />
+      )}
     </div>
   );
 }

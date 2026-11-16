@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArtworkCard } from "@/components/artwork-card";
+import { measureWithoutDrift, useMasonryDrift } from "@/components/portfolio/use-masonry-drift";
 import { columnCountFor, columnWidthFor, distributeIntoColumns, heightRatio } from "@/lib/masonry";
 import { hasPortfolioFilters, type PortfolioCard, type PortfolioFilters } from "@/lib/portfolio-filters";
 
@@ -67,13 +68,14 @@ export function PortfolioGrid({
   // Sampled only when positions are settled. During a count change the DOM is mid-reflow, so reading it there gives wrong positions.
   const topCardRef = useRef<{ id: string; top: number } | null>(null);
   const pendingAnchorRef = useRef<{ id: string; top: number } | null>(null);
+  useMasonryDrift(container, layout.count);
 
   useEffect(() => {
     if (!container) return;
     let frame = 0;
     const sample = () => {
       frame = 0;
-      topCardRef.current = findTopCard(container);
+      topCardRef.current = measureWithoutDrift(container, () => findTopCard(container));
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(sample);
@@ -95,7 +97,7 @@ export function PortfolioGrid({
         countRef.current = count;
         pendingAnchorRef.current = topCardRef.current;
       } else {
-        topCardRef.current = findTopCard(container);
+        topCardRef.current = measureWithoutDrift(container, () => findTopCard(container));
       }
       setLayout((prev) => (prev.count === count && prev.sizes === sizes ? prev : { count, sizes }));
     });
@@ -107,12 +109,13 @@ export function PortfolioGrid({
   useLayoutEffect(() => {
     const anchor = pendingAnchorRef.current;
     pendingAnchorRef.current = null;
+    if (!container) return;
     const node = anchor && document.getElementById(anchor.id);
     if (anchor && node) {
-      const delta = node.getBoundingClientRect().top - anchor.top;
+      const delta = measureWithoutDrift(container, () => node.getBoundingClientRect().top) - anchor.top;
       if (delta) window.scrollBy(0, delta);
     }
-    if (container) topCardRef.current = findTopCard(container);
+    topCardRef.current = measureWithoutDrift(container, () => findTopCard(container));
   }, [layout.count, container]);
 
   const columns = useMemo(
@@ -167,7 +170,7 @@ export function PortfolioGrid({
         }}
       >
         {columns.map((column, columnIndex) => (
-          <div key={columnIndex} className="flex min-w-0 flex-1 flex-col gap-4">
+          <div key={columnIndex} className="flex min-w-0 flex-1 flex-col gap-4 will-change-transform">
             {column.map(({ item: artwork, index }) => (
               <ArtworkCard
                 key={artwork.slug}

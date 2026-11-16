@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { getAbout } from "@/lib/queries";
 import { cloudinaryImageUrl } from "@/lib/seo";
@@ -6,6 +8,11 @@ import { cloudinaryImageUrl } from "@/lib/seo";
 export const revalidate = 60;
 export const size = { width: 128, height: 128 };
 export const contentType = "image/png";
+
+// Default icon, used when no footer logo is uploaded.
+const defaultIcon = `data:image/png;base64,${(
+  await readFile(join(process.cwd(), "src/app/default-icon.png"))
+).toString("base64")}`;
 
 async function logoDataUrl(publicId: string): Promise<string | undefined> {
   const url = cloudinaryImageUrl(publicId, "f_png,c_fit,w_128,h_128");
@@ -26,24 +33,7 @@ export default async function Icon() {
   const logo = publicId ? await logoDataUrl(publicId) : undefined;
 
   return new ImageResponse(
-    logo ? (
-      <img src={logo} width={size.width} height={size.height} alt="" />
-    ) : (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#000",
-          color: "#fff",
-          fontSize: 80,
-        }}
-      >
-        S
-      </div>
-    ),
+    <img src={logo ?? defaultIcon} width={size.width} height={size.height} alt="" />,
     { ...size },
   );
 }

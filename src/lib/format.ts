@@ -9,6 +9,13 @@ export function getYear(date?: Date | string | null) {
   return new Date(date).getUTCFullYear();
 }
 
+export function formatDimensions(dimensions?: { height?: number; width?: number; unit?: string } | null) {
+  if (!dimensions?.height || !dimensions?.width) return null;
+  const { height, width, unit = "cm" } = dimensions;
+  const unitLabel = unit === "in" ? "inch" : unit;
+  return `${height} × ${width} ${unitLabel}`;
+}
+
 export function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
