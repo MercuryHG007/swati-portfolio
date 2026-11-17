@@ -8,18 +8,20 @@ import { CldImage as BaseCldImage } from "next-cloudinary";
 // straight into a Server Component. Wrapping it in this client module gives
 // it a proper client boundary.
 
-// Public base URL of the R2 mirror (see scripts/mirror-cloudinary-to-r2.mjs). If an image fails to load from
-// Cloudinary, the browser requests the original file from here instead. Unset means no fallback.
-const MIRROR_BASE_URL = process.env.NEXT_PUBLIC_MEDIA_MIRROR_URL?.replace(/\/+$/, "");
-
+// If an image fails to load from Cloudinary, the fallback requests a resized copy from /api/media, which reads the
+// R2 mirror. Cloudinary-only transforms (format, quality, gravity) are replaced by the route's defaults.
 type CldImageProps = ComponentProps<typeof BaseCldImage>;
 
-function mirrorUrl(publicId: string) {
-  return `${MIRROR_BASE_URL}/${publicId.split("/").map(encodeURIComponent).join("/")}`;
+const MAX_EDGE = 2400;
+
+function mirrorUrl(publicId: string, width: CldImageProps["width"], height: CldImageProps["height"], cover: boolean) {
+  const params = new URLSearchParams({ w: String(Math.min(Number(width) || 1200, MAX_EDGE)) });
+  if (height) params.set("h", String(Math.min(Number(height), MAX_EDGE)));
+  if (cover) params.set("fit", "cover");
+  return `/api/media/${publicId.split("/").map(encodeURIComponent).join("/")}?${params}`;
 }
 
-// Plain <img> for the fallback. Cloudinary-only transforms (format, quality, gravity) don't apply, so the
-// original file is shown. `cover` keeps the crop that Cloudinary's `fill` mode would have produced.
+// Plain <img> for the fallback. `cover` keeps the crop that Cloudinary's `fill` mode would have produced.
 function MirrorImage({
   src,
   alt,
@@ -32,6 +34,7 @@ function MirrorImage({
   loading,
   draggable,
   onContextMenu,
+  onLoad,
 }: CldImageProps & { src: string }) {
   const cover = Boolean(fill) || crop === "fill";
   const fillStyle: CSSProperties | undefined = fill
@@ -40,7 +43,7 @@ function MirrorImage({
   return (
     // eslint-disable-next-line @next/next/no-img-element -- next/image would optimise via the loader, defeating the fallback
     <img
-      src={mirrorUrl(src)}
+      src={mirrorUrl(src, width, height, cover)}
       alt={alt}
       width={fill ? undefined : width}
       height={fill ? undefined : height}
@@ -49,6 +52,7 @@ function MirrorImage({
       loading={loading}
       draggable={draggable}
       onContextMenu={onContextMenu}
+      onLoad={onLoad}
     />
   );
 }
@@ -56,7 +60,7 @@ function MirrorImage({
 export function CldImage(props: CldImageProps) {
   const [useMirror, setUseMirror] = useState(false);
 
-  if (useMirror && MIRROR_BASE_URL && typeof props.src === "string") {
+  if (useMirror && typeof props.src === "string") {
     return <MirrorImage {...props} src={props.src} />;
   }
 
@@ -65,8 +69,7 @@ export function CldImage(props: CldImageProps) {
       {...props}
       onError={(event) => {
         props.onError?.(event);
-        if (!MIRROR_BASE_URL) return;
-        // Returning false stops CldImage's own retry polling, so the mirror shows right away.
+        // Returning false stops CldImage's own retry polling, so the fallback shows right away.
         setUseMirror(true);
         return false;
       }}

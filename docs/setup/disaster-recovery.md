@@ -8,7 +8,7 @@ What keeps the site up when MongoDB or Cloudinary fails, and how to restore afte
 | --- | --- | --- |
 | **MongoDB unreachable** | Public pages are served from the content snapshot, read-only. Contact enquiries still reach your inbox by email. Admin is unavailable. The `/portfolio` listing shows an error (see limits). | Check Atlas status. Nothing else is needed. |
 | **MongoDB emptied or wiped, still reachable** | If the database has no published artworks at all, reads are served from the snapshot, so pages keep their content. A single unpublished piece is not affected. The snapshot job refuses to overwrite a snapshot that has artworks with an empty one. | [Restore the database](#restore-the-database). |
-| **Cloudinary down** | Images that fail to load are re-requested from the R2 mirror as original files. They are larger and untransformed, but they show. | Nothing. |
+| **Cloudinary down** | Images that fail to load are served as resized copies from the R2 mirror. They show, but can take a moment longer on first load. | Nothing. |
 | **Cloudinary account lost** | Same as above, and the mirror still holds every image. | [Restore images](#restore-images). |
 | **Deploy during an outage** | The build prerenders some pages, so it can fail. The last deployment keeps serving. | Wait for the database, or roll back in Vercel. |
 
@@ -34,8 +34,9 @@ What keeps the site up when MongoDB or Cloudinary fails, and how to restore afte
 - **Snapshot.** [content-snapshot.ts](../../src/lib/content-snapshot.ts) runs every wrapped query with the arguments
   the site uses and stores the results in R2 at `content/<database name>/snapshot.json`. Each admin save schedules a
   rebuild after the response, and [a daily Vercel cron](../../vercel.json) rebuilds it too.
-- **Image fallback.** [cloudinary-image.tsx](../../src/components/cloudinary-image.tsx) swaps to the mirror URL
-  when Cloudinary fails to load an image. It only does this when `NEXT_PUBLIC_MEDIA_MIRROR_URL` is set.
+- **Image fallback.** [cloudinary-image.tsx](../../src/components/cloudinary-image.tsx) swaps to
+  `/api/media`, which resizes the copy in the R2 mirror to the size on the page and caches it at the CDN.
+  Output is WebP by default. Cloudinary's crop is matched with `object-fit: cover`.
 - **Backups.** [disaster-recovery.yml](../../.github/workflows/disaster-recovery.yml) runs nightly. It dumps the
   database with `mongodump`, encrypts it with AES-256-GCM, uploads it to R2 and keeps 30 days of dumps plus the
   first dump of each month. Each dump is named by its UTC time, for example
@@ -46,8 +47,7 @@ What keeps the site up when MongoDB or Cloudinary fails, and how to restore afte
 
 1. **Create two R2 buckets** in Cloudflare:
    - `swati-backups` (private): database dumps and the snapshot.
-   - `swati-media-mirror` (public read): either a custom domain such as `media.example.com` or the `r2.dev` URL.
-     Use the public URL for `NEXT_PUBLIC_MEDIA_MIRROR_URL`.
+   - `swati-media-mirror` (private): copies of Cloudinary images. The server reads it, so it doesn't need public access.
 2. **Create an R2 API token** with Object Read & Write on both buckets. Note the account ID, access key ID and secret.
 3. **Generate the backup passphrase** with `openssl rand -base64 48`. Store it in a password manager. Without it,
    no backup can be decrypted.
@@ -55,7 +55,7 @@ What keeps the site up when MongoDB or Cloudinary fails, and how to restore afte
    `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, `R2_MIRROR_BUCKET`, and the production
    `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
 5. **Add these Vercel environment variables** (Production): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
-   `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, `R2_MIRROR_BUCKET`, `NEXT_PUBLIC_MEDIA_MIRROR_URL` and `CRON_SECRET`.
+   `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, `R2_MIRROR_BUCKET` and `CRON_SECRET`.
    Use a random value for `CRON_SECRET`. Vercel Cron sends it automatically.
 6. **Run the workflow once** from Actions → Disaster recovery → Run workflow. Check that the two buckets have objects.
 7. **Build the first snapshot:**
@@ -75,7 +75,8 @@ The backup and mirror workflow only ever points at production.
 ## Restore the database
 
 The restore script remaps the dump from `--source-db` (default `swati_portfolio_prod`) to the `--target-db` you name,
-so a restore into a scratch database never touches production. The target URI must not include a database name:
+Dumps made from UAT or local hold `swati_portfolio`, so pass `--source-db swati_portfolio` for those.
+So a restore into a scratch database never touches production. The target URI must not include a database name:
 a database in the URI filters the dump, and the restore would silently write nothing.
 
 Restoring into a different database name needs the snapshot key copied first, because the snapshot is keyed by

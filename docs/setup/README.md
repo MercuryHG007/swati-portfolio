@@ -44,7 +44,7 @@ for the environment shown. Vercel's **Production** and **Preview** rows are the 
 | `GA4_CLIENT_EMAIL`, `GA4_PRIVATE_KEY` | same service account | same | same |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | production token | blank | set for restore drills only |
 | `R2_BACKUP_BUCKET` | `swati-backups` | blank | blank (pass on the command line for restore drills) |
-| `R2_MIRROR_BUCKET`, `NEXT_PUBLIC_MEDIA_MIRROR_URL` | production buckets | blank | blank |
+| `R2_MIRROR_BUCKET` | production bucket | blank | blank |
 | `BACKUP_ENCRYPTION_KEY`, `CRON_SECRET` | production values | not needed | not needed |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | production widget | UAT widget | blank |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | same | same | same |
