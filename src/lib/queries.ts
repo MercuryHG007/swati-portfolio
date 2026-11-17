@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import type { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
+import { resilient } from "@/lib/resilient-read";
 import { seededShuffle } from "@/lib/portfolio-order";
 import {
   PORTFOLIO_PAGE_SIZE,
@@ -16,14 +17,14 @@ import { Series, Medium, Subject, Artwork, Exhibition, About, SeriesSettings, Ho
 import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
 import { HOME_SETTINGS_DEFAULTS } from "@/models/HomeSettings";
 
-export async function getPublishedSeries() {
+async function getPublishedSeriesLive() {
   await connectToDatabase();
   return Series.find({ status: "published" }).sort({ order: 1, title: 1 }).lean();
 }
 
 // Series shown in the portfolio carousel. Falls back to the latest published series when none are
 // featured yet, the same way homepage artworks fall back to recent work.
-export async function getFeaturedSeries(limit = 8) {
+async function getFeaturedSeriesLive(limit = 8) {
   await connectToDatabase();
   const featured = await Series.find({ status: "published", featured: true, coverImage: { $ne: null } })
     .sort({ order: 1, title: 1 })
@@ -36,57 +37,57 @@ export async function getFeaturedSeries(limit = 8) {
     .lean();
 }
 
-export async function getSeriesSettings() {
+async function getSeriesSettingsLive() {
   await connectToDatabase();
   const settings = await SeriesSettings.findOne().lean();
   return { ...SERIES_SETTINGS_DEFAULTS, ...settings };
 }
 
-export async function getHomeSettings() {
+async function getHomeSettingsLive() {
   await connectToDatabase();
   const settings = await HomeSettings.findOne().lean();
   return { ...HOME_SETTINGS_DEFAULTS, ...settings };
 }
 
-export async function getSeriesBySlug(slug: string) {
+async function getSeriesBySlugLive(slug: string) {
   await connectToDatabase();
   return Series.findOne({ slug, status: "published" }).lean();
 }
 
-export async function getMediums() {
+async function getMediumsLive() {
   await connectToDatabase();
   return Medium.find().sort({ name: 1 }).lean();
 }
 
-export async function getMediumBySlug(slug: string) {
+async function getMediumBySlugLive(slug: string) {
   await connectToDatabase();
   return Medium.findOne({ slug }).lean();
 }
 
-export async function getSubjects() {
+async function getSubjectsLive() {
   await connectToDatabase();
   return Subject.find().sort({ name: 1 }).lean();
 }
 
 // Filters on the public site only list mediums and subjects that lead to at least one published artwork.
-export async function getMediumsWithWork() {
+async function getMediumsWithWorkLive() {
   await connectToDatabase();
   const ids = await Artwork.distinct("medium", { status: "published" });
   return Medium.find({ _id: { $in: ids } }).sort({ name: 1 }).lean();
 }
 
-export async function getSubjectsWithWork() {
+async function getSubjectsWithWorkLive() {
   await connectToDatabase();
   const ids = await Artwork.distinct("subjects", { status: "published" });
   return Subject.find({ _id: { $in: ids } }).sort({ name: 1 }).lean();
 }
 
-export async function getSubjectBySlug(slug: string) {
+async function getSubjectBySlugLive(slug: string) {
   await connectToDatabase();
   return Subject.findOne({ slug }).lean();
 }
 
-export async function getFeaturedArtworks(limit = 4) {
+async function getFeaturedArtworksLive(limit = 4) {
   await connectToDatabase();
   const featured = await Artwork.find({ status: "published", featured: true })
     .sort({ order: 1, createdAt: -1 })
@@ -99,12 +100,12 @@ export async function getFeaturedArtworks(limit = 4) {
   return Artwork.find({ status: "published" }).sort({ dateMade: -1, createdAt: -1 }).limit(limit).lean();
 }
 
-export async function getStandaloneArtworks() {
+async function getStandaloneArtworksLive() {
   await connectToDatabase();
   return Artwork.find({ status: "published", series: null }).sort({ order: 1, createdAt: -1 }).lean();
 }
 
-export async function getArtworksBySeriesId(seriesId: unknown) {
+async function getArtworksBySeriesIdLive(seriesId: unknown) {
   await connectToDatabase();
   return Artwork.find({ status: "published", series: seriesId }).sort({ seriesOrder: 1, createdAt: -1 }).lean();
 }
@@ -240,7 +241,7 @@ export async function getPortfolioFacets(resolved: ResolvedPortfolioFilters): Pr
   };
 }
 
-export async function getArtworkBySlug(slug: string) {
+async function getArtworkBySlugLive(slug: string) {
   await connectToDatabase();
   return Artwork.findOne({ slug, status: "published" })
     .populate("medium")
@@ -249,12 +250,12 @@ export async function getArtworkBySlug(slug: string) {
     .lean();
 }
 
-export async function getPublishedExhibitions() {
+async function getPublishedExhibitionsLive() {
   await connectToDatabase();
   return Exhibition.find({ status: "published" }).sort({ startDate: -1 }).lean();
 }
 
-export async function getExhibitionBySlug(slug: string) {
+async function getExhibitionBySlugLive(slug: string) {
   await connectToDatabase();
   const exhibition = await Exhibition.findOne({ slug, status: "published" })
     .populate({ path: "artworks", match: { status: "published" } })
@@ -264,18 +265,18 @@ export async function getExhibitionBySlug(slug: string) {
   return { ...exhibition, artworks: (exhibition.artworks ?? []).filter(Boolean) };
 }
 
-export async function getExhibitionsForArtwork(artworkId: unknown) {
+async function getExhibitionsForArtworkLive(artworkId: unknown) {
   await connectToDatabase();
   return Exhibition.find({ status: "published", artworks: artworkId }).sort({ startDate: -1 }).lean();
 }
 
-export async function getAbout() {
+async function getAboutLive() {
   await connectToDatabase();
   return About.findOne().lean();
 }
 
 // Published URLs for sitemap.xml. Only the fields needed for each URL and its lastModified date are selected.
-export async function getSitemapEntries() {
+async function getSitemapEntriesLive() {
   await connectToDatabase();
   const [artworks, series, exhibitions] = await Promise.all([
     Artwork.find({ status: "published" }).select("slug updatedAt").lean<{ slug: string; updatedAt: Date }[]>(),
@@ -286,7 +287,7 @@ export async function getSitemapEntries() {
 }
 
 // Published FAQ entries, in the order the artist set in the admin.
-export async function getPublishedFaqs() {
+async function getPublishedFaqsLive() {
   await connectToDatabase();
   return Faq.find({ status: "published" })
     .sort({ order: 1, createdAt: 1 })
@@ -295,7 +296,7 @@ export async function getPublishedFaqs() {
 }
 
 // Published series, exhibitions and works for llms.txt, plus the artist's own statement.
-export async function getLlmsContent() {
+async function getLlmsContentLive() {
   await connectToDatabase();
   const [series, exhibitions, artworks, about] = await Promise.all([
     Series.find({ status: "published" })
@@ -324,6 +325,31 @@ export async function getLlmsContent() {
   ]);
   return { series, exhibitions, artworks, statement: about?.statement ?? "" };
 }
+
+// Public reads go through `resilient`: the live database first, then the content snapshot if it fails.
+// The *Live functions above are the raw database queries.
+export const getPublishedSeries = resilient("getPublishedSeries", getPublishedSeriesLive);
+export const getFeaturedSeries = resilient("getFeaturedSeries", getFeaturedSeriesLive);
+export const getSeriesSettings = resilient("getSeriesSettings", getSeriesSettingsLive);
+export const getHomeSettings = resilient("getHomeSettings", getHomeSettingsLive);
+export const getSeriesBySlug = resilient("getSeriesBySlug", getSeriesBySlugLive);
+export const getMediums = resilient("getMediums", getMediumsLive);
+export const getMediumBySlug = resilient("getMediumBySlug", getMediumBySlugLive);
+export const getSubjects = resilient("getSubjects", getSubjectsLive);
+export const getMediumsWithWork = resilient("getMediumsWithWork", getMediumsWithWorkLive);
+export const getSubjectsWithWork = resilient("getSubjectsWithWork", getSubjectsWithWorkLive);
+export const getSubjectBySlug = resilient("getSubjectBySlug", getSubjectBySlugLive);
+export const getFeaturedArtworks = resilient("getFeaturedArtworks", getFeaturedArtworksLive);
+export const getStandaloneArtworks = resilient("getStandaloneArtworks", getStandaloneArtworksLive);
+export const getArtworksBySeriesId = resilient("getArtworksBySeriesId", getArtworksBySeriesIdLive);
+export const getArtworkBySlug = resilient("getArtworkBySlug", getArtworkBySlugLive);
+export const getPublishedExhibitions = resilient("getPublishedExhibitions", getPublishedExhibitionsLive);
+export const getExhibitionBySlug = resilient("getExhibitionBySlug", getExhibitionBySlugLive);
+export const getExhibitionsForArtwork = resilient("getExhibitionsForArtwork", getExhibitionsForArtworkLive);
+export const getAbout = resilient("getAbout", getAboutLive);
+export const getSitemapEntries = resilient("getSitemapEntries", getSitemapEntriesLive);
+export const getPublishedFaqs = resilient("getPublishedFaqs", getPublishedFaqsLive);
+export const getLlmsContent = resilient("getLlmsContent", getLlmsContentLive);
 
 // Cached copies of everything the /portfolio page reads. The page depends on searchParams, so it
 // can't be prerendered; caching the queries keeps it from hitting MongoDB on every visit. Admin

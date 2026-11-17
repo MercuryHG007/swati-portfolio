@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
 const oneLine = (value: string) => value.replace(/\s+/g, " ").trim();
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 const AVAILABILITY_TEXT: Record<string, string> = { available: "Available", sold: "Sold" };
+const joinList = (items: string[]) =>
+  items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 
 export async function GET() {
   // Matches the sitemap: preview and UAT deployments publish nothing.
@@ -17,6 +19,12 @@ export async function GET() {
     getLlmsContent(),
     getPublishedFaqs(),
   ]);
+
+  // Built from published works so the summary never names a medium the portfolio doesn't show.
+  const mediumNames = [
+    ...new Set(artworks.map((item) => item.medium?.name).filter((name): name is string => Boolean(name))),
+  ].map((name) => name.toLowerCase());
+  const mediumSentence = mediumNames.length > 0 ? ` The portfolio presents ${joinList(mediumNames)} works.` : "";
 
   const artworkLines = artworks.map((item) => {
     const details = [
@@ -44,7 +52,7 @@ export async function GET() {
   const lines = [
     "# Swati Garg",
     "",
-    "> Swati Garg is a watercolor artist. The portfolio presents watercolor, acrylic, pencil and oil works.",
+    `> Swati Garg is an artist.${mediumSentence}`,
     "",
     "## About the artist",
     "",

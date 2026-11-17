@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { scheduleSnapshotRefresh } from "@/lib/content-snapshot";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
@@ -9,6 +10,7 @@ import { Subject, Artwork } from "@/models";
 import { slugify } from "@/lib/slugify";
 
 function refresh() {
+  scheduleSnapshotRefresh();
   revalidatePath("/admin/subjects");
   revalidatePath("/portfolio");
   updateTag(PORTFOLIO_CACHE_TAG);

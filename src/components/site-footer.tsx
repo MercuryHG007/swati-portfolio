@@ -7,7 +7,11 @@ import { getAbout } from "@/lib/queries";
 const LOGO_SIZE = 72;
 
 export async function SiteFooter() {
-  const about = await getAbout();
+  // The footer is in the root layout, so a data failure must not take every page down with it.
+  const about = await getAbout().catch((err) => {
+    console.error("Footer data unavailable:", err);
+    return null;
+  });
   const email = about?.contactEmail;
   const instagram = about?.socials?.instagram;
   const logo = about?.footerLogo;

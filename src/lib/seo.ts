@@ -83,7 +83,12 @@ export function websiteJsonLd() {
   };
 }
 
-export function artistJsonLd(sameAs: string[] = []) {
+// sameAs links the site to profiles the artist controls. homeLocation tells search engines and AI tools which "Swati Garg" this is.
+export function artistJsonLd({
+  instagram,
+  location,
+}: { instagram?: string; location?: string } = {}) {
+  const sameAs = [instagram].filter((url): url is string => Boolean(url));
   return {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -91,6 +96,7 @@ export function artistJsonLd(sameAs: string[] = []) {
     name: "Swati Garg",
     jobTitle: "Artist",
     url: absoluteUrl("/"),
+    ...(location && { homeLocation: { "@type": "Place", name: location } }),
     ...(sameAs.length > 0 && { sameAs }),
   };
 }

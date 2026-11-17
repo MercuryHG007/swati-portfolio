@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { scheduleSnapshotRefresh } from "@/lib/content-snapshot";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
@@ -24,6 +25,7 @@ export async function updateHomeSettings(formData: FormData) {
 
   await connectToDatabase();
   await HomeSettings.findOneAndUpdate({}, settings, { upsert: true });
+  scheduleSnapshotRefresh();
   revalidatePath("/", "layout");
   redirect("/admin/home?saved=1");
 }

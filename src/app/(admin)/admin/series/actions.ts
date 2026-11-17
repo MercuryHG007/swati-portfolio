@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { scheduleSnapshotRefresh } from "@/lib/content-snapshot";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
@@ -13,6 +14,7 @@ import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-clea
 import { readSingleImage } from "@/lib/form-fields";
 
 function refresh(slug?: string) {
+  scheduleSnapshotRefresh();
   revalidatePath("/admin/series");
   revalidatePath("/portfolio");
   updateTag(PORTFOLIO_CACHE_TAG);
@@ -98,6 +100,7 @@ export async function updateSeriesSettings(formData: FormData) {
 
   await connectToDatabase();
   await SeriesSettings.findOneAndUpdate({}, { heading, body, ctaLabel }, { upsert: true });
+  scheduleSnapshotRefresh();
   revalidatePath("/portfolio");
   updateTag(PORTFOLIO_CACHE_TAG);
   revalidatePath("/admin/series");

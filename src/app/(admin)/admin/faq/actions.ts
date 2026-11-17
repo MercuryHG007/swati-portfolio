@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { scheduleSnapshotRefresh } from "@/lib/content-snapshot";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
@@ -9,6 +10,7 @@ import { buildStarterFaqs } from "@/lib/faq-starter";
 import { Faq } from "@/models";
 
 function refresh() {
+  scheduleSnapshotRefresh();
   revalidatePath("/faq");
   revalidatePath("/admin/faq");
 }
