@@ -6,9 +6,9 @@
  * Needs `mongodump` (MongoDB Database Tools) on PATH and these variables:
  *   MONGODB_URI, BACKUP_ENCRYPTION_KEY, R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BACKUP_BUCKET
  *
- * Objects are written to backups/mongo/YYYY-MM-DD.archive.gz.enc. Keeps every dump from the last 30 days
- * plus the first dump of each month. Losing BACKUP_ENCRYPTION_KEY makes every backup unreadable, so store it
- * outside this repo and outside the database.
+ * Objects are written to backups/mongo/YYYY-MM-DDTHH-MM-SSZ.archive.gz.enc, so every run gets its own name. Keeps every
+ * dump from the last 30 days plus the earliest dump of each month. Losing BACKUP_ENCRYPTION_KEY makes every backup
+ * unreadable, so store it outside this repo and outside the database.
  */
 import { spawn } from 'node:child_process';
 import { createCipheriv, randomBytes, scryptSync } from 'node:crypto';
@@ -66,29 +66,42 @@ function encrypt(plain, passphrase) {
 }
 
 function dateFromKey(key) {
-  const match = key.match(/(\d{4}-\d{2}-\d{2})\.archive\.gz\.enc$/);
+  const match = key.match(/(\d{4}-\d{2}-\d{2})(?:T[\d-]+Z)?\.archive\.gz\.enc$/);
   return match ? new Date(`${match[1]}T00:00:00Z`) : null;
 }
 
 async function pruneOldDumps() {
   const cutoff = Date.now() - RETAIN_DAYS * 24 * 60 * 60 * 1000;
+  const keys = [];
   let token;
-  let deleted = 0;
   do {
     const res = await s3.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: PREFIX, ContinuationToken: token }));
-    for (const obj of res.Contents ?? []) {
-      const date = dateFromKey(obj.Key ?? '');
-      if (!date || date.getTime() >= cutoff || date.getUTCDate() === 1) continue;
-      await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: obj.Key }));
-      deleted += 1;
-    }
+    for (const obj of res.Contents ?? []) if (obj.Key) keys.push(obj.Key);
     token = res.IsTruncated ? res.NextContinuationToken : undefined;
   } while (token);
-  return deleted;
+
+  // Keys sort chronologically, so the first key seen for a month is that month's earliest dump.
+  const seenMonths = new Set();
+  const keepForMonth = new Set();
+  const expired = [];
+  for (const key of keys.sort()) {
+    const date = dateFromKey(key);
+    if (!date) continue;
+    const month = date.toISOString().slice(0, 7);
+    if (!seenMonths.has(month)) {
+      seenMonths.add(month);
+      keepForMonth.add(key);
+    }
+    if (date.getTime() < cutoff && !keepForMonth.has(key)) expired.push(key);
+  }
+  for (const key of expired) {
+    await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  }
+  return expired.length;
 }
 
-const today = new Date().toISOString().slice(0, 10);
-const key = `${PREFIX}${today}.archive.gz.enc`;
+const stamp = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z').replace(/:/g, '-');
+const key = `${PREFIX}${stamp}.archive.gz.enc`;
 
 const archive = await dumpArchive();
 if (archive.length === 0) throw new Error('mongodump produced an empty archive; nothing uploaded.');

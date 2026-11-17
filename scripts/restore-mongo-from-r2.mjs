@@ -3,7 +3,7 @@
  *
  *   node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs --list
  *   node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs latest --target-uri "mongodb+srv://<user>:<pass>@cluster/?..." --target-db swati_portfolio_restore_test --confirm
- *   node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs backups/mongo/2026-11-01.archive.gz.enc --target-uri "..." --target-db swati_portfolio_restore_test --confirm
+ *   node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs backups/mongo/2026-11-17T07-19-15Z.archive.gz.enc --target-uri "..." --target-db swati_portfolio_restore_test --confirm
  *   node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs latest --target-uri "..." --target-db swati_portfolio_restore_test --dry-run
  *
  * Needs `mongorestore` (MongoDB Database Tools) on PATH, plus BACKUP_ENCRYPTION_KEY and the R2 variables.
