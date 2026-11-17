@@ -48,6 +48,8 @@ export function resilient<A extends unknown[], R>(name: string, query: (...args:
     if (Date.now() < breakerOpenUntil) {
       const fallback = await fromSnapshot(key);
       if (fallback.found) return fallback.value as R;
+      // Nothing to serve and the database is known to be down, so fail now rather than wait for another timeout.
+      throw new Error(`${name}: database unavailable and no snapshot entry for these arguments`);
     }
 
     let live: R;

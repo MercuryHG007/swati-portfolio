@@ -50,12 +50,24 @@ async function submitMessage(formData: FormData) {
     redirect(errorUrl("captcha"));
   }
 
+  // One connection attempt shared by the checks below. During an outage it waits for the server selection
+  // timeout once, not once per database call.
+  const dbReady = connectToDatabase().then(
+    () => true,
+    (err) => {
+      console.error("Database unavailable for contact form:", err);
+      return false;
+    }
+  );
+
   // Per-IP limit. The per-email throttle below is bypassed by using a different address.
   // Fails open during a database outage: Turnstile above still screens bots, and an enquiry must not be lost.
-  const allowed = await allowSubmission(ip).catch((err) => {
-    console.error("IP throttle skipped (database unavailable):", err);
-    return true;
-  });
+  const allowed = (await dbReady)
+    ? await allowSubmission(ip).catch((err) => {
+        console.error("IP throttle skipped (database unavailable):", err);
+        return true;
+      })
+    : true;
   if (!allowed) {
     redirect(errorUrl("rate_limited"));
   }
@@ -70,16 +82,17 @@ async function submitMessage(formData: FormData) {
   // Email and database save run together. Either one reaching the artist is enough, so a database
   // outage doesn't lose the enquiry. The per-email throttle is best-effort for the same reason.
   let recentlySent = false;
-  try {
-    await connectToDatabase();
-    recentlySent = Boolean(
-      await ContactMessage.findOne({
-        email,
-        createdAt: { $gte: new Date(Date.now() - 60_000) },
-      })
-    );
-  } catch (err) {
-    console.error("Contact throttle check skipped (database unavailable):", err);
+  if (await dbReady) {
+    try {
+      recentlySent = Boolean(
+        await ContactMessage.findOne({
+          email,
+          createdAt: { $gte: new Date(Date.now() - 60_000) },
+        })
+      );
+    } catch (err) {
+      console.error("Contact throttle check skipped (database unavailable):", err);
+    }
   }
   if (recentlySent) {
     redirect(errorUrl("rate_limited"));
@@ -87,7 +100,10 @@ async function submitMessage(formData: FormData) {
 
   const [emailResult, saveResult] = await Promise.allSettled([
     sendContactNotification({ name, email, message }),
-    connectToDatabase().then(() => ContactMessage.create({ name, email, message, ...(source && { source }) })),
+    dbReady.then((ready) => {
+      if (!ready) throw new Error("database unavailable");
+      return ContactMessage.create({ name, email, message, ...(source && { source }) });
+    }),
   ]);
 
   if (emailResult.status === "rejected") {
@@ -110,9 +126,10 @@ export default async function ContactPage({
 }) {
   const { sent, error, artwork, retry } = await searchParams;
   const artworkSlug = parseArtworkSlug(artwork);
+  // The form has to render even when the database and the snapshot are both unavailable.
   const [about, enquiredArtwork] = await Promise.all([
-    getAbout(),
-    artworkSlug ? getArtworkBySlug(artworkSlug) : null,
+    getAbout().catch(() => null),
+    artworkSlug ? getArtworkBySlug(artworkSlug).catch(() => null) : null,
   ]);
   // Only published artworks resolve here, so an unpublished slug just leaves the message blank.
   const messagePrefill = enquiredArtwork
