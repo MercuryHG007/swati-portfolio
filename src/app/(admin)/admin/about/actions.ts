@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { scheduleSnapshotRefresh } from "@/lib/content-snapshot";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
@@ -52,6 +53,7 @@ export async function updateAbout(formData: FormData) {
     removedPublicIds([previous?.photo, previous?.footerLogo], [finalPhoto, finalFooterLogo])
   );
 
+  scheduleSnapshotRefresh();
   revalidatePath("/", "layout");
   redirect("/admin/about?saved=1");
 }

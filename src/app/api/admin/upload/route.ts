@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { UploadApiResponse } from "cloudinary";
 import { auth } from "@/auth";
 import { cloudinary } from "@/lib/cloudinary";
+import { isR2Configured, putR2Object, R2_MIRROR_BUCKET } from "@/lib/r2";
 
 export const runtime = "nodejs"; // Cloudinary SDK requires Node APIs, not Edge
 
@@ -56,6 +57,14 @@ export async function POST(request: NextRequest) {
       );
       uploadStream.end(buffer);
     });
+
+    // Copy to the R2 mirror now, so this image survives a Cloudinary outage before the nightly sync runs.
+    // A failed copy is logged, not fatal: the upload itself succeeded and the nightly sync fills the gap.
+    if (isR2Configured() && R2_MIRROR_BUCKET) {
+      await putR2Object(R2_MIRROR_BUCKET, result.public_id, buffer, file.type).catch((err) => {
+        console.error(`Mirror copy failed for ${result.public_id}:`, err);
+      });
+    }
 
     return NextResponse.json({
       ok: true,

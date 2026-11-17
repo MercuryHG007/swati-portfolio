@@ -51,7 +51,12 @@ async function submitMessage(formData: FormData) {
   }
 
   // Per-IP limit. The per-email throttle below is bypassed by using a different address.
-  if (!(await allowSubmission(ip))) {
+  // Fails open during a database outage: Turnstile above still screens bots, and an enquiry must not be lost.
+  const allowed = await allowSubmission(ip).catch((err) => {
+    console.error("IP throttle skipped (database unavailable):", err);
+    return true;
+  });
+  if (!allowed) {
     redirect(errorUrl("rate_limited"));
   }
 
@@ -59,22 +64,41 @@ async function submitMessage(formData: FormData) {
     redirect(errorUrl("invalid"));
   }
 
-  await connectToDatabase();
-
-  // Basic throttle: block a second submission from the same email within 60s.
-  const recent = await ContactMessage.findOne({
-    email,
-    createdAt: { $gte: new Date(Date.now() - 60_000) },
-  });
-  if (recent) {
-    redirect(errorUrl("rate_limited"));
-  }
-
   const attribution = parseAttribution(formData.get("attribution"));
   const source = artworkSlug || attribution ? { ...attribution, artworkSlug } : undefined;
 
-  await ContactMessage.create({ name, email, message, ...(source && { source }) });
-  await sendContactNotification({ name, email, message });
+  // Email and database save run together. Either one reaching the artist is enough, so a database
+  // outage doesn't lose the enquiry. The per-email throttle is best-effort for the same reason.
+  let recentlySent = false;
+  try {
+    await connectToDatabase();
+    recentlySent = Boolean(
+      await ContactMessage.findOne({
+        email,
+        createdAt: { $gte: new Date(Date.now() - 60_000) },
+      })
+    );
+  } catch (err) {
+    console.error("Contact throttle check skipped (database unavailable):", err);
+  }
+  if (recentlySent) {
+    redirect(errorUrl("rate_limited"));
+  }
+
+  const [emailResult, saveResult] = await Promise.allSettled([
+    sendContactNotification({ name, email, message }),
+    connectToDatabase().then(() => ContactMessage.create({ name, email, message, ...(source && { source }) })),
+  ]);
+
+  if (emailResult.status === "rejected") {
+    console.error("Contact notification email failed:", emailResult.reason);
+  }
+  if (saveResult.status === "rejected") {
+    console.error("Contact message not saved to database:", saveResult.reason);
+  }
+  if (emailResult.status === "rejected" && saveResult.status === "rejected") {
+    redirect(errorUrl("failed"));
+  }
 
   redirect("/contact?sent=1");
 }
@@ -132,6 +156,11 @@ export default async function ContactPage({
           {error === "rate_limited" ? (
             <p className="text-sm text-red-600">
               You already sent a message recently — please wait a moment and try again.
+            </p>
+          ) : null}
+          {error === "failed" ? (
+            <p className="text-sm text-red-600">
+              Your message could not be sent right now. Please try again shortly, or email us directly.
             </p>
           ) : null}
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { scheduleSnapshotRefresh } from "@/lib/content-snapshot";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
@@ -15,6 +16,7 @@ import { readImageList } from "@/lib/form-fields";
 import { recordSavedDescription } from "@/lib/artist-voice";
 
 function refresh(slug?: string) {
+  scheduleSnapshotRefresh();
   revalidatePath("/");
   revalidatePath("/portfolio");
   updateTag(PORTFOLIO_CACHE_TAG);
@@ -150,6 +152,7 @@ export async function reorderArtworksInSeries(seriesId: string, orderedIds: stri
       Artwork.updateOne({ _id: id, series: seriesId }, { seriesOrder: index })
     )
   );
+  scheduleSnapshotRefresh();
   revalidatePath(`/admin/series/${seriesId}`);
   revalidatePath("/portfolio");
   updateTag(PORTFOLIO_CACHE_TAG);

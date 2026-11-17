@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { scheduleSnapshotRefresh } from "@/lib/content-snapshot";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
@@ -11,6 +12,7 @@ import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-clea
 import { readImageList } from "@/lib/form-fields";
 
 function refresh(slug?: string) {
+  scheduleSnapshotRefresh();
   revalidatePath("/about");
   if (slug) revalidatePath(`/exhibitions/${slug}`);
 }

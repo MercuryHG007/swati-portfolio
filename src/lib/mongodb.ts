@@ -23,7 +23,13 @@ export async function connectToDatabase() {
   }
 
   if (!cache.promise) {
-    cache.promise = mongoose.connect(MONGODB_URI, { bufferCommands: false });
+    // Short timeouts so an Atlas outage fails in seconds (and falls back to the content snapshot)
+    // instead of hanging each request for Mongoose's default 30s.
+    cache.promise = mongoose.connect(MONGODB_URI, {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+    });
   }
 
   try {
