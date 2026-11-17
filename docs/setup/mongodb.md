@@ -69,7 +69,7 @@ paid plan with static outbound IPs and list only those addresses.
    named `test`:
 
    ```
-   mongodb+srv://swati-app:PASSWORD@cluster0.xxxxx.mongodb.net/swati_portfolio?retryWrites=true&w=majority&appName=swati-portfolio
+   mongodb+srv://swati-app:<password>@cluster0.xxxxx.mongodb.net/swati_portfolio?retryWrites=true&w=majority&appName=swati-portfolio
    ```
 
 Use the database name for each environment: `swati_portfolio_prod` for production, and
@@ -83,7 +83,7 @@ points the app at a different database, which is empty unless data already exist
 Add it to `.env.local` in the project root:
 
 ```bash
-MONGODB_URI=mongodb+srv://swati-app:PASSWORD@cluster0.xxxxx.mongodb.net/swati_portfolio?retryWrites=true&w=majority&appName=swati-portfolio
+MONGODB_URI=mongodb+srv://swati-app:<password>@cluster0.xxxxx.mongodb.net/swati_portfolio?retryWrites=true&w=majority&appName=swati-portfolio
 ```
 
 Also add it in **Vercel → Project → Settings → Environment Variables**. Use `swati_portfolio_prod` for

@@ -38,7 +38,9 @@ What keeps the site up when MongoDB or Cloudinary fails, and how to restore afte
   when Cloudinary fails to load an image. It only does this when `NEXT_PUBLIC_MEDIA_MIRROR_URL` is set.
 - **Backups.** [disaster-recovery.yml](../../.github/workflows/disaster-recovery.yml) runs nightly. It dumps the
   database with `mongodump`, encrypts it with AES-256-GCM, uploads it to R2 and keeps 30 days of dumps plus the
-  first dump of each month. The same workflow copies new Cloudinary images to the mirror.
+  first dump of each month. Each dump is named by its UTC time, for example
+  `backups/mongo/2026-11-17T07-19-15Z.archive.gz.enc`, so several runs on one day don't overwrite each other.
+  The same workflow copies new Cloudinary images to the mirror.
 
 ## One-time setup
 
@@ -86,6 +88,22 @@ node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs --list
 # Restore the newest dump into the scratch database
 node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs latest \
   --target-uri "mongodb+srv://USER:PASS@CLUSTER/" --target-db swati_portfolio_restore_test --confirm
+```
+
+Restore a specific dump by passing a key from `--list` instead of `latest`:
+
+```bash
+node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs backups/mongo/2026-11-17T07-19-15Z.archive.gz.enc \
+  --target-uri "<target-uri>" --target-db swati_portfolio_restore_test --confirm
+```
+
+Check that the newest dump decrypts without touching any database. `--dry-run` downloads and decrypts the dump and
+reports its size, but never runs `mongorestore`. Use it to confirm the backup and `BACKUP_ENCRYPTION_KEY` still match
+before you need a restore:
+
+```bash
+node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs latest \
+  --target-uri "<target-uri>" --target-db swati_portfolio_restore_test --dry-run
 ```
 
 **Recovery into production (only after the production database is confirmed lost):**
