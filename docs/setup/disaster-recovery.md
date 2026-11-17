@@ -72,23 +72,36 @@ The backup and mirror workflow only ever points at production.
 
 ## Restore the database
 
-Use the same database name in the restored target. The snapshot is keyed by that name, so renaming the database
-means copying `content/<old name>/snapshot.json` to `content/<new name>/snapshot.json` first.
+The restore script remaps the dump from `--source-db` (default `swati_portfolio_prod`) to the `--target-db` you name,
+so a restore into a scratch database never touches production. The target URI must not include a database name:
+a database in the URI filters the dump, and the restore would silently write nothing.
+
+Restoring into a different database name needs the snapshot key copied first, because the snapshot is keyed by
+database name: copy `content/<old name>/snapshot.json` to `content/<new name>/snapshot.json`.
 
 ```bash
 # List available dumps
-node --env-file=.env.local scripts/restore-mongo-from-r2.mjs --list
+node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs --list
 
-# Restore the newest dump into a target (existing collections in the target are replaced)
-node --env-file=.env.local scripts/restore-mongo-from-r2.mjs latest \
-  --target-uri "mongodb+srv://USER:PASS@CLUSTER/swati_portfolio_prod" --confirm
+# Restore the newest dump into the scratch database
+node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs latest \
+  --target-uri "mongodb+srv://USER:PASS@CLUSTER/" --target-db swati_portfolio_restore_test --confirm
 ```
 
-Then confirm that `MONGODB_URI` in Vercel points at the restored database and redeploy.
+**Recovery into production (only after the production database is confirmed lost):**
+
+```bash
+node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs latest \
+  --target-uri "mongodb+srv://<prod-user>:<password>@<cluster-host>/?<options>" \
+  --target-db swati_portfolio_prod --overwrite-source --confirm
+```
+
+Existing collections in production are replaced. If you restored into a different database name, point `MONGODB_URI`
+in Vercel at it, redeploy, and copy the snapshot key as described above.
 `mongorestore` and `mongodump` must be on your PATH (the MongoDB Database Tools).
 
-Restore drill: once a quarter, restore into a scratch database such as `swati_portfolio_restore_test`, check
-the homepage and admin against it, then delete it.
+Restore drill check: once a quarter, restore into `swati_portfolio_restore_test`, run the site locally with
+`MONGODB_URI` pointed at it, check the homepage and admin, then drop that database.
 
 ## Restore images
 
