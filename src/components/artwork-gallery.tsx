@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ProtectedImage } from "@/components/cloudinary-image";
 import { ArtworkLightbox, type LightboxSlide } from "@/components/artwork-lightbox/artwork-lightbox";
 import { cloudinaryDeliveryUrl } from "@/lib/media-options";
+import { MEDIA_STORAGE, r2MediaUrl } from "@/lib/media-storage";
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "";
 
@@ -14,10 +15,16 @@ export function ArtworkGallery({ images, title }: { images: GalleryImage[]; titl
 
   if (images.length === 0) return null;
 
-  // The lightbox takes plain URLs and has no retry, so these load straight from Cloudinary.
+  // The lightbox takes plain URLs and has no retry, so these load straight from the active store.
   const slides: LightboxSlide[] = images.map((image) => ({
-    src: cloudinaryDeliveryUrl(CLOUD_NAME, image.publicId, { width: 2400, fit: "inside", format: "auto" }),
-    thumbSrc: cloudinaryDeliveryUrl(CLOUD_NAME, image.publicId, { width: 176, height: 120, fit: "cover", format: "auto" }),
+    src:
+      MEDIA_STORAGE === "r2"
+        ? r2MediaUrl(image.publicId, 2400)
+        : cloudinaryDeliveryUrl(CLOUD_NAME, image.publicId, { width: 2400, fit: "inside", format: "auto" }),
+    thumbSrc:
+      MEDIA_STORAGE === "r2"
+        ? r2MediaUrl(image.publicId, 320)
+        : cloudinaryDeliveryUrl(CLOUD_NAME, image.publicId, { width: 176, height: 120, fit: "cover", format: "auto" }),
     alt: image.alt || title,
     width: image.width,
     height: image.height,

@@ -1,19 +1,36 @@
 import { cloudinary } from "./cloudinary";
 import { connectToDatabase } from "./mongodb";
+import { deleteR2Object, R2_MEDIA_BUCKET, R2_ORIGINALS_BUCKET } from "./r2";
+import { MEDIA_STORAGE, MEDIA_VARIANT_WIDTHS, variantKey } from "./media-storage";
 import { About, Artwork, Exhibition, Series } from "@/models";
 
 type ImageRef = { publicId: string } | null | undefined;
 
 // Deleting a record, or replacing one of its images on edit, previously left the old
 // Cloudinary asset orphaned forever — call this wherever an image reference is dropped.
+// The name is kept from the Cloudinary-only version: it deletes from whichever store the active mode uses.
 export async function destroyCloudinaryAssets(publicIds: string[]) {
   const unique = [...new Set(publicIds.filter(Boolean))];
+  await Promise.all(unique.map((publicId) => (MEDIA_STORAGE === "r2" ? destroyR2Asset(publicId) : destroyCloudinaryAsset(publicId))));
+}
+
+async function destroyCloudinaryAsset(publicId: string) {
+  await cloudinary.uploader.destroy(publicId).catch((err) => {
+    console.error(`Failed to delete Cloudinary asset ${publicId}:`, err);
+  });
+}
+
+async function destroyR2Asset(publicId: string) {
+  if (!R2_MEDIA_BUCKET || !R2_ORIGINALS_BUCKET) {
+    console.error(`Cannot delete ${publicId}: R2 media buckets are not configured`);
+    return;
+  }
+  const targets = [
+    ...MEDIA_VARIANT_WIDTHS.map((width) => deleteR2Object(R2_MEDIA_BUCKET!, variantKey(publicId, width))),
+    deleteR2Object(R2_ORIGINALS_BUCKET, publicId),
+  ];
   await Promise.all(
-    unique.map((publicId) =>
-      cloudinary.uploader.destroy(publicId).catch((err) => {
-        console.error(`Failed to delete Cloudinary asset ${publicId}:`, err);
-      })
-    )
+    targets.map((task) => task.catch((err) => console.error(`Failed to delete R2 object for ${publicId}:`, err)))
   );
 }
 

@@ -1,3 +1,5 @@
+import { MEDIA_STORAGE, r2MediaUrl } from "@/lib/media-storage";
+
 // Shared Gemini plumbing for the admin AI assistants. Model output is untrusted: each caller's `parse`
 // validates it, and a model whose output fails validation falls through to the next model.
 
@@ -19,14 +21,17 @@ export function isValidPublicId(value: unknown): value is string {
 }
 
 export async function fetchCloudinaryImage(cloudName: string, publicId: string): Promise<AiImage> {
-  const url = `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/c_limit,w_1024,q_auto,f_jpg/${publicId}`;
+  const r2 = MEDIA_STORAGE === "r2";
+  const url = r2
+    ? r2MediaUrl(publicId, 1024)
+    : `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/c_limit,w_1024,q_auto,f_jpg/${publicId}`;
   const response = await fetch(url, { signal: AbortSignal.timeout(15_000), cache: "no-store" });
-  if (!response.ok) throw new Error(`Cloudinary returned HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`${r2 ? "Media store" : "Cloudinary"} returned HTTP ${response.status}`);
   const length = Number(response.headers.get("content-length") ?? 0);
   if (length > MAX_IMAGE_BYTES) throw new Error("Image is too large for the assistant");
   const bytes = await response.arrayBuffer();
   if (bytes.byteLength > MAX_IMAGE_BYTES) throw new Error("Image is too large for the assistant");
-  return { mimeType: "image/jpeg", data: Buffer.from(bytes).toString("base64") };
+  return { mimeType: r2 ? "image/webp" : "image/jpeg", data: Buffer.from(bytes).toString("base64") };
 }
 
 export async function requestGeminiSuggestion<T>({

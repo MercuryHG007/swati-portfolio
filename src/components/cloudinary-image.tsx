@@ -3,6 +3,7 @@
 import Image, { type ImageLoaderProps } from "next/image";
 import { useState, type ComponentProps, type CSSProperties } from "react";
 import { cloudinaryDeliveryUrl, mediaUrl } from "@/lib/media-options";
+import { MEDIA_STORAGE, r2MediaUrl } from "@/lib/media-storage";
 
 // Images load straight from Cloudinary's CDN, one request each. If a load fails, the image is requested once more
 // through the server (proxy=1), which falls back to the R2 mirror.
@@ -27,6 +28,8 @@ export function CldImage({ src, alt, crop, gravity, quality, format: _format, st
   const [useProxy, setUseProxy] = useState(false);
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const loader = ({ width }: ImageLoaderProps) => {
+    // R2 mode: each size is a pre-made file, so the loader only picks the nearest one.
+    if (MEDIA_STORAGE === "r2") return r2MediaUrl(src, width);
     const options = { width, fit: "inside" as const, quality: typeof quality === "number" ? quality : undefined };
     // Healthy case: the browser loads Cloudinary directly, one request per image. Only after a failed load does the
     // image come through the server, which falls back to the R2 mirror.
@@ -45,8 +48,8 @@ export function CldImage({ src, alt, crop, gravity, quality, format: _format, st
       loader={loader}
       onError={(event) => {
         props.onError?.(event);
-        // One retry through the server. Once proxied, a further failure is left alone rather than looping.
-        if (!useProxy) setUseProxy(true);
+        // Cloudinary mode only: one retry through the server. Once proxied, a further failure is left alone.
+        if (!useProxy && MEDIA_STORAGE === "cloudinary") setUseProxy(true);
       }}
       style={{ ...cropStyle, ...style }}
     />

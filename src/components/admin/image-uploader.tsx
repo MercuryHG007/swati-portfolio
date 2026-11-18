@@ -12,6 +12,7 @@ import {
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
+import { MEDIA_STORAGE, r2MediaUrl } from "@/lib/media-storage";
 
 export type CloudinaryImageValue = {
   publicId: string;
@@ -36,8 +37,47 @@ type ImageUploaderProps = {
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
 function thumbUrl(publicId: string) {
+  if (MEDIA_STORAGE === "r2") return r2MediaUrl(publicId, 160);
   return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_160,h_160,c_fill/${publicId}`;
 }
+
+type UploadResult = { ok: boolean; error?: string; publicId: string; width: number; height: number };
+type SignedUpload = { ok: boolean; error?: string; publicId: string; uploadUrl: string };
+
+async function postJson<T extends { ok: boolean; error?: string }>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json()) as T;
+  if (!res.ok || !data.ok) throw new Error(data.error ?? "Upload failed");
+  return data;
+}
+
+// Cloudinary mode posts the file to the server. R2 mode sends the file straight to R2 with a signed URL, then
+// asks the server to build the variants.
+async function uploadImage(file: File, folder: string): Promise<UploadResult> {
+  if (MEDIA_STORAGE === "cloudinary") {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", folder);
+    const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+    const data = (await res.json()) as UploadResult;
+    if (!res.ok || !data.ok) throw new Error(data.error ?? "Upload failed");
+    return data;
+  }
+  const signed = await postJson<SignedUpload>("/api/admin/upload/sign", { folder, contentType: file.type });
+  try {
+    const put = await fetch(signed.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+    if (!put.ok) throw new Error(`Upload failed (${put.status})`);
+    return await postJson<UploadResult>("/api/admin/upload/process", { publicId: signed.publicId });
+  } catch (err) {
+    discardUploads([signed.publicId]);
+    throw err;
+  }
+}
+
 
 function withUid(image: CloudinaryImageValue): ImageItem {
   return { ...image, uid: crypto.randomUUID() };
@@ -146,14 +186,7 @@ export function ImageUploader({ name, folder, initial = [], multiple = false, on
       const uploaded: ImageItem[] = [];
       for (const file of Array.from(fileList)) {
         if (!mountedRef.current) break;
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("folder", folder);
-        const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
-          throw new Error(data.error ?? "Upload failed");
-        }
+        const data = await uploadImage(file, folder);
         if (mountedRef.current) {
           unsavedRef.current.add(data.publicId);
         } else {
