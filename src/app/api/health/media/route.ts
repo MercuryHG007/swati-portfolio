@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Written by scripts/probe-media-health.mjs every 15 minutes. Read from R2 so this still answers while the database is
-// down. Returns 503 when Cloudinary is down or critical, or when the probe hasn't run for 45 minutes (three missed
+// down. Returns 503 when the media domain is down or critical, or when the probe hasn't run for 45 minutes (three missed
 // runs). An external uptime monitor on this URL then alerts independently of the probe.
 const STALE_AFTER_MINUTES = 45;
 

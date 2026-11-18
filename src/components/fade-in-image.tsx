@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ComponentProps } from "react";
-import { ProtectedImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/media-image";
 
 // Fades in when the picture has loaded. A CSS animation starts as soon as the element renders, so on a slow
 // connection it would finish before the image arrives and the picture would just pop in.

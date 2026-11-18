@@ -1,5 +1,5 @@
 import { Schema, model, models } from "mongoose";
-import { AVAILABILITY_STATUS, cloudinaryImageSchema, PUBLICATION_STATUS } from "./shared";
+import { AVAILABILITY_STATUS, mediaImageSchema, PUBLICATION_STATUS } from "./shared";
 
 const dimensionsSchema = new Schema(
   {
@@ -14,7 +14,7 @@ const artworkSchema = new Schema(
   {
     title: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    images: { type: [cloudinaryImageSchema], default: [] },
+    images: { type: [mediaImageSchema], default: [] },
     dateMade: { type: Date },
     medium: { type: Schema.Types.ObjectId, ref: "Medium", required: true },
     subjects: [{ type: Schema.Types.ObjectId, ref: "Subject" }],

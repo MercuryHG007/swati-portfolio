@@ -1,4 +1,4 @@
-import { ProtectedImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/media-image";
 
 // Square preview for admin list rows. Shows an empty tile until the item has an image.
 export function AdminThumbnail({ image, alt }: { image?: { publicId: string; alt?: string } | null; alt: string }) {

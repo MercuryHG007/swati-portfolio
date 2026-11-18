@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import sharp from "sharp";
 import { getAbout } from "@/lib/queries";
-import { cloudinaryImageUrl } from "@/lib/seo";
+import { getR2Object, R2_ORIGINALS_BUCKET } from "@/lib/r2";
 
 // Rebuilt from the footer logo every minute, so a new logo from the admin shows up without a redeploy.
 export const revalidate = 60;
@@ -14,14 +15,14 @@ const defaultIcon = `data:image/png;base64,${(
   await readFile(join(process.cwd(), "src/app/default-icon.png"))
 ).toString("base64")}`;
 
+// ImageResponse can't draw WebP, so the stored original is converted to a PNG at icon size.
 async function logoDataUrl(publicId: string): Promise<string | undefined> {
-  const url = cloudinaryImageUrl(publicId, "f_png,c_fit,w_128,h_128");
-  if (!url) return undefined;
+  if (!R2_ORIGINALS_BUCKET) return undefined;
   try {
-    const res = await fetch(url);
-    if (!res.ok) return undefined;
-    const base64 = Buffer.from(await res.arrayBuffer()).toString("base64");
-    return `data:image/png;base64,${base64}`;
+    const original = await getR2Object(R2_ORIGINALS_BUCKET, publicId);
+    if (!original) return undefined;
+    const png = await sharp(original).rotate().resize(size.width, size.height, { fit: "inside" }).png().toBuffer();
+    return `data:image/png;base64,${png.toString("base64")}`;
   } catch {
     return undefined;
   }

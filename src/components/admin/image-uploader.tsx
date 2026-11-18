@@ -12,9 +12,9 @@ import {
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
-import { MEDIA_STORAGE, r2MediaUrl } from "@/lib/media-storage";
+import { r2MediaUrl } from "@/lib/media-storage";
 
-export type CloudinaryImageValue = {
+export type MediaImageValue = {
   publicId: string;
   width: number;
   height: number;
@@ -23,22 +23,19 @@ export type CloudinaryImageValue = {
 
 // Client-only id so dnd-kit can track each thumbnail through reorders/removals;
 // never sent to the server (stripped when serializing into the hidden input).
-type ImageItem = CloudinaryImageValue & { uid: string };
+type ImageItem = MediaImageValue & { uid: string };
 
 type ImageUploaderProps = {
   name: string;
   folder: string;
-  initial?: CloudinaryImageValue[];
+  initial?: MediaImageValue[];
   multiple?: boolean;
   // Lets a parent react to how many images are currently attached (e.g. to show a hint).
   onCountChange?: (count: number) => void;
 };
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-
 function thumbUrl(publicId: string) {
-  if (MEDIA_STORAGE === "r2") return r2MediaUrl(publicId, 160);
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_160,h_160,c_fill/${publicId}`;
+  return r2MediaUrl(publicId, 160);
 }
 
 type UploadResult = { ok: boolean; error?: string; publicId: string; width: number; height: number };
@@ -55,18 +52,8 @@ async function postJson<T extends { ok: boolean; error?: string }>(url: string, 
   return data;
 }
 
-// Cloudinary mode posts the file to the server. R2 mode sends the file straight to R2 with a signed URL, then
-// asks the server to build the variants.
+// The file goes straight to R2 with a signed URL, then the server builds the variants from it.
 async function uploadImage(file: File, folder: string): Promise<UploadResult> {
-  if (MEDIA_STORAGE === "cloudinary") {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("folder", folder);
-    const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
-    const data = (await res.json()) as UploadResult;
-    if (!res.ok || !data.ok) throw new Error(data.error ?? "Upload failed");
-    return data;
-  }
   const signed = await postJson<SignedUpload>("/api/admin/upload/sign", { folder, contentType: file.type });
   try {
     const put = await fetch(signed.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
@@ -78,8 +65,7 @@ async function uploadImage(file: File, folder: string): Promise<UploadResult> {
   }
 }
 
-
-function withUid(image: CloudinaryImageValue): ImageItem {
+function withUid(image: MediaImageValue): ImageItem {
   return { ...image, uid: crypto.randomUUID() };
 }
 
@@ -119,14 +105,12 @@ function SortableThumb({
       className="flex w-40 flex-col gap-2"
     >
       <div className="relative">
-        {CLOUD_NAME ? (
-          // eslint-disable-next-line @next/next/no-img-element -- small admin thumbnail preview, not a page image
-          <img
-            src={thumbUrl(item.publicId)}
-            alt={item.alt || ""}
-            className="h-40 w-40 rounded-md border border-border object-cover"
-          />
-        ) : null}
+        {/* eslint-disable-next-line @next/next/no-img-element -- small admin thumbnail preview, not a page image */}
+        <img
+          src={thumbUrl(item.publicId)}
+          alt={item.alt || ""}
+          className="h-40 w-40 rounded-md border border-border object-cover"
+        />
         <button
           type="button"
           {...attributes}
@@ -224,7 +208,7 @@ export function ImageUploader({ name, folder, initial = [], multiple = false, on
     });
   }
 
-  const plain: CloudinaryImageValue[] = images.map((img) => ({
+  const plain: MediaImageValue[] = images.map((img) => ({
     publicId: img.publicId,
     width: img.width,
     height: img.height,

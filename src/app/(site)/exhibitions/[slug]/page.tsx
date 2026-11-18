@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ProtectedImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/media-image";
 import { getExhibitionBySlug, getPublishedExhibitions } from "@/lib/queries";
 import { formatDateRange } from "@/lib/format";
 import { Breadcrumbs } from "@/components/breadcrumbs";

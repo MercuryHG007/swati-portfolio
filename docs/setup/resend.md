@@ -107,7 +107,7 @@ problem is the email path. Check the Resend logs, then the server logs for the
 
 ## Image monitor alerts
 
-The scheduled **Media health** workflow emails you when Cloudinary delivery is down or critical. It uses
+The scheduled **Media health** workflow emails you when the media domain is down or critical. It uses
 the same Resend account, through these GitHub Actions secrets:
 
 | Secret | Purpose |

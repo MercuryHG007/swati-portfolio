@@ -2,7 +2,7 @@
 
 import { AppLink as Link } from "@/components/app-link";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type Ref } from "react";
-import { ProtectedImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/media-image";
 
 export type CarouselItem = {
   href: string;

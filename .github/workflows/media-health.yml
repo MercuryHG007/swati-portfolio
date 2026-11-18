@@ -12,14 +12,12 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     env:
-      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      NEXT_PUBLIC_MEDIA_BASE_URL: ${{ secrets.NEXT_PUBLIC_MEDIA_BASE_URL }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
-      R2_MIRROR_BUCKET: ${{ secrets.R2_MIRROR_BUCKET }}
+      R2_MEDIA_BUCKET: ${{ secrets.R2_MEDIA_BUCKET }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
       ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
@@ -30,5 +28,5 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Check Cloudinary delivery, API, quota and the R2 fallback copy
+      - name: Check the media domain and the R2 origin
         run: node scripts/probe-media-health.mjs

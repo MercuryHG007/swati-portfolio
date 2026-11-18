@@ -4,8 +4,7 @@ import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
 import { JsonLd } from "@/components/json-ld";
 import { getAbout, getFeaturedArtworks, getHomeSettings, getMediumsWithWork } from "@/lib/queries";
-import { cloudinaryDeliveryUrl } from "@/lib/media-options";
-import { MEDIA_STORAGE, r2MediaUrl } from "@/lib/media-storage";
+import { r2MediaUrl } from "@/lib/media-storage";
 import { artistJsonLd, mediaImageUrl, pageMetadata, websiteJsonLd } from "@/lib/seo";
 
 export const revalidate = 60;
@@ -26,15 +25,7 @@ const PLACEHOLDER_WIDTH = 32;
 
 function blurPlaceholder(image: { publicId: string; width: number; height: number }) {
   if (!image.width || !image.height) return undefined;
-  if (MEDIA_STORAGE === "r2") return r2MediaUrl(image.publicId, PLACEHOLDER_WIDTH);
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  if (!cloudName) return undefined;
-  return cloudinaryDeliveryUrl(cloudName, image.publicId, {
-    width: PLACEHOLDER_WIDTH,
-    fit: "inside",
-    quality: 40,
-    format: "auto",
-  });
+  return r2MediaUrl(image.publicId, PLACEHOLDER_WIDTH);
 }
 
 export default async function Home() {

@@ -8,7 +8,7 @@ import {
   parseArtworkSuggestion,
   type ArtworkOptions,
 } from "@/lib/artwork-assist";
-import { fetchCloudinaryImage, isValidPublicId, requestGeminiSuggestion } from "@/lib/gemini";
+import { fetchMediaImage, isValidPublicId, requestGeminiSuggestion } from "@/lib/gemini";
 
 export const runtime = "nodejs";
 
@@ -23,8 +23,7 @@ export async function POST(request: NextRequest) {
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  if (!apiKey || !cloudName) {
+  if (!apiKey) {
     return NextResponse.json({ error: "The AI assistant is not configured." }, { status: 503 });
   }
 
@@ -53,7 +52,7 @@ export async function POST(request: NextRequest) {
       subjectIds: onlyObjectIds(subjectIds, MAX_SUBJECTS),
       examples: MAX_EXAMPLES,
     });
-    const image = await fetchCloudinaryImage(cloudName, publicId);
+    const image = await fetchMediaImage(publicId);
     const { suggestion, model } = await requestGeminiSuggestion({
       apiKey,
       prompt: buildArtworkPrompt(options, context),

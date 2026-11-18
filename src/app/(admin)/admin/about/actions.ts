@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
 import { About } from "@/models";
-import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
+import { destroyMediaAssets, removedPublicIds } from "@/lib/media-cleanup";
 import { readCvRows, readSingleImage } from "@/lib/form-fields";
 
 // Only fields the form actually submitted are written. A missing field means "leave it as it is",
@@ -49,7 +49,7 @@ export async function updateAbout(formData: FormData) {
   // An image the form didn't submit keeps its stored value, so it is never counted as removed.
   const finalPhoto = photo !== undefined ? photo : previous?.photo;
   const finalFooterLogo = footerLogo !== undefined ? footerLogo : previous?.footerLogo;
-  await destroyCloudinaryAssets(
+  await destroyMediaAssets(
     removedPublicIds([previous?.photo, previous?.footerLogo], [finalPhoto, finalFooterLogo])
   );
 

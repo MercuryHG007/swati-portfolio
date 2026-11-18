@@ -11,7 +11,7 @@ import { AVAILABILITY_STATUS } from "@/models/shared";
 import { slugify } from "@/lib/slugify";
 import { normalizeSubjectName } from "@/lib/subject-names";
 import { withAltFallback, withSuggestedAlt } from "@/lib/image-alt";
-import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
+import { destroyMediaAssets, removedPublicIds } from "@/lib/media-cleanup";
 import { readImageList } from "@/lib/form-fields";
 import { recordSavedDescription } from "@/lib/artist-voice";
 
@@ -126,7 +126,7 @@ export async function updateArtwork(formData: FormData) {
     ...(seriesOrder !== undefined && { seriesOrder }),
   });
   await recordAiFeedback(formData, id, fields);
-  if (images !== undefined) await destroyCloudinaryAssets(removedPublicIds(existing?.images ?? [], images));
+  if (images !== undefined) await destroyMediaAssets(removedPublicIds(existing?.images ?? [], images));
   refresh(fields.slug);
   redirect("/admin/artworks?saved=1");
 }
@@ -139,7 +139,7 @@ export async function deleteArtwork(formData: FormData) {
   await connectToDatabase();
   await Exhibition.updateMany({ artworks: id }, { $pull: { artworks: id } });
   const deleted = await Artwork.findByIdAndDelete(id).lean<{ images?: { publicId: string }[] }>();
-  await destroyCloudinaryAssets((deleted?.images ?? []).map((img) => img.publicId));
+  await destroyMediaAssets((deleted?.images ?? []).map((img) => img.publicId));
   refresh();
   redirect("/admin/artworks?deleted=1");
 }

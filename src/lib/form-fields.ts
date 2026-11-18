@@ -3,7 +3,7 @@
 // A field that is missing from the submission, or that can't be parsed, returns `undefined`, which
 // callers treat as "leave the stored value alone". Only an explicit empty value ("[]" or "null")
 // clears it. Otherwise a form that didn't send a field, such as a page left open from before the
-// field existed, would wipe the stored data and delete its Cloudinary assets.
+// field existed, would wipe the stored data and delete its images.
 
 export type ImageValue = { publicId: string; width: number; height: number; alt?: string };
 

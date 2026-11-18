@@ -1,5 +1,5 @@
 import { Schema, model, models } from "mongoose";
-import { cloudinaryImageSchema } from "./shared";
+import { mediaImageSchema } from "./shared";
 
 // One CV line. `date` is free text because CV dates mix years, months and ranges ("2019 – 2020", "05/2025").
 const cvEntrySchema = new Schema(
@@ -17,9 +17,9 @@ const aboutSchema = new Schema(
     bio: { type: String, default: "" },
     statement: { type: String, default: "" },
     location: { type: String, default: "" },
-    photo: { type: cloudinaryImageSchema, default: null },
+    photo: { type: mediaImageSchema, default: null },
     // Square mark shown in the site footer. Null hides it.
-    footerLogo: { type: cloudinaryImageSchema, default: null },
+    footerLogo: { type: mediaImageSchema, default: null },
     resumeUrl: { type: String, default: "" },
     contactEmail: { type: String, default: "" },
     socials: {

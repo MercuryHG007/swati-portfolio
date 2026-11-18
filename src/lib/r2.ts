@@ -8,12 +8,10 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-// Cloudflare R2 speaks the S3 API. Used for DB backups, the content snapshot, the Cloudinary mirror and,
-// in r2 media mode, uploads and variants. Server-only: the access key is never exposed to the client.
+// Cloudflare R2 speaks the S3 API. Used for the image originals and variants, DB backups, and the content snapshot.
 const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
 
 export const R2_BACKUP_BUCKET = process.env.R2_BACKUP_BUCKET;
-export const R2_MIRROR_BUCKET = process.env.R2_MIRROR_BUCKET;
 export const R2_MEDIA_BUCKET = process.env.R2_MEDIA_BUCKET;
 export const R2_ORIGINALS_BUCKET = process.env.R2_ORIGINALS_BUCKET;
 

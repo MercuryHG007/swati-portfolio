@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { AvailabilityStatus } from "@/models/shared";
-import { mediaUrl } from "@/lib/media-options";
-import { MEDIA_STORAGE, r2MediaUrl } from "@/lib/media-storage";
+import { r2MediaUrl } from "@/lib/media-storage";
 
 // Derived from Vercel's system variables, so no domain is hardcoded. VERCEL_PROJECT_PRODUCTION_URL is
 // the project's production domain, so preview and UAT deployments also point canonical links at the live site.
@@ -24,19 +23,10 @@ export function absoluteUrl(path: string): string {
   return new URL(path, getSiteUrl()).toString();
 }
 
-export function cloudinaryImageUrl(publicId: string, transform = "c_limit,w_1200"): string | undefined {
-  if (MEDIA_STORAGE === "r2") return publicId ? r2MediaUrl(publicId, 160) : undefined;
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  if (!cloudName || !publicId) return undefined;
-  return `https://res.cloudinary.com/${cloudName}/image/upload/${transform}/${publicId}`;
-}
-
-// Absolute URL of the central image route, for OG, Twitter and JSON-LD. Crawlers don't run JavaScript, so this URL
-// has to serve the image itself. The route falls back to R2 when Cloudinary is down.
+// Absolute URL of the image served from the R2 media domain, for OG, Twitter and JSON-LD. Crawlers need a plain URL.
 export function mediaImageUrl(publicId: string, width = 1200): string | undefined {
   if (!publicId) return undefined;
-  if (MEDIA_STORAGE === "r2") return r2MediaUrl(publicId, width);
-  return absoluteUrl(mediaUrl(publicId, { width, fit: "inside" }));
+  return r2MediaUrl(publicId, width);
 }
 
 type PageMetadataInput = {

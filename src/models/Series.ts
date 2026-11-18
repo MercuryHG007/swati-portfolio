@@ -1,12 +1,12 @@
 import { Schema, model, models } from "mongoose";
-import { cloudinaryImageSchema, PUBLICATION_STATUS } from "./shared";
+import { mediaImageSchema, PUBLICATION_STATUS } from "./shared";
 
 const seriesSchema = new Schema(
   {
     title: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     description: { type: String, default: "" },
-    coverImage: { type: cloudinaryImageSchema, default: null },
+    coverImage: { type: mediaImageSchema, default: null },
     order: { type: Number, default: 0 },
     // Curated by the admin for the portfolio carousel. Carousel order follows `order`.
     featured: { type: Boolean, default: false },

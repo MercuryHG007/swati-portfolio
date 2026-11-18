@@ -10,8 +10,7 @@ import {
   R2_ORIGINALS_BUCKET,
 } from "@/lib/r2";
 import { buildMediaVariants } from "@/lib/media-variants";
-import { MEDIA_MAX_UPLOAD_BYTES, MEDIA_FOLDER_ROOT } from "@/lib/media-storage";
-import { isValidMediaPublicId } from "@/lib/media-options";
+import { MEDIA_MAX_UPLOAD_BYTES, MEDIA_FOLDER_ROOT, isValidMediaPublicId } from "@/lib/media-storage";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;

@@ -1,5 +1,5 @@
 import { BrandLink } from "@/components/brand-link";
-import { CldImage } from "@/components/cloudinary-image";
+import { MediaImage } from "@/components/media-image";
 import { TextLink } from "@/components/text-link/text-link";
 import { getAbout } from "@/lib/queries";
 
@@ -38,13 +38,11 @@ export async function SiteFooter() {
             aria-label="Swati Garg home"
             className="order-2 w-fit md:order-none md:col-start-1 md:row-start-1 md:justify-self-start"
           >
-            <CldImage
+            <MediaImage
               src={logo.publicId}
               alt={logo.alt || "Swati Garg"}
               width={LOGO_SIZE * 2}
               height={LOGO_SIZE * 2}
-              format="auto"
-              quality="auto"
               className="h-[72px] w-[72px]"
             />
         </BrandLink>

@@ -10,7 +10,7 @@ import { Series, Artwork, SeriesSettings } from "@/models";
 import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
 import { slugify } from "@/lib/slugify";
 import { withAltFallback, withSuggestedAlt } from "@/lib/image-alt";
-import { destroyCloudinaryAssets, removedPublicIds } from "@/lib/cloudinary-cleanup";
+import { destroyMediaAssets, removedPublicIds } from "@/lib/media-cleanup";
 import { readSingleImage } from "@/lib/form-fields";
 
 function refresh(slug?: string) {
@@ -62,7 +62,7 @@ export async function updateSeries(formData: FormData) {
     ...(coverImage !== undefined && { coverImage }),
   }).lean<{ coverImage?: { publicId: string } }>();
   if (coverImage !== undefined) {
-    await destroyCloudinaryAssets(
+    await destroyMediaAssets(
       removedPublicIds(previous?.coverImage ? [previous.coverImage] : [], coverImage ? [coverImage] : [])
     );
   }
@@ -79,7 +79,7 @@ export async function deleteSeries(formData: FormData) {
   // A series is an optional grouping — unlink its artworks (make them standalone) instead of blocking.
   await Artwork.updateMany({ series: id }, { series: null });
   const deleted = await Series.findByIdAndDelete(id).lean<{ coverImage?: { publicId: string } }>();
-  await destroyCloudinaryAssets(deleted?.coverImage ? [deleted.coverImage.publicId] : []);
+  await destroyMediaAssets(deleted?.coverImage ? [deleted.coverImage.publicId] : []);
   refresh();
   redirect("/admin/series?deleted=1");
 }
