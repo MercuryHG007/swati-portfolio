@@ -6,15 +6,15 @@ Each guide lists the accounts to create, the values to copy, and where each valu
 | Guide | Covers |
 | --- | --- |
 | [MongoDB Atlas](./mongodb.md) | Database, `MONGODB_URI`, first admin login. **Required** |
-| [Cloudinary](./cloudinary.md) | Image hosting and uploads. **Required** |
+| [Image storage (R2)](./media-storage.md) | Image buckets, the public media domain, upload CORS, and the health canary. **Required** |
 | [Resend](./resend.md) | Contact-form email notifications. Optional |
 | [Google Analytics 4](./ga4.md) | Website tracking, the admin analytics page, and the contact-form lead source. Optional |
 | [Gemini](./gemini.md) | The AI artwork assistant on the admin artwork form. Optional |
 | [Cloudflare Turnstile](./turnstile.md) | Captcha on the contact form. Optional, but enable it in production |
-| [Disaster recovery](./disaster-recovery.md) | Snapshot fallback, nightly backups, Cloudinary mirror, restore steps. Optional, recommended for production |
+| [Disaster recovery](./disaster-recovery.md) | Content snapshot, change-detected nightly backups, contact-enquiry spool, media health monitoring, restore steps. Optional, recommended for production |
 
-Set up in this order: MongoDB, then Cloudinary, then Resend, GA4 and Gemini. The app won't start
-without MongoDB and Cloudinary, and the admin can't sign in until a first admin exists.
+Set up in this order: MongoDB, then image storage (R2), then Resend, GA4 and Gemini. The app won't start
+without MongoDB and the media domain, and the admin can't sign in until a first admin exists.
 
 ## Required app variables (NextAuth)
 
@@ -38,14 +38,13 @@ for the environment shown. Vercel's **Production** and **Preview** rows are the 
 | `MONGODB_URI` | database `swati_portfolio_prod` | database `swati_portfolio` | `swati_portfolio` (shared with UAT) |
 | `NEXTAUTH_SECRET` | production secret | separate secret | separate secret |
 | `NEXTAUTH_URL` | not set | not set | `http://localhost:3000` |
-| `CLOUDINARY_*` and `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | production account | separate UAT account | UAT account |
+| `NEXT_PUBLIC_MEDIA_BASE_URL`, `R2_MEDIA_BUCKET`, `R2_ORIGINALS_BUCKET` | production media domain and buckets | UAT media domain and buckets | UAT buckets (see [Image storage](./media-storage.md)) |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | production `G-…` | UAT `G-…` | blank |
 | `GA4_PROPERTY_ID` | production property | UAT property | UAT property |
 | `GA4_CLIENT_EMAIL`, `GA4_PRIVATE_KEY` | same service account | same | same |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | production token | blank | set for restore drills only |
 | `R2_BACKUP_BUCKET` | `swati-backups` | blank | blank (pass on the command line for restore drills) |
-| `R2_MIRROR_BUCKET`, `NEXT_PUBLIC_MEDIA_MIRROR_URL` | production buckets | blank | blank |
-| `BACKUP_ENCRYPTION_KEY`, `CRON_SECRET` | production values | not needed | not needed |
+| `BACKUP_ENCRYPTION_KEY`, `CRON_SECRET` | production values (the key also encrypts contact enquiries spooled during an outage) | not needed | not needed |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | production widget | UAT widget | blank |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | same | same | same |
 | `CONTACT_TO_EMAIL` | your inbox | a test inbox | a test inbox |
@@ -53,8 +52,8 @@ for the environment shown. Vercel's **Production** and **Preview** rows are the 
 
 Why these differ:
 - UAT edits must not change live data, so UAT has its own database.
-- Deleting in the admin also deletes Cloudinary assets. UAT needs its own account, or its database
-  would hold the same image IDs as production.
+- Deleting in the admin also deletes the image from R2. UAT needs its own buckets, or deleting a UAT image would remove
+  the production copy.
 - UAT form tests shouldn't email your real inbox.
 - Local development should not count in GA4 or use production services.
 - Local and UAT share `swati_portfolio`, so local edits show up in UAT. Use `swati_portfolio_dev`

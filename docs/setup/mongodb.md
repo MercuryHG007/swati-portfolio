@@ -69,7 +69,7 @@ paid plan with static outbound IPs and list only those addresses.
    named `test`:
 
    ```
-   mongodb+srv://swati-app:PASSWORD@cluster0.xxxxx.mongodb.net/swati_portfolio?retryWrites=true&w=majority&appName=swati-portfolio
+   mongodb+srv://swati-app:<password>@cluster0.xxxxx.mongodb.net/swati_portfolio?retryWrites=true&w=majority&appName=swati-portfolio
    ```
 
 Use the database name for each environment: `swati_portfolio_prod` for production, and
@@ -83,7 +83,7 @@ points the app at a different database, which is empty unless data already exist
 Add it to `.env.local` in the project root:
 
 ```bash
-MONGODB_URI=mongodb+srv://swati-app:PASSWORD@cluster0.xxxxx.mongodb.net/swati_portfolio?retryWrites=true&w=majority&appName=swati-portfolio
+MONGODB_URI=mongodb+srv://swati-app:<password>@cluster0.xxxxx.mongodb.net/swati_portfolio?retryWrites=true&w=majority&appName=swati-portfolio
 ```
 
 Also add it in **Vercel → Project → Settings → Environment Variables**. Use `swati_portfolio_prod` for
@@ -167,7 +167,7 @@ Yes. It finds the user by email and sets a new password, or creates the user if 
 Run `create-admin` with the second person's email. Each email is a separate login.
 
 **Are my images stored in MongoDB?**
-No. Images live in Cloudinary. MongoDB stores their Cloudinary IDs, along with titles, descriptions, and status.
+No. Images live in Cloudflare R2. MongoDB stores their public IDs, along with titles, descriptions, and status.
 
 **Are the database contents backed up?**
 Backup options depend on your Atlas tier. Check the cluster's **Backup** tab to see what it supports. If you can't rely on it, export your content regularly.

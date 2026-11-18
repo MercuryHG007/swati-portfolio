@@ -29,46 +29,64 @@ async function databaseHasNoPublishedArtworks() {
   }
 }
 
-async function fromSnapshot(key: string): Promise<{ found: true; value: unknown } | { found: false }> {
+export type Fallback<T> = { found: true; value: T } | { found: false };
+
+export async function readSnapshotEntry<T>(name: string, args: unknown[]): Promise<Fallback<T>> {
   const snapshot = await readContentSnapshot();
-  const text = snapshot?.entries[key];
+  const text = snapshot?.entries[`${name}:${JSON.stringify(args)}`];
   if (text === undefined) return { found: false };
-  return { found: true, value: decodeSnapshotValue(text) };
+  return { found: true, value: decodeSnapshotValue(text) as T };
+}
+
+// Shared by the single-record getters and the portfolio listings. The live query runs first. A failure opens
+// the breaker, and the snapshot is served until it closes. A reachable database with no published artworks
+// while the snapshot has content is treated as wiped, so the snapshot is served.
+export async function serveWithFallback<T>(options: {
+  label: string;
+  live: () => Promise<T>;
+  fromSnapshot: () => Promise<Fallback<T>>;
+  isEmpty: (value: T) => boolean;
+}): Promise<T> {
+  if (liveOnlyStore.getStore()) return options.live();
+
+  if (Date.now() < breakerOpenUntil) {
+    const fallback = await options.fromSnapshot();
+    if (fallback.found) return fallback.value;
+    // Nothing to serve and the database is known to be down, so fail now rather than wait for another timeout.
+    throw new Error(`${options.label}: database unavailable and no snapshot entry for these arguments`);
+  }
+
+  let live: T;
+  try {
+    live = await options.live();
+  } catch (err) {
+    breakerOpenUntil = Date.now() + BREAKER_MS;
+    console.error(`[content] ${options.label} failed; serving snapshot if available.`, err);
+    const fallback = await options.fromSnapshot();
+    if (fallback.found) return fallback.value;
+    throw err;
+  }
+
+  if (options.isEmpty(live)) {
+    const fallback = await options.fromSnapshot();
+    if (fallback.found && !options.isEmpty(fallback.value) && (await databaseHasNoPublishedArtworks())) {
+      console.warn(`[content] ${options.label}: database has no published artworks; serving snapshot.`);
+      return fallback.value;
+    }
+  }
+
+  return live;
 }
 
 // Wraps a public read query. Live result first. If the database fails, the last snapshot is served.
 // If the database answers but has no published artworks while the snapshot has content, it is treated as wiped
 // and the snapshot is served instead.
 export function resilient<A extends unknown[], R>(name: string, query: (...args: A) => Promise<R>) {
-  return async (...args: A): Promise<R> => {
-    if (liveOnlyStore.getStore()) return query(...args);
-
-    const key = `${name}:${JSON.stringify(args)}`;
-
-    if (Date.now() < breakerOpenUntil) {
-      const fallback = await fromSnapshot(key);
-      if (fallback.found) return fallback.value as R;
-    }
-
-    let live: R;
-    try {
-      live = await query(...args);
-    } catch (err) {
-      breakerOpenUntil = Date.now() + BREAKER_MS;
-      console.error(`[content] ${name} failed; serving snapshot if available.`, err);
-      const fallback = await fromSnapshot(key);
-      if (fallback.found) return fallback.value as R;
-      throw err;
-    }
-
-    if (isEmptyResult(live)) {
-      const fallback = await fromSnapshot(key);
-      if (fallback.found && !isEmptyResult(fallback.value) && (await databaseHasNoPublishedArtworks())) {
-        console.warn(`[content] ${name}: database has no published artworks; serving snapshot.`);
-        return fallback.value as R;
-      }
-    }
-
-    return live;
-  };
+  return (...args: A): Promise<R> =>
+    serveWithFallback<R>({
+      label: name,
+      live: () => query(...args),
+      fromSnapshot: () => readSnapshotEntry<R>(name, args),
+      isEmpty: isEmptyResult,
+    });
 }

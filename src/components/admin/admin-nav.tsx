@@ -2,7 +2,7 @@ import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { AdminNavLinks } from "@/components/admin/admin-nav-links";
 import { UserMenu } from "@/components/admin/user-menu";
-import { CldImage } from "@/components/cloudinary-image";
+import { MediaImage } from "@/components/media-image";
 import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
 import { TextLink, textLinkClasses } from "@/components/text-link/text-link";
 import { getAbout } from "@/lib/queries";
@@ -26,13 +26,11 @@ export async function AdminNav() {
     <header className="sticky top-0 z-40 flex h-(--header-height) items-center justify-between gap-4 border-b border-border bg-background px-6">
       <Link href="/admin" aria-label="Admin dashboard" className="shrink-0">
         {logo ? (
-          <CldImage
+          <MediaImage
             src={logo.publicId}
             alt={logo.alt || "Swati Garg"}
             width={LOGO_SIZE * 2}
             height={LOGO_SIZE * 2}
-            format="auto"
-            quality="auto"
             className="h-10 w-10"
           />
         ) : (

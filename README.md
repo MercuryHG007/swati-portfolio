@@ -9,7 +9,7 @@ admin area for managing all of it.
 - **Next.js 16** (App Router, Turbopack) + **React 19** + **TypeScript**
 - **Tailwind CSS v4** (CSS-first `@theme` tokens in `src/app/globals.css` — no `tailwind.config.js`)
 - **MongoDB Atlas** + **Mongoose** for data
-- **Cloudinary** for image hosting/transforms (`next-cloudinary`'s `CldImage`)
+- **Cloudflare R2** for image storage. Uploads are kept as originals, and the site serves pre-made WebP variants from a public custom domain. See [docs/setup/media-storage.md](docs/setup/media-storage.md)
 - **NextAuth v5** (Credentials provider) for admin authentication
 - **Resend** for contact-form email notifications
 
@@ -31,8 +31,9 @@ Open [http://localhost:3000](http://localhost:3000) for the public site, and
 | Variable | Required | Notes |
 | --- | --- | --- |
 | `MONGODB_URI` | yes | MongoDB Atlas connection string |
-| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | yes | Server-side Cloudinary SDK config |
-| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes | Same cloud name, exposed client-side for `CldImage` |
+| `NEXT_PUBLIC_MEDIA_BASE_URL` | yes | Public media domain, for example `https://media.<your domain>`. Images are served from its R2 variants |
+| `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | yes | R2 API token, server-only. See [docs/setup/media-storage.md](docs/setup/media-storage.md) |
+| `R2_MEDIA_BUCKET` / `R2_ORIGINALS_BUCKET` | yes | Public variants bucket and private originals bucket |
 | `NEXTAUTH_SECRET` | yes | `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | yes in dev | `http://localhost:3000` locally; not required on Vercel since `trustHost: true` trusts the request host |
 | `RESEND_API_KEY` / `CONTACT_TO_EMAIL` | optional | Contact form still saves to Mongo without these; email notification is just skipped |
@@ -42,6 +43,7 @@ Open [http://localhost:3000](http://localhost:3000) for the public site, and
 | `GEMINI_API_KEY` | optional | Enables the admin "Suggest details with AI" buttons on artwork and series forms. Server-only |
 | `GEMINI_ARTWORK_MODELS` | optional | Comma-separated Gemini model IDs to try in order, shared by all AI assistants. Defaults to `gemini-3.7-flash,gemini-3.1-flash-lite` |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | optional | Cloudflare Turnstile captcha on the contact form. Set both or neither. Use a separate widget for UAT. See [docs/setup/turnstile.md](docs/setup/turnstile.md) |
+| `R2_BACKUP_BUCKET`, `BACKUP_ENCRYPTION_KEY`, `CRON_SECRET` | optional | Nightly backups, content snapshot, contact-enquiry spool. Blank locally unless you run a restore drill. See [docs/setup/disaster-recovery.md](docs/setup/disaster-recovery.md) |
 
 ### Useful scripts
 

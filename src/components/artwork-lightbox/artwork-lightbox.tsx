@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- slides and thumbnails use pre-sized Cloudinary URLs built in artwork-gallery; next/image would re-process them */
+/* eslint-disable @next/next/no-img-element -- slides and thumbnails use pre-sized media URLs built in artwork-gallery; next/image would re-process them */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";

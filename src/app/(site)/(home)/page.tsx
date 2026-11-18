@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { getCldImageUrl } from "next-cloudinary";
 import { FeaturedCarousel, type CarouselItem } from "@/components/featured-carousel";
 import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
 import { JsonLd } from "@/components/json-ld";
 import { getAbout, getFeaturedArtworks, getHomeSettings, getMediumsWithWork } from "@/lib/queries";
-import { artistJsonLd, cloudinaryImageUrl, pageMetadata, websiteJsonLd } from "@/lib/seo";
+import { r2MediaUrl } from "@/lib/media-storage";
+import { artistJsonLd, mediaImageUrl, pageMetadata, websiteJsonLd } from "@/lib/seo";
 
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
   const [cover] = await getFeaturedArtworks(1);
   const image = cover?.images?.[0];
-  const url = image ? cloudinaryImageUrl(image.publicId) : undefined;
+  const url = image ? mediaImageUrl(image.publicId) : undefined;
   return pageMetadata({
     title: "Swati Garg — Watercolor Artist",
     description: "Portfolio of watercolor, acrylic, pencil and oil works by Swati Garg.",
@@ -25,16 +25,7 @@ const PLACEHOLDER_WIDTH = 32;
 
 function blurPlaceholder(image: { publicId: string; width: number; height: number }) {
   if (!image.width || !image.height) return undefined;
-  return getCldImageUrl({
-    src: image.publicId,
-    width: PLACEHOLDER_WIDTH,
-    height: Math.round((PLACEHOLDER_WIDTH * image.height) / image.width),
-    crop: "fill",
-    gravity: "auto",
-    blur: "1000",
-    quality: "auto:low",
-    format: "auto",
-  });
+  return r2MediaUrl(image.publicId, PLACEHOLDER_WIDTH);
 }
 
 export default async function Home() {

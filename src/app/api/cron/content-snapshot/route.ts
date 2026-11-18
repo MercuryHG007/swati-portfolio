@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { refreshContentSnapshot } from "@/lib/content-snapshot";
+import { replayContactSpool } from "@/lib/contact-spool";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,11 +15,17 @@ export async function GET(request: NextRequest) {
 
   try {
     const snapshot = await refreshContentSnapshot();
+    // Moves contact messages spooled while the database was down. A replay failure must not fail the snapshot.
+    const contactSpool = await replayContactSpool().catch((err) => {
+      console.error("Contact spool replay failed:", err);
+      return null;
+    });
     return NextResponse.json({
       ok: true,
       generatedAt: snapshot.generatedAt,
       artworkCount: snapshot.artworkCount,
       entries: Object.keys(snapshot.entries).length,
+      contactSpool,
     });
   } catch (err) {
     console.error("Scheduled content snapshot failed:", err);

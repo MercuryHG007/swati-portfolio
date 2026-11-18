@@ -6,13 +6,14 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-// Cloudflare R2 speaks the S3 API. Used for DB backups, the content snapshot and the Cloudinary mirror.
-// Server-only: the access key is never exposed to the client.
+// Cloudflare R2 speaks the S3 API. Used for the image originals and variants, DB backups, and the content snapshot.
 const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
 
 export const R2_BACKUP_BUCKET = process.env.R2_BACKUP_BUCKET;
-export const R2_MIRROR_BUCKET = process.env.R2_MIRROR_BUCKET;
+export const R2_MEDIA_BUCKET = process.env.R2_MEDIA_BUCKET;
+export const R2_ORIGINALS_BUCKET = process.env.R2_ORIGINALS_BUCKET;
 
 export function isR2Configured() {
   return Boolean(R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY);
@@ -28,6 +29,8 @@ function client() {
     region: "auto",
     endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
     forcePathStyle: true,
+    // Presigned browser uploads must not carry SDK-added checksum query params: CORS would block the extra headers.
+    requestChecksumCalculation: "WHEN_REQUIRED",
     credentials: {
       accessKeyId: R2_ACCESS_KEY_ID!,
       secretAccessKey: R2_SECRET_ACCESS_KEY!,
@@ -42,8 +45,24 @@ function isNotFound(err: unknown) {
   return name === "NoSuchKey" || name === "NotFound" || status === 404;
 }
 
-export async function putR2Object(bucket: string, key: string, body: Buffer | string, contentType?: string) {
-  await client().send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: contentType }));
+export async function putR2Object(
+  bucket: string,
+  key: string,
+  body: Buffer | string,
+  contentType?: string,
+  cacheControl?: string
+) {
+  await client().send(
+    new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: contentType, CacheControl: cacheControl })
+  );
+}
+
+// A short-lived URL that lets the browser upload one object straight to R2. The signature doesn't cover the body
+// size or content type, so the process route checks both before writing any variants.
+export async function presignR2Put(bucket: string, key: string, contentType: string, expiresIn = 300) {
+  return getSignedUrl(client(), new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType }), {
+    expiresIn,
+  });
 }
 
 export async function getR2Object(bucket: string, key: string): Promise<Buffer | null> {

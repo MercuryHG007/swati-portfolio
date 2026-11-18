@@ -3,7 +3,7 @@
 import { AppLink as Link } from "@/components/app-link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
-import { ProtectedImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/media-image";
 import { Button } from "@/components/button/button";
 import { CardTitle } from "@/components/card-title/card-title";
 

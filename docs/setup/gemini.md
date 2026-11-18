@@ -15,7 +15,7 @@ the rest of the admin works as normal.
 | --- | --- | --- |
 | `GEMINI_API_KEY` | `src/app/api/admin/artwork-assist/route.ts` and `src/app/api/admin/series-assist/route.ts` (shared client in `src/lib/gemini.ts`) | **No. Secret.** |
 | `GEMINI_ARTWORK_MODELS` | Both routes. Optional, comma-separated, tried in order | No |
-| `CLOUDINARY_CLOUD_NAME` | Both routes, to fetch the image. Already required by [Cloudinary](./cloudinary.md) | No |
+| `NEXT_PUBLIC_MEDIA_BASE_URL` and `R2_ORIGINALS_BUCKET` | Both routes, to fetch the original image from R2. Set up in [Image storage](./media-storage.md) | No |
 
 Notes:
 
@@ -93,7 +93,7 @@ The HTTP code is the most useful clue:
 | `HTTP 404` | The model name isn't available to your key (older names are retired) | Remove the model from `GEMINI_ARTWORK_MODELS`, or use `gemini-3.1-flash-lite` |
 | `HTTP 429` | Rate or quota limit reached | Wait a minute and try again |
 | `HTTP 503` | Google reports high demand. This is temporary | Try again later, or put a second model first in `GEMINI_ARTWORK_MODELS` |
-| `Cloudinary returned HTTP …` | The image couldn't be fetched | See [Cloudinary](./cloudinary.md) |
+| `Media store returned HTTP …` | The image couldn't be fetched | See [Image storage](./media-storage.md) |
 
 The toast shows only a general message. The terminal has the detail.
 

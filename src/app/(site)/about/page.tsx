@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
-import { ProtectedImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/media-image";
 import { ExhibitionList } from "@/components/exhibition-list";
 import { getAbout, getPublishedExhibitions } from "@/lib/queries";
 import { JsonLd } from "@/components/json-ld";

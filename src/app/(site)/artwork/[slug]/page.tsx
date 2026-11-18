@@ -19,7 +19,7 @@ import { getPrevNext } from "@/lib/prev-next";
 import { formatDateRange, formatDimensions, getYear } from "@/lib/format";
 import { toMetaDescription } from "@/lib/meta-description";
 import { JsonLd } from "@/components/json-ld";
-import { breadcrumbJsonLd, cloudinaryImageUrl, pageMetadata, visualArtworkJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, mediaImageUrl, pageMetadata, visualArtworkJsonLd } from "@/lib/seo";
 import type { AvailabilityStatus } from "@/models/shared";
 
 const AVAILABILITY_TEXT: Record<AvailabilityStatus, string> = {
@@ -39,7 +39,7 @@ export async function generateMetadata({
   if (!artwork) return {};
 
   const cover = artwork.images?.[0];
-  const coverUrl = cover ? cloudinaryImageUrl(cover.publicId) : undefined;
+  const coverUrl = cover ? mediaImageUrl(cover.publicId) : undefined;
   // Fallback for works without a description, so each page still gets a distinct snippet.
   const fallbackDescription = `${artwork.title}${artwork.medium ? `, ${artwork.medium.name.toLowerCase()}` : ""} by Swati Garg.`;
   return pageMetadata({

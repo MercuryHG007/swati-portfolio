@@ -1,19 +1,27 @@
-import { cloudinary } from "./cloudinary";
 import { connectToDatabase } from "./mongodb";
+import { deleteR2Object, R2_MEDIA_BUCKET, R2_ORIGINALS_BUCKET } from "./r2";
+import { MEDIA_VARIANT_WIDTHS, variantKey } from "./media-storage";
 import { About, Artwork, Exhibition, Series } from "@/models";
 
 type ImageRef = { publicId: string } | null | undefined;
 
-// Deleting a record, or replacing one of its images on edit, previously left the old
-// Cloudinary asset orphaned forever — call this wherever an image reference is dropped.
-export async function destroyCloudinaryAssets(publicIds: string[]) {
+// Deleting a record, or replacing one of its images on edit, must also remove the image from R2, or it is orphaned.
+export async function destroyMediaAssets(publicIds: string[]) {
   const unique = [...new Set(publicIds.filter(Boolean))];
+  await Promise.all(unique.map((publicId) => destroyMediaAsset(publicId)));
+}
+
+async function destroyMediaAsset(publicId: string) {
+  if (!R2_MEDIA_BUCKET || !R2_ORIGINALS_BUCKET) {
+    console.error(`Cannot delete ${publicId}: R2 media buckets are not configured`);
+    return;
+  }
+  const targets = [
+    ...MEDIA_VARIANT_WIDTHS.map((width) => deleteR2Object(R2_MEDIA_BUCKET!, variantKey(publicId, width))),
+    deleteR2Object(R2_ORIGINALS_BUCKET, publicId),
+  ];
   await Promise.all(
-    unique.map((publicId) =>
-      cloudinary.uploader.destroy(publicId).catch((err) => {
-        console.error(`Failed to delete Cloudinary asset ${publicId}:`, err);
-      })
-    )
+    targets.map((task) => task.catch((err) => console.error(`Failed to delete R2 object for ${publicId}:`, err)))
   );
 }
 
@@ -42,5 +50,5 @@ export async function destroyUnreferencedUploads(publicIds: string[]) {
     About.distinct("footerLogo.publicId", { "footerLogo.publicId": filter }),
   ]);
   const stored = new Set(referenced.flat().map(String));
-  await destroyCloudinaryAssets(candidates.filter((publicId) => !stored.has(publicId)));
+  await destroyMediaAssets(candidates.filter((publicId) => !stored.has(publicId)));
 }

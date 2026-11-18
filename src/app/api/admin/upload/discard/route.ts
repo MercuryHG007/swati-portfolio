@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { destroyUnreferencedUploads } from "@/lib/cloudinary-cleanup";
+import { destroyUnreferencedUploads } from "@/lib/media-cleanup";
 
 export const runtime = "nodejs";
 

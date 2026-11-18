@@ -1,7 +1,7 @@
 import { Schema } from "mongoose";
 
-// Embedded (not a separate collection) — one entry per uploaded Cloudinary asset.
-export const cloudinaryImageSchema = new Schema(
+// Embedded (not a separate collection) — one entry per uploaded image, keyed by its R2 public id.
+export const mediaImageSchema = new Schema(
   {
     publicId: { type: String, required: true },
     width: { type: Number, required: true },

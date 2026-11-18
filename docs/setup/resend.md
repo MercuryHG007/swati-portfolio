@@ -18,8 +18,9 @@ Email is optional. Without these variables the form still works, and messages st
 Notes on the code's behaviour:
 
 - Send failures are logged on the server (`Failed to send contact notification email`). The
-  visitor still sees "Thanks — your message has been sent", so check the logs or the Resend
-  dashboard if emails stop arriving.
+  message is still kept: in the database, or encrypted in R2 when the database is down. Visitors see
+  "Thanks — your message has been sent" as long as one of the two worked. They see an error only when
+  both the email and the save fail. If emails stop arriving, check the logs and the Resend dashboard.
 - Each notification has subject `New contact message from <name>`, and its body begins with the
   sender's name and email address.
 
@@ -103,6 +104,23 @@ Add the same variables in **Vercel → Project → Settings → Environment Vari
 If no email arrives but the message appears in `/admin/messages`, the database is working and the
 problem is the email path. Check the Resend logs, then the server logs for the
 `Failed to send contact notification email` message.
+
+## Image monitor alerts
+
+The scheduled **Media health** workflow emails you when the media domain is down or critical. It uses
+the same Resend account, through these GitHub Actions secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `RESEND_API_KEY` | The same key as above |
+| `ALERT_EMAIL` | The address that receives alerts |
+| `RESEND_FROM_EMAIL` | Optional. Same as above |
+
+With Resend's default sender, mail is delivered only to the address on your Resend account. So either set
+`ALERT_EMAIL` to that address, or verify your domain (Part 2, Option B) before relying on alerts. See
+[disaster recovery](./disaster-recovery.md#one-time-setup) for the full list of steps.
+
+---
 
 ## Troubleshooting
 

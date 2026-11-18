@@ -1,5 +1,5 @@
 import { AppLink as Link } from "@/components/app-link";
-import { ProtectedImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/media-image";
 import { getPublishedSeries } from "@/lib/queries";
 import { CardTitle } from "@/components/card-title/card-title";
 import { Breadcrumbs } from "@/components/breadcrumbs";

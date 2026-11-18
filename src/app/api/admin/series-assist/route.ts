@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { auth } from "@/auth";
 import { getAllSeries, getArtworksBySeriesIdAdmin } from "@/lib/admin-queries";
-import { fetchCloudinaryImage, isValidPublicId, requestGeminiSuggestion } from "@/lib/gemini";
+import { fetchMediaImage, isValidPublicId, requestGeminiSuggestion } from "@/lib/gemini";
 import { SERIES_SUGGESTION_SCHEMA, buildSeriesPrompt, parseSeriesSuggestion } from "@/lib/series-assist";
 
 export const runtime = "nodejs";
@@ -16,8 +16,7 @@ export async function POST(request: NextRequest) {
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  if (!apiKey || !cloudName) {
+  if (!apiKey) {
     return NextResponse.json({ error: "The AI assistant is not configured." }, { status: 503 });
   }
 
@@ -44,7 +43,7 @@ export async function POST(request: NextRequest) {
         : Promise.resolve<string[]>([]),
     ]);
     const context = { existingTitles: allSeries.map((item) => item.title), artworkTitles };
-    const image = await fetchCloudinaryImage(cloudName, publicId);
+    const image = await fetchMediaImage(publicId);
     const { suggestion, model } = await requestGeminiSuggestion({
       apiKey,
       prompt: buildSeriesPrompt(context),

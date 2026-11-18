@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "15 20 * * *"
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Take a full backup even if nothing changed"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -30,18 +35,23 @@ jobs:
           curl -fsSL https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.12.0.tgz | tar -xz
           echo "$PWD/mongodb-database-tools-ubuntu2204-x86_64-100.12.0/bin" >> "$GITHUB_PATH"
       - name: Dump, encrypt and upload
+        env:
+          FORCE_BACKUP: ${{ github.event.inputs.force == 'true' && '1' || '0' }}
         run: node scripts/backup-mongo-to-r2.mjs
 
-  cloudinary-mirror:
+  # Copies the newest encrypted dump and the image originals out of Cloudflare into the private backup repo.
+  # Runs even if the dump job failed, so images are still copied. Each copy step can fail on its own.
+  backup-r2-to-offsite:
+    needs: mongo-backup
+    if: always()
     runs-on: ubuntu-latest
     env:
-      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      R2_MIRROR_BUCKET: ${{ secrets.R2_MIRROR_BUCKET }}
+      R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+      R2_ORIGINALS_BUCKET: ${{ secrets.R2_ORIGINALS_BUCKET }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,5 +59,27 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Copy new Cloudinary images to R2
-        run: node scripts/mirror-cloudinary-to-r2.mjs
+      - name: Clone the private backup repo
+        run: git clone "https://x-access-token:${BACKUP_REPO_TOKEN}@github.com/MercuryHG007/swati-portfolio-backups.git" offsite
+      - name: Copy the newest database dump
+        id: db
+        continue-on-error: true
+        run: node scripts/backup-r2-to-offsite.mjs db offsite/mongo
+      - name: Copy image originals
+        id: images
+        continue-on-error: true
+        run: node scripts/backup-r2-to-offsite.mjs images offsite/images
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          cd offsite
+          git config user.name "swati-portfolio-backup-bot"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -m "Off-site copy $(date -u +%Y-%m-%d)" || echo "No changes to commit"
+          git push
+      - name: Report off-site copy failure
+        if: steps.db.outcome == 'failure' || steps.images.outcome == 'failure'
+        run: |
+          echo "::error::Off-site copy failed (database dump or image originals). Check the failed step and rerun."
+          exit 1

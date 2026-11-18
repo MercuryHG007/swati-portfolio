@@ -1,8 +1,15 @@
 import { unstable_cache } from "next/cache";
 import type { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
-import { resilient } from "@/lib/resilient-read";
+import { readSnapshotEntry, resilient, serveWithFallback, type Fallback } from "@/lib/resilient-read";
 import { seededShuffle } from "@/lib/portfolio-order";
+import {
+  portfolioFacetsFromSnapshot,
+  portfolioPageFromSnapshot,
+  type CatalogueArtwork,
+  type CatalogueTaxonomy,
+  type PortfolioSnapshotInput,
+} from "@/lib/portfolio-fallback";
 import {
   PORTFOLIO_PAGE_SIZE,
   SIZE_BUCKETS,
@@ -169,7 +176,7 @@ export async function getPortfolioPage(
 ): Promise<PortfolioPageResponse> {
   await connectToDatabase();
   const match = buildPortfolioMatch(resolved);
-  const ids = await Artwork.find(match, { _id: 1 }).lean();
+  const ids = await Artwork.find(match, { _id: 1 }).sort({ _id: 1 }).lean();
   const ordered = seededShuffle(
     ids.map((doc) => String(doc._id)),
     seed,
@@ -351,6 +358,62 @@ export const getSitemapEntries = resilient("getSitemapEntries", getSitemapEntrie
 export const getPublishedFaqs = resilient("getPublishedFaqs", getPublishedFaqsLive);
 export const getLlmsContent = resilient("getLlmsContent", getLlmsContentLive);
 
+// Every published artwork in a plain shape, captured in the snapshot so portfolio listings work without the database.
+async function getPortfolioCatalogueLive(): Promise<CatalogueArtwork[]> {
+  await connectToDatabase();
+  const docs = await Artwork.find(
+    { status: "published" },
+    { title: 1, slug: 1, medium: 1, subjects: 1, dimensions: 1, images: { $slice: 1 } }
+  )
+    .sort({ _id: 1 })
+    .lean();
+  return docs.map((doc) => {
+    const image = doc.images?.[0];
+    return {
+      id: String(doc._id),
+      slug: doc.slug,
+      title: doc.title,
+      medium: doc.medium ? String(doc.medium) : null,
+      subjects: ((doc.subjects ?? []) as unknown[]).map((subject) => String(subject)),
+      dimensions: doc.dimensions
+        ? { width: doc.dimensions.width ?? undefined, height: doc.dimensions.height ?? undefined, unit: doc.dimensions.unit }
+        : null,
+      image: image
+        ? { publicId: image.publicId, alt: image.alt, width: image.width, height: image.height }
+        : null,
+    };
+  });
+}
+
+export const getPortfolioCatalogue = resilient("getPortfolioCatalogue", getPortfolioCatalogueLive);
+
+// Reads the snapshot entries a portfolio listing needs. Not found if any are missing, so the listing fails rather
+// than showing partial results. EJSON restores _id as an ObjectId, so taxonomy ids are converted to strings to match
+// the catalogue's ids.
+async function portfolioFromSnapshot<T>(compute: (input: PortfolioSnapshotInput) => T): Promise<Fallback<T>> {
+  const [artworks, mediums, subjects, mediumsWithWork, subjectsWithWork] = await Promise.all([
+    readSnapshotEntry<CatalogueArtwork[]>("getPortfolioCatalogue", []),
+    readSnapshotEntry<CatalogueTaxonomy[]>("getMediums", []),
+    readSnapshotEntry<CatalogueTaxonomy[]>("getSubjects", []),
+    readSnapshotEntry<CatalogueTaxonomy[]>("getMediumsWithWork", []),
+    readSnapshotEntry<CatalogueTaxonomy[]>("getSubjectsWithWork", []),
+  ]);
+  if (!artworks.found || !mediums.found || !subjects.found || !mediumsWithWork.found || !subjectsWithWork.found) {
+    return { found: false };
+  }
+  const asTaxonomies = (list: CatalogueTaxonomy[]) => list.map((item) => ({ ...item, _id: String(item._id) }));
+  return {
+    found: true,
+    value: compute({
+      artworks: artworks.value,
+      mediums: asTaxonomies(mediums.value),
+      subjects: asTaxonomies(subjects.value),
+      mediumsWithWork: asTaxonomies(mediumsWithWork.value),
+      subjectsWithWork: asTaxonomies(subjectsWithWork.value),
+    }),
+  };
+}
+
 // Cached copies of everything the /portfolio page reads. The page depends on searchParams, so it
 // can't be prerendered; caching the queries keeps it from hitting MongoDB on every visit. Admin
 // actions call updateTag(PORTFOLIO_CACHE_TAG) so edits show up immediately, and the time-based
@@ -383,13 +446,24 @@ export const getCachedSeriesSettings = unstable_cache(
 
 export const getCachedPortfolioPage = unstable_cache(
   async (filters: PortfolioFilters, page: number, seed: string) =>
-    getPortfolioPage(await resolvePortfolioFilters(filters), page, seed),
+    serveWithFallback<PortfolioPageResponse>({
+      label: "getPortfolioPage",
+      live: async () => getPortfolioPage(await resolvePortfolioFilters(filters), page, seed),
+      fromSnapshot: () => portfolioFromSnapshot((input) => portfolioPageFromSnapshot(input, filters, page, seed)),
+      isEmpty: (value) => value.total === 0,
+    }),
   ["portfolio-page"],
   portfolioCacheOptions
 );
 
 export const getCachedPortfolioFacets = unstable_cache(
-  async (filters: PortfolioFilters) => getPortfolioFacets(await resolvePortfolioFilters(filters)),
+  async (filters: PortfolioFilters) =>
+    serveWithFallback<PortfolioFacets>({
+      label: "getPortfolioFacets",
+      live: async () => getPortfolioFacets(await resolvePortfolioFilters(filters)),
+      fromSnapshot: () => portfolioFromSnapshot((input) => portfolioFacetsFromSnapshot(input, filters)),
+      isEmpty: (value) => value.mediums.length === 0 && value.subjects.length === 0,
+    }),
   ["portfolio-facets"],
   portfolioCacheOptions
 );

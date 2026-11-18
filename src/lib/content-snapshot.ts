@@ -39,6 +39,7 @@ export async function buildContentSnapshot(): Promise<ContentSnapshot> {
       capture("getFeaturedArtworks", [1], queries.getFeaturedArtworks),
       capture("getFeaturedArtworks", [8], queries.getFeaturedArtworks),
       capture("getStandaloneArtworks", [], queries.getStandaloneArtworks),
+      capture("getPortfolioCatalogue", [], queries.getPortfolioCatalogue),
       capture("getPublishedExhibitions", [], queries.getPublishedExhibitions),
       capture("getAbout", [], queries.getAbout),
       capture("getPublishedFaqs", [], queries.getPublishedFaqs),

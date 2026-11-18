@@ -1,5 +1,5 @@
 import { Schema, model, models } from "mongoose";
-import { cloudinaryImageSchema, PUBLICATION_STATUS } from "./shared";
+import { mediaImageSchema, PUBLICATION_STATUS } from "./shared";
 
 const exhibitionSchema = new Schema(
   {
@@ -12,7 +12,7 @@ const exhibitionSchema = new Schema(
     startDate: { type: Date, required: true },
     endDate: { type: Date },
     description: { type: String, default: "" },
-    images: { type: [cloudinaryImageSchema], default: [] },
+    images: { type: [mediaImageSchema], default: [] },
     status: { type: String, enum: PUBLICATION_STATUS, default: "hidden" },
     artworks: [{ type: Schema.Types.ObjectId, ref: "Artwork" }],
   },

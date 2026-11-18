@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { AvailabilityStatus } from "@/models/shared";
+import { r2MediaUrl } from "@/lib/media-storage";
 
 // Derived from Vercel's system variables, so no domain is hardcoded. VERCEL_PROJECT_PRODUCTION_URL is
 // the project's production domain, so preview and UAT deployments also point canonical links at the live site.
@@ -22,10 +23,10 @@ export function absoluteUrl(path: string): string {
   return new URL(path, getSiteUrl()).toString();
 }
 
-export function cloudinaryImageUrl(publicId: string, transform = "c_limit,w_1200"): string | undefined {
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  if (!cloudName || !publicId) return undefined;
-  return `https://res.cloudinary.com/${cloudName}/image/upload/${transform}/${publicId}`;
+// Absolute URL of the image served from the R2 media domain, for OG, Twitter and JSON-LD. Crawlers need a plain URL.
+export function mediaImageUrl(publicId: string, width = 1200): string | undefined {
+  if (!publicId) return undefined;
+  return r2MediaUrl(publicId, width);
 }
 
 type PageMetadataInput = {
@@ -119,7 +120,7 @@ export function visualArtworkJsonLd(artwork: {
   series?: { title: string; slug: string; linkable: boolean };
 }) {
   const images = artwork.imagePublicIds
-    .map((publicId) => cloudinaryImageUrl(publicId))
+    .map((publicId) => mediaImageUrl(publicId))
     .filter((url): url is string => Boolean(url));
   const availability = artwork.availability ? OFFER_AVAILABILITY[artwork.availability] : undefined;
   return {
@@ -180,7 +181,7 @@ export function exhibitionJsonLd(exhibition: {
   endDate?: Date | string;
   images?: { publicId: string; alt?: string }[];
 }) {
-  const image = exhibition.images?.[0] ? cloudinaryImageUrl(exhibition.images[0].publicId) : undefined;
+  const image = exhibition.images?.[0] ? mediaImageUrl(exhibition.images[0].publicId) : undefined;
   return {
     "@context": "https://schema.org",
     "@type": "ExhibitionEvent",

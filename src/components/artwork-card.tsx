@@ -1,6 +1,6 @@
 import { AppLink as Link } from "@/components/app-link";
 import { CardTitle } from "@/components/card-title/card-title";
-import { ProtectedImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/media-image";
 import { FadeInImage } from "@/components/fade-in-image";
 
 type ArtworkCardImage = {

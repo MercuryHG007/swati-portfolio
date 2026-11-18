@@ -1,27 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { ProtectedImage } from "@/components/cloudinary-image";
+import { ProtectedImage } from "@/components/media-image";
 import { ArtworkLightbox, type LightboxSlide } from "@/components/artwork-lightbox/artwork-lightbox";
-
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+import { r2MediaUrl } from "@/lib/media-storage";
 
 type GalleryImage = { publicId: string; alt?: string; width: number; height: number };
-
-// Lightbox slides need direct image URLs — CldImage/ProtectedImage only build one
-// internally for Next's loader, so the raw delivery URLs are constructed here instead.
-function cloudinaryUrl(publicId: string, transformations = "f_auto,q_auto") {
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${transformations}/${publicId}`;
-}
 
 export function ArtworkGallery({ images, title }: { images: GalleryImage[]; title: string }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   if (images.length === 0) return null;
 
+  // The lightbox takes plain URLs, so these are built here rather than by the image component.
   const slides: LightboxSlide[] = images.map((image) => ({
-    src: cloudinaryUrl(image.publicId),
-    thumbSrc: cloudinaryUrl(image.publicId, "f_auto,q_auto,c_fill,w_176,h_120"),
+    src: r2MediaUrl(image.publicId, 2400),
+    thumbSrc: r2MediaUrl(image.publicId, 320),
     alt: image.alt || title,
     width: image.width,
     height: image.height,
