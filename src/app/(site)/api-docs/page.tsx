@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { TextLink } from "@/components/text-link/text-link";
 import { CopyButton } from "@/components/copy-button";
-import { OPENAPI_MEDIA_TYPE, OPENAPI_PATH, OPENAPI_PATHS } from "@/lib/api-catalog";
+import { OPENAPI_MEDIA_TYPE, OPENAPI_PATH, OPENAPI_PATHS, API_CATALOG_PATH } from "@/lib/api-catalog";
 import { absoluteUrl, pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -26,7 +26,7 @@ export default function ApiDocsPage() {
             OpenAPI document
           </TextLink>{" "}
           ({OPENAPI_MEDIA_TYPE}). Automated clients can find it through the{" "}
-          <TextLink href="/.well-known/api-catalog" variant="primary" className="text-accent">
+          <TextLink href={API_CATALOG_PATH} variant="primary" className="text-accent">
             API catalog
           </TextLink>
           .

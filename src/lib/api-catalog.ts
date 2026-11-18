@@ -7,6 +7,20 @@ export const OPENAPI_MEDIA_TYPE = "application/openapi+json; version=3.0";
 
 export const API_DOCS_PATH = "/api-docs";
 export const OPENAPI_PATH = "/openapi.json";
+export const API_CATALOG_PATH = "/.well-known/api-catalog";
+export const SITEMAP_PATH = "/sitemap.xml";
+
+// Links advertised on the homepage with RFC 8288 Link headers. Relative targets resolve against the request URL.
+export const HOMEPAGE_LINKS = [
+  { rel: "api-catalog", href: API_CATALOG_PATH, type: API_CATALOG_MEDIA_TYPE },
+  { rel: "service-desc", href: OPENAPI_PATH, type: OPENAPI_MEDIA_TYPE },
+  { rel: "service-doc", href: API_DOCS_PATH, type: "text/html" },
+  { rel: "describedby", href: SITEMAP_PATH, type: "application/xml" },
+];
+
+export function homepageLinkHeader() {
+  return HOMEPAGE_LINKS.map(({ rel, href, type }) => `<${href}>; rel="${rel}"; type="${type}"`).join(", ");
+}
 
 type Parameter = {
   name: string;

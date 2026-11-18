@@ -1,11 +1,20 @@
-import { readFile, readdir } from "node:fs/promises";
+import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { OPENAPI_PATHS, apiCatalog } from "@/lib/api-catalog";
+import { HOMEPAGE_LINKS, OPENAPI_PATHS, apiCatalog, homepageLinkHeader } from "@/lib/api-catalog";
 
-const API_DIR = fileURLToPath(new URL("../app/api", import.meta.url));
+const APP_DIR = fileURLToPath(new URL("../app", import.meta.url));
+const API_DIR = path.join(APP_DIR, "api");
 const PUBLIC_API_ROOT = "portfolio";
+
+// Source file that serves each homepage link target.
+const LINK_TARGET_FILES: Record<string, string> = {
+  "/.well-known/api-catalog": ".well-known/api-catalog/route.ts",
+  "/openapi.json": "openapi.json/route.ts",
+  "/api-docs": "(site)/api-docs/page.tsx",
+  "/sitemap.xml": "sitemap.ts",
+};
 
 // Lists every GET route under the public API folder, as spec paths. Dynamic segments become {name}.
 async function publicRoutePaths(): Promise<string[]> {
@@ -40,5 +49,19 @@ describe("API catalog and OpenAPI spec", () => {
     const { anchor } = apiCatalog().linkset[0];
     const specPath = new URL(anchor).pathname.replace(/^\/api/, "");
     expect(Object.keys(OPENAPI_PATHS)).toContain(specPath);
+  });
+
+  it("advertises registered relation types on the homepage", () => {
+    const rels = HOMEPAGE_LINKS.map((link) => link.rel).sort();
+    expect(rels).toEqual(["api-catalog", "describedby", "service-desc", "service-doc"]);
+    expect(homepageLinkHeader()).toContain('</.well-known/api-catalog>; rel="api-catalog"');
+  });
+
+  it("points every homepage link at a file that serves it", async () => {
+    for (const link of HOMEPAGE_LINKS) {
+      const file = LINK_TARGET_FILES[link.href];
+      expect(file, `no source file mapped for ${link.href}`).toBeDefined();
+      await expect(access(path.join(APP_DIR, file))).resolves.toBeUndefined();
+    }
   });
 });

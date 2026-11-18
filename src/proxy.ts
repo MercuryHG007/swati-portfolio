@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/auth";
+import { homepageLinkHeader } from "@/lib/api-catalog";
 import { prefersMarkdown } from "@/lib/markdown";
 
 const LOGIN_PATH = "/admin/login";
@@ -20,6 +21,7 @@ export default auth((req) => {
 });
 
 // Agents that send `Accept: text/markdown` get the markdown route at the same URL. Everything else gets HTML.
+// The homepage HTML also advertises the API catalog and other machine-readable resources through Link headers.
 function negotiateMarkdown(req: NextRequest) {
   if (prefersMarkdown(req.headers.get("accept"))) {
     const url = req.nextUrl.clone();
@@ -28,7 +30,9 @@ function negotiateMarkdown(req: NextRequest) {
     url.search = "";
     return NextResponse.rewrite(url);
   }
-  return NextResponse.next();
+  const response = NextResponse.next();
+  if (req.nextUrl.pathname === "/") response.headers.set("Link", homepageLinkHeader());
+  return response;
 }
 
 export const config = {
