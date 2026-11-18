@@ -3,6 +3,8 @@ import type { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { readSnapshotEntry, resilient, serveWithFallback, type Fallback } from "@/lib/resilient-read";
 import { seededShuffle } from "@/lib/portfolio-order";
+import { formatDimensions, getYear } from "@/lib/format";
+import { mediaImageUrl } from "@/lib/seo";
 import {
   portfolioFacetsFromSnapshot,
   portfolioPageFromSnapshot,
@@ -465,5 +467,66 @@ export const getCachedPortfolioFacets = unstable_cache(
       isEmpty: (value) => value.mediums.length === 0 && value.subjects.length === 0,
     }),
   ["portfolio-facets"],
+  portfolioCacheOptions
+);
+
+// Same lists the site shows: published series, and mediums and subjects with at least one published work.
+export const getCachedPortfolioSeries = unstable_cache(
+  async () =>
+    (await getPublishedSeries()).map((item) => ({
+      slug: item.slug,
+      title: item.title,
+      description: item.description ?? "",
+    })),
+  ["portfolio-series-list"],
+  portfolioCacheOptions
+);
+
+export const getCachedPortfolioMediums = unstable_cache(
+  async () => (await getMediumsWithWork()).map((item) => ({ slug: item.slug, name: item.name })),
+  ["portfolio-medium-list"],
+  portfolioCacheOptions
+);
+
+export const getCachedPortfolioSubjects = unstable_cache(
+  async () => (await getSubjectsWithWork()).map((item) => ({ slug: item.slug, name: item.name })),
+  ["portfolio-subject-list"],
+  portfolioCacheOptions
+);
+
+// One published work, shaped like the artwork page. Null when the slug is unknown or unpublished.
+export const getCachedPortfolioArtwork = unstable_cache(
+  async (slug: string) => {
+    const artwork = await getArtworkBySlug(slug);
+    if (!artwork) return null;
+    return {
+      slug: artwork.slug,
+      title: artwork.title,
+      description: artwork.description ?? "",
+      medium: artwork.medium ? { slug: artwork.medium.slug, name: artwork.medium.name } : null,
+      subjects: (artwork.subjects ?? []).map((item: { slug: string; name: string }) => ({
+        slug: item.slug,
+        name: item.name,
+      })),
+      // A series is only named while its page is public, matching the artwork page's link.
+      series:
+        artwork.series?.status === "published"
+          ? { slug: artwork.series.slug, title: artwork.series.title }
+          : null,
+      year: getYear(artwork.dateMade) ?? null,
+      dimensions: formatDimensions(artwork.dimensions),
+      availability: artwork.availability ?? null,
+      images: (artwork.images ?? []).map(
+        (image: { publicId: string; alt?: string; width: number; height: number }) => ({
+          publicId: image.publicId,
+          url: mediaImageUrl(image.publicId) ?? null,
+          alt: image.alt ?? "",
+          width: image.width,
+          height: image.height,
+        })
+      ),
+    };
+  },
+  ["portfolio-artwork"],
   portfolioCacheOptions
 );
