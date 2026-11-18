@@ -3,7 +3,7 @@ import { MediaImage } from "@/components/media-image";
 import { TextLink } from "@/components/text-link/text-link";
 import { getAbout } from "@/lib/queries";
 
-// The logo is square and shown at 72px. Rendered at 2x so it stays sharp on high-density screens.
+// The logo is square and shown at 72px. next/image's srcset supplies the 2x file for high-density screens.
 const LOGO_SIZE = 72;
 
 export async function SiteFooter() {
@@ -41,8 +41,8 @@ export async function SiteFooter() {
             <MediaImage
               src={logo.publicId}
               alt={logo.alt || "Swati Garg"}
-              width={LOGO_SIZE * 2}
-              height={LOGO_SIZE * 2}
+              width={LOGO_SIZE}
+              height={LOGO_SIZE}
               className="h-[72px] w-[72px]"
             />
         </BrandLink>

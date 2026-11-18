@@ -1,7 +1,7 @@
 "use client";
 
 import { AppLink as Link } from "@/components/app-link";
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type Ref } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type Ref } from "react";
 import { ProtectedImage } from "@/components/media-image";
 
 export type CarouselItem = {
@@ -279,8 +279,7 @@ export function FeaturedCarousel({ items, label = "Featured work" }: { items: Ca
       aria-label={label}
       tabIndex={0}
       onKeyDown={onKeyDown}
-      className="relative w-full touch-pan-y cursor-grab select-none overflow-hidden active:cursor-grabbing"
-      style={{ "--h": "55svh" } as CSSProperties}
+      className="relative w-full touch-pan-y cursor-grab select-none overflow-hidden active:cursor-grabbing [--h:55svh] max-sm:[--h:40svh]"
     >
       <div ref={trackRef} className="flex w-max will-change-transform">
         {Array.from({ length: copies }, (_, index) => (
@@ -295,7 +294,7 @@ function Group({ items, groupRef, hidden = false }: { items: CarouselItem[]; gro
   return (
     <div ref={groupRef} aria-hidden={hidden || undefined} className="flex shrink-0 gap-8 pr-8">
       {items.map((item, index) => (
-        <Tile key={`${hidden ? "b" : "a"}-${item.href}`} item={item} hidden={hidden} eager={!hidden && index < 3} />
+        <Tile key={`${hidden ? "b" : "a"}-${item.href}`} item={item} hidden={hidden} eager={!hidden && index === 0} />
       ))}
     </div>
   );
@@ -303,9 +302,10 @@ function Group({ items, groupRef, hidden = false }: { items: CarouselItem[]; gro
 
 function Tile({ item, hidden, eager }: { item: CarouselItem; hidden: boolean; eager: boolean }) {
   const ratio = item.image && item.image.height ? item.image.width / item.image.height : 0.8;
-  // Tile height is 55svh and its width follows the image ratio. The image box is overscanned on both
-  // sides, so the rendered width is larger than the tile. `sizes` needs that real width.
-  const imageSizes = `calc(55svh * ${(ratio * (1 + OVERSCAN * 2)).toFixed(4)})`;
+  // Tile height is --h (55svh, or 40svh below 640px). Its width follows the image ratio. The image box is
+  // overscanned on both sides, so the rendered width is larger than the tile. `sizes` needs that real width.
+  const boxRatio = (ratio * (1 + OVERSCAN * 2)).toFixed(4);
+  const imageSizes = `(max-width: 639px) calc(40svh * ${boxRatio}), calc(55svh * ${boxRatio})`;
 
   return (
     <Link
@@ -331,7 +331,9 @@ function Tile({ item, hidden, eager }: { item: CarouselItem; hidden: boolean; ea
               sizes={imageSizes}
               draggable={false}
               className="object-cover"
+              // The first tile is the page's LCP image. Later tiles wait so they don't compete for bandwidth on phones.
               loading={eager ? "eager" : "lazy"}
+              fetchPriority={eager ? "high" : undefined}
               placeholder={item.placeholder ? "blur" : "empty"}
               blurDataURL={item.placeholder}
             />

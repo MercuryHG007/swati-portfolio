@@ -227,6 +227,9 @@ export function GridCarousel({ heading, body, ctaLabel, ctaHref, items }: GridCa
   const tiles = Array.from({ length: loop ? copies : 1 }, (_, copy) =>
     items.map((item, index) => ({ copy, index, item })),
   ).flat();
+  // Before the script moves the row to the primary copy, the server-rendered view shows copy 0. Its first tile is
+  // the one visible on load, so it leads too. Clones share image URLs with the primary copy, so nothing loads twice.
+  const isLeadTile = (copy: number, index: number) => index === 0 && (copy === 0 || copy === primaryCopy);
 
   return (
     <section
@@ -300,8 +303,10 @@ export function GridCarousel({ heading, body, ctaLabel, ctaHref, items }: GridCa
                     crop="fill"
                     gravity="auto"
                     sizes="(min-width: 1280px) 31vw, 70vw"
-                    // The first three tiles are above the fold on desktop, so they must not be lazy-loaded.
-                    loading={copy === primaryCopy && index < 3 ? "eager" : "lazy"}
+                    // The first three tiles of the primary copy are above the fold on desktop, so they must not be lazy-loaded.
+                    // The lead tile is the LCP image on phones; the other two load at low priority so they don't compete with it.
+                    loading={isLeadTile(copy, index) || (copy === primaryCopy && index < 3) ? "eager" : "lazy"}
+                    fetchPriority={isLeadTile(copy, index) ? "high" : copy === primaryCopy && index < 3 ? "low" : undefined}
                     className="scale-[1.05] object-cover transition duration-500 ease-out group-hover:scale-100 group-focus-visible:scale-100 motion-reduce:scale-100 motion-reduce:transition-none"
                   />
                 ) : null}
@@ -326,7 +331,7 @@ export function GridCarousel({ heading, body, ctaLabel, ctaHref, items }: GridCa
                     aria-label={`Show ${item.title}`}
                     aria-current={active || undefined}
                     onClick={() => scrollToIndex(index)}
-                    className="flex h-6 w-5 cursor-pointer items-center justify-center"
+                    className="flex h-6 w-6 cursor-pointer items-center justify-center"
                   >
                     <span
                       className={`relative block h-1.5 overflow-hidden rounded-full bg-muted/40 transition-[width] duration-300 ${active ? "w-4" : "w-1.5"}`}

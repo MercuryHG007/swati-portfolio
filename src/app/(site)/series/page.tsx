@@ -35,7 +35,7 @@ export default async function SeriesIndexPage() {
                     fill
                     crop="fill"
                     gravity="auto"
-                    sizes="(min-width: 640px) 50vw, 100vw"
+                    sizes="(min-width: 640px) 50vw, calc(100vw - 3rem)"
                     className="scale-[1.05] object-cover transition duration-500 ease-out group-hover:scale-100 group-focus-visible:scale-100 motion-reduce:scale-100 motion-reduce:transition-none"
                     loading={index === 0 ? "eager" : "lazy"}
                   />

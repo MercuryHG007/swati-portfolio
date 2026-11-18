@@ -35,6 +35,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Next streams metadata to browsers for speed, but sends it in <head> to crawlers that need it there. Next's default
+  // list misses Googlebot (no "-Google" suffix), so it is added here. The rest of the default list is kept, so social
+  // preview bots still get head metadata.
+  htmlLimitedBots: /Googlebot|[\w-]+-Google|Google-[\w-]+|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|googleweblight/i,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
