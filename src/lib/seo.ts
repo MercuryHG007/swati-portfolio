@@ -17,6 +17,9 @@ export function isIndexableDeployment(): boolean {
   return process.env.VERCEL_ENV === "production" && (!branch || branch === "main");
 }
 
+// Content Signals: no AI training, search indexing allowed, and AI assistants may read pages to answer questions.
+export const CONTENT_SIGNAL = "ai-train=no, search=yes, ai-input=yes";
+
 export function absoluteUrl(path: string): string {
   // The root has no trailing slash, matching the canonical tag Next renders for the home page.
   if (path === "/") return getSiteUrl().origin;

@@ -1,4 +1,4 @@
-import { absoluteUrl, isIndexableDeployment } from "@/lib/seo";
+import { CONTENT_SIGNAL, absoluteUrl, isIndexableDeployment } from "@/lib/seo";
 
 // Crawlers that gather content for AI model training. Search indexing uses separate user agents and stays allowed.
 // Compliance is voluntary, so this only signals the site's preference.
@@ -15,8 +15,7 @@ const AI_TRAINING_CRAWLERS = [
   "cohere-ai",
 ];
 
-// Content Signals: no AI training, search indexing allowed, and AI assistants may read pages to answer questions.
-const CONTENT_SIGNAL = "ai-train=no, search=yes, ai-input=yes";
+// Non-indexable deployments disallow everything, so every signal is off.
 const NOT_INDEXABLE_CONTENT_SIGNAL = "ai-train=no, search=no, ai-input=no";
 
 export function GET() {
