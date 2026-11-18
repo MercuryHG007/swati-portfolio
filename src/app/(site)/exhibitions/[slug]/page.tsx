@@ -10,7 +10,7 @@ import { getPrevNext } from "@/lib/prev-next";
 import { ArtworkCard } from "@/components/artwork-card";
 import { getYear } from "@/lib/format";
 import { toMetaDescription } from "@/lib/meta-description";
-import { breadcrumbJsonLd, cloudinaryImageUrl, exhibitionJsonLd, pageMetadata } from "@/lib/seo";
+import { breadcrumbJsonLd, exhibitionJsonLd, mediaImageUrl, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!exhibition) return {};
 
   const cover = exhibition.images?.[0];
-  const coverUrl = cover ? cloudinaryImageUrl(cover.publicId) : undefined;
+  const coverUrl = cover ? mediaImageUrl(cover.publicId) : undefined;
   const place = exhibition.city ? `${exhibition.venue}, ${exhibition.city}` : exhibition.venue;
   return pageMetadata({
     title: `${exhibition.title} — Swati Garg`,

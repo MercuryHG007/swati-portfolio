@@ -1,78 +1,54 @@
 "use client";
 
-import { useState, type CSSProperties, type ComponentProps } from "react";
-import { CldImage as BaseCldImage } from "next-cloudinary";
+import Image, { type ImageLoaderProps } from "next/image";
+import { useState, type ComponentProps, type CSSProperties } from "react";
+import { cloudinaryDeliveryUrl, mediaUrl } from "@/lib/media-options";
 
-// next-cloudinary@6.19.3's dist bundle is missing the "use client" directive
-// (its CldImage uses useState internally), which breaks it when imported
-// straight into a Server Component. Wrapping it in this client module gives
-// it a proper client boundary.
+// Images load straight from Cloudinary's CDN, one request each. If a load fails, the image is requested once more
+// through the server (proxy=1), which falls back to the R2 mirror.
+//
+// The route only resizes, so crops are done in the browser. A `fill` image is returned whole and cropped by
+// object-fit: cover, positioned by the gravity prop. This gives the same result from either source.
+type ProtectedImageProps = Omit<ComponentProps<typeof Image>, "src" | "loader" | "quality" | "unoptimized"> & {
+  src: string;
+  crop?: "fill";
+  gravity?: "auto" | "face";
+  quality?: number | "auto";
+  format?: string;
+};
 
-// If an image fails to load from Cloudinary, the fallback requests a resized copy from /api/media, which reads the
-// R2 mirror. Cloudinary-only transforms (format, quality, gravity) are replaced by the route's defaults.
-type CldImageProps = ComponentProps<typeof BaseCldImage>;
+const OBJECT_POSITION: Record<NonNullable<ProtectedImageProps["gravity"]>, string> = {
+  auto: "50% 50%",
+  face: "50% 30%",
+};
 
-const MAX_EDGE = 2400;
+export function CldImage({ src, alt, crop, gravity, quality, format: _format, style, ...props }: ProtectedImageProps) {
+  void _format; // The format is picked by Cloudinary (f_auto) on the direct path, or by the route on the fallback path.
+  const [useProxy, setUseProxy] = useState(false);
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const loader = ({ width }: ImageLoaderProps) => {
+    const options = { width, fit: "inside" as const, quality: typeof quality === "number" ? quality : undefined };
+    // Healthy case: the browser loads Cloudinary directly, one request per image. Only after a failed load does the
+    // image come through the server, which falls back to the R2 mirror.
+    if (!useProxy && cloudName) return cloudinaryDeliveryUrl(cloudName, src, { ...options, format: "auto" });
+    return mediaUrl(src, { ...options, proxy: true });
+  };
 
-function mirrorUrl(publicId: string, width: CldImageProps["width"], height: CldImageProps["height"], cover: boolean) {
-  const params = new URLSearchParams({ w: String(Math.min(Number(width) || 1200, MAX_EDGE)) });
-  if (height) params.set("h", String(Math.min(Number(height), MAX_EDGE)));
-  if (cover) params.set("fit", "cover");
-  return `/api/media/${publicId.split("/").map(encodeURIComponent).join("/")}?${params}`;
-}
-
-// Plain <img> for the fallback. `cover` keeps the crop that Cloudinary's `fill` mode would have produced.
-function MirrorImage({
-  src,
-  alt,
-  width,
-  height,
-  fill,
-  crop,
-  className,
-  style,
-  loading,
-  draggable,
-  onContextMenu,
-  onLoad,
-}: CldImageProps & { src: string }) {
-  const cover = Boolean(fill) || crop === "fill";
-  const fillStyle: CSSProperties | undefined = fill
-    ? { position: "absolute", inset: 0, width: "100%", height: "100%" }
-    : undefined;
-  return (
-    // eslint-disable-next-line @next/next/no-img-element -- next/image would optimise via the loader, defeating the fallback
-    <img
-      src={mirrorUrl(src, width, height, cover)}
-      alt={alt}
-      width={fill ? undefined : width}
-      height={fill ? undefined : height}
-      className={className}
-      style={{ ...fillStyle, objectFit: cover ? "cover" : undefined, ...style }}
-      loading={loading}
-      draggable={draggable}
-      onContextMenu={onContextMenu}
-      onLoad={onLoad}
-    />
-  );
-}
-
-export function CldImage(props: CldImageProps) {
-  const [useMirror, setUseMirror] = useState(false);
-
-  if (useMirror && typeof props.src === "string") {
-    return <MirrorImage {...props} src={props.src} />;
-  }
+  const cropStyle: CSSProperties | undefined =
+    crop === "fill" ? { objectFit: "cover", objectPosition: OBJECT_POSITION[gravity ?? "auto"] } : undefined;
 
   return (
-    <BaseCldImage
+    <Image
       {...props}
+      src={src}
+      alt={alt}
+      loader={loader}
       onError={(event) => {
         props.onError?.(event);
-        // Returning false stops CldImage's own retry polling, so the fallback shows right away.
-        setUseMirror(true);
-        return false;
+        // One retry through the server. Once proxied, a further failure is left alone rather than looping.
+        if (!useProxy) setUseProxy(true);
       }}
+      style={{ ...cropStyle, ...style }}
     />
   );
 }
@@ -80,7 +56,7 @@ export function CldImage(props: CldImageProps) {
 // Deterrent (not real DRM) against casual right-click-save / drag / iOS
 // long-press-save copying of artwork images — used on all public-facing
 // artwork, series, exhibition and profile images.
-export function ProtectedImage(props: CldImageProps) {
+export function ProtectedImage(props: ProtectedImageProps) {
   return (
     <CldImage
       {...props}

@@ -100,6 +100,12 @@ if (targetDb === sourceDb && !flag('--overwrite-source')) {
   console.error(`Refusing to restore over ${sourceDb}. Pass --overwrite-source only for a deliberate production recovery.`);
   process.exit(1);
 }
+if (/_prod$/.test(targetDb) && !flag('--allow-prod')) {
+  console.error(
+    `Refusing to restore into ${targetDb}, which looks like a production database. Use a scratch database such as swati_portfolio_restore_test, or pass --allow-prod for a deliberate production recovery.`
+  );
+  process.exit(1);
+}
 if (!env.BACKUP_ENCRYPTION_KEY) {
   console.error('Missing environment variable: BACKUP_ENCRYPTION_KEY');
   process.exit(1);

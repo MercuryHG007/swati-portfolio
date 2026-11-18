@@ -1,23 +1,24 @@
 # Cloudinary setup
 
 Cloudinary hosts all artwork, series cover, exhibition, and video images. Uploads go through the
-server (`src/app/api/admin/upload/route.ts`), and pages load images from `res.cloudinary.com`
-using the public cloud name.
+server (`src/app/api/admin/upload/route.ts`). Site pages load images straight from Cloudinary's CDN. If a load fails, the browser retries it through the app's
+image route, `/api/media`, which serves the copy in the Cloudflare R2 mirror. See [disaster recovery](./disaster-recovery.md).
 
 ## What the code expects
 
 | Variable | Used by | Public? |
 | --- | --- | --- |
-| `CLOUDINARY_CLOUD_NAME` | `src/lib/cloudinary.ts`, the AI artwork assistant route | No, but not secret |
+| `CLOUDINARY_CLOUD_NAME` | `src/lib/cloudinary.ts`, the AI artwork assistant route, the image route `src/app/api/media` | No, but not secret. Set it on Vercel too |
 | `CLOUDINARY_API_KEY` | `src/lib/cloudinary.ts` | No |
 | `CLOUDINARY_API_SECRET` | `src/lib/cloudinary.ts` | **No. Secret.** |
-| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | Image URLs in the browser (`CldImage`, the image uploader, the gallery) | Yes |
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | The admin image uploader, and the app icon (`src/lib/seo.ts`) | Yes |
 
 Two things to know:
 
 - `src/lib/cloudinary.ts` throws at startup if any of the three server values is missing. The app
   won't run without them.
-- `next.config.ts` allows images only from `res.cloudinary.com`. Keep the default delivery domain.
+- `next.config.ts` still lists `res.cloudinary.com` for `next/image`. Site images don't load from
+  Cloudinary in the browser any more, so this only matters if a page renders a Cloudinary URL directly.
 
 Uploads are signed with the API secret, so **no upload preset is needed**. Files up to 15 MB are
 accepted (JPEG, PNG, WebP, AVIF, GIF). Images are resized to a maximum of 2500 px on upload.
@@ -110,7 +111,9 @@ one environment removes the image from the account it points to.
    upload context, for example `swati-portfolio/artworks`.
 
 The `/api/health/cloudinary` endpoint is public and returns only the ping status. It never
-returns the credentials.
+returns the credentials. It checks the management API only. To check image delivery, use
+`/api/health/media`, which the scheduled **Media health** workflow updates every 15 minutes. It
+returns 503 while Cloudinary is down or critical. See [disaster recovery](./disaster-recovery.md#checking-health).
 
 ## Troubleshooting
 
@@ -121,6 +124,8 @@ returns the credentials.
 | Upload fails with "Unsupported file type" | The file isn't JPEG, PNG, WebP, AVIF, or GIF | Convert the file, for example to JPEG |
 | Upload fails with "File exceeds 15MB limit" | The file is larger than the app's limit | Compress the image before uploading |
 | Images are missing on the site, but the admin shows them | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` differs from the server value, or the variable wasn't redeployed | Make the two values identical and redeploy |
+| Site images return `503 Image source unavailable` | Cloudinary is unreachable and the R2 mirror variables (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_MIRROR_BUCKET`) are missing in this environment | Set them in Vercel for this environment, then redeploy. See [disaster recovery](./disaster-recovery.md) |
+| Images load but `X-Media-Source` is `r2` | Cloudinary is failing, or `CLOUDINARY_CLOUD_NAME` doesn't match the account the images are in. The fallback still works | Check `/api/health/media` for the reason, then the Cloudinary status page or your cloud name |
 | Next.js error about an unconfigured image host | The image URL is not on `res.cloudinary.com` | Re-upload through the admin rather than pasting an external URL |
 | Build fails on Vercel with the missing-variable error | The modules read these variables when they load, and the build loads them too | Set all four variables in Vercel for every environment that builds, then redeploy |
 | Upload fails with an error message | Wrong API secret, a network problem, or a file Cloudinary rejects | Run the `/api/health/cloudinary` check first. If that passes, try a smaller JPEG |
@@ -175,5 +180,6 @@ No. The same signed-upload rules apply to every account.
 - [ ] Four variables set in `.env.local`
 - [ ] Same variables set in Vercel, and redeployed
 - [ ] `/api/health/cloudinary` returns `"ok":true`
+- [ ] `/api/health/media` returns 200 (create the canary first, see [disaster recovery](./disaster-recovery.md#one-time-setup))
 - [ ] Test upload appears in the admin and on the public site
 - [ ] UAT uses its own Cloudinary account (Part 4)

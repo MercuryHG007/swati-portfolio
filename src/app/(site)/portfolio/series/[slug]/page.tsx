@@ -8,7 +8,7 @@ import { PrevNextNav } from "@/components/prev-next-nav";
 import { getPrevNext } from "@/lib/prev-next";
 import { getYear } from "@/lib/format";
 import { toMetaDescription } from "@/lib/meta-description";
-import { breadcrumbJsonLd, cloudinaryImageUrl, pageMetadata } from "@/lib/seo";
+import { breadcrumbJsonLd, mediaImageUrl, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const series = await getSeriesBySlug(slug);
   if (!series) return {};
 
-  const coverUrl = series.coverImage ? cloudinaryImageUrl(series.coverImage.publicId) : undefined;
+  const coverUrl = series.coverImage ? mediaImageUrl(series.coverImage.publicId) : undefined;
   return pageMetadata({
     title: `${series.title} — Swati Garg`,
     description: toMetaDescription(series.description) ?? `${series.title}, a series of paintings by Swati Garg.`,

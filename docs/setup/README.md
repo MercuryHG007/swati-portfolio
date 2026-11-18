@@ -11,7 +11,7 @@ Each guide lists the accounts to create, the values to copy, and where each valu
 | [Google Analytics 4](./ga4.md) | Website tracking, the admin analytics page, and the contact-form lead source. Optional |
 | [Gemini](./gemini.md) | The AI artwork assistant on the admin artwork form. Optional |
 | [Cloudflare Turnstile](./turnstile.md) | Captcha on the contact form. Optional, but enable it in production |
-| [Disaster recovery](./disaster-recovery.md) | Snapshot fallback, nightly backups, Cloudinary mirror, restore steps. Optional, recommended for production |
+| [Disaster recovery](./disaster-recovery.md) | Content snapshot, image fallback through the R2 mirror, change-detected nightly backups, contact-enquiry spool, Cloudinary monitoring, restore steps. Optional, recommended for production |
 
 Set up in this order: MongoDB, then Cloudinary, then Resend, GA4 and Gemini. The app won't start
 without MongoDB and Cloudinary, and the admin can't sign in until a first admin exists.
@@ -45,7 +45,7 @@ for the environment shown. Vercel's **Production** and **Preview** rows are the 
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | production token | blank | set for restore drills only |
 | `R2_BACKUP_BUCKET` | `swati-backups` | blank | blank (pass on the command line for restore drills) |
 | `R2_MIRROR_BUCKET` | production bucket | blank | blank |
-| `BACKUP_ENCRYPTION_KEY`, `CRON_SECRET` | production values | not needed | not needed |
+| `BACKUP_ENCRYPTION_KEY`, `CRON_SECRET` | production values (the key also encrypts contact enquiries spooled during an outage) | not needed | not needed |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | production widget | UAT widget | blank |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | same | same | same |
 | `CONTACT_TO_EMAIL` | your inbox | a test inbox | a test inbox |

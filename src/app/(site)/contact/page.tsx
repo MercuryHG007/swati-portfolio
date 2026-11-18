@@ -8,6 +8,7 @@ import { TurnstileWidget } from "@/components/turnstile-widget";
 import { connectToDatabase } from "@/lib/mongodb";
 import { ContactMessage } from "@/models";
 import { sendContactNotification } from "@/lib/email";
+import { spoolContactMessage } from "@/lib/contact-spool";
 import { allowSubmission } from "@/lib/submission-throttle";
 import { TURNSTILE_SITE_KEY, verifyTurnstile } from "@/lib/turnstile";
 import { getAbout, getArtworkBySlug } from "@/lib/queries";
@@ -109,10 +110,19 @@ async function submitMessage(formData: FormData) {
   if (emailResult.status === "rejected") {
     console.error("Contact notification email failed:", emailResult.reason);
   }
+  let stored = saveResult.status === "fulfilled";
   if (saveResult.status === "rejected") {
     console.error("Contact message not saved to database:", saveResult.reason);
+    // Keep the enquiry in encrypted storage. The nightly job moves it into the database once it's back.
+    stored = await spoolContactMessage({ name, email, message, ...(source && { source }) }).then(
+      () => true,
+      (err) => {
+        console.error("Contact message could not be spooled:", err);
+        return false;
+      }
+    );
   }
-  if (emailResult.status === "rejected" && saveResult.status === "rejected") {
+  if (emailResult.status === "rejected" && !stored) {
     redirect(errorUrl("failed"));
   }
 

@@ -1,52 +1,31 @@
 import sharp from "sharp";
+import { MEDIA_MAX_EDGE, type MediaFormat, type MediaOptions } from "@/lib/media-options";
 
-export const MEDIA_MAX_EDGE = 2400;
+export { MEDIA_MAX_EDGE };
 
-const FORMATS = ["webp", "avif", "jpeg"] as const;
-type MediaFormat = (typeof FORMATS)[number];
-
-export type ResizeOptions = {
-  width?: number;
-  height?: number;
-  fit: "cover" | "inside";
-  quality: number;
-  format: MediaFormat;
-};
-
-// Returns undefined when the parameter is absent, and null when it is present but out of range.
-function optionalInt(raw: string | null, min: number, max: number): number | undefined | null {
-  if (raw === null) return undefined;
-  const value = Number(raw);
-  return Number.isInteger(value) && value >= min && value <= max ? value : null;
+// Resolves f=auto the way Cloudinary's f_auto does: AVIF or WebP when the browser accepts them, otherwise JPEG.
+export function resolveFormat(format: MediaFormat, accept: string | null): Exclude<MediaFormat, "auto"> {
+  if (format !== "auto") return format;
+  if (accept?.includes("image/avif")) return "avif";
+  if (accept?.includes("image/webp")) return "webp";
+  return "jpeg";
 }
 
-// Query parameters: w and h (pixels, at least one required), fit (cover | inside), q (1-100), f (webp | avif | jpeg).
-export function parseResizeOptions(params: URLSearchParams): ResizeOptions | null {
-  const width = optionalInt(params.get("w"), 16, MEDIA_MAX_EDGE);
-  const height = optionalInt(params.get("h"), 16, MEDIA_MAX_EDGE);
-  if (width === null || height === null || (width === undefined && height === undefined)) return null;
-
-  const fit = params.get("fit") ?? "inside";
-  if (fit !== "cover" && fit !== "inside") return null;
-
-  const format = params.get("f") ?? "webp";
-  if (!(FORMATS as readonly string[]).includes(format)) return null;
-
-  return {
-    width,
-    height,
-    fit,
-    quality: optionalInt(params.get("q"), 1, 100) ?? 80,
-    format: format as MediaFormat,
-  };
-}
-
-// Auto-rotates from EXIF and never enlarges, so a small original is returned at its own size.
-export async function resizeImage(input: Buffer, options: ResizeOptions) {
+// Matches the Cloudinary transform from cloudinaryTransform(): auto-rotate from EXIF, never enlarge, cover crops
+// around the most interesting area (Cloudinary's g_auto), and quality defaults to 80 where Cloudinary's q_auto is used.
+export async function resizeImage(input: Buffer, options: MediaOptions, accept: string | null = null) {
+  const format = resolveFormat(options.format, accept);
+  const cover = options.fit === "cover";
   const body = await sharp(input)
     .rotate()
-    .resize({ width: options.width, height: options.height, fit: options.fit, withoutEnlargement: true })
-    .toFormat(options.format, { quality: options.quality })
+    .resize({
+      width: options.width,
+      height: options.height,
+      fit: cover ? "cover" : "inside",
+      position: cover ? "attention" : "centre",
+      withoutEnlargement: true,
+    })
+    .toFormat(format, { quality: options.quality ?? 80 })
     .toBuffer();
-  return { body, contentType: `image/${options.format}` };
+  return { body, contentType: `image/${format}`, format };
 }

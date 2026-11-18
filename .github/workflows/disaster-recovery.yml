@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "15 20 * * *"
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Take a full backup even if nothing changed"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -30,6 +35,8 @@ jobs:
           curl -fsSL https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.12.0.tgz | tar -xz
           echo "$PWD/mongodb-database-tools-ubuntu2204-x86_64-100.12.0/bin" >> "$GITHUB_PATH"
       - name: Dump, encrypt and upload
+        env:
+          FORCE_BACKUP: ${{ github.event.inputs.force == 'true' && '1' || '0' }}
         run: node scripts/backup-mongo-to-r2.mjs
 
   cloudinary-mirror:

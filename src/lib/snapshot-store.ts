@@ -23,7 +23,7 @@ export type ContentSnapshot = {
 
 let memo: { at: number; snapshot: ContentSnapshot | null } | null = null;
 
-async function loadSnapshot(): Promise<ContentSnapshot | null> {
+export async function loadSnapshot(): Promise<ContentSnapshot | null> {
   if (!isR2Configured() || !R2_BACKUP_BUCKET) return null;
   const body = await getR2Object(R2_BACKUP_BUCKET, snapshotKey());
   if (!body) return null;
