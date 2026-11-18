@@ -19,7 +19,8 @@ UAT uses its own set with `-uat` in each name. Keep the UAT and production bucke
    `swati-backups`.
 2. **Attach the public domain.** Open `swati-media` → Settings → Custom Domains → Connect domain, and enter
    `media.<your domain>`. The domain's DNS must be on Cloudflare. Don't attach a domain to the other two buckets.
-   Turn off the `r2.dev` URL, which is rate-limited.
+   Turn off the `r2.dev` URL, which is rate-limited. It isn't a fallback: it's served by the same Cloudflare R2 network as the
+custom domain, so it fails with it.
 3. **Add a CORS policy** to `swati-media-originals`. The browser uploads straight to this bucket, so the policy must
    list every origin the admin is used from. Origins must match exactly, with `https://` and no trailing slash:
 

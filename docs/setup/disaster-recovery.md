@@ -8,7 +8,8 @@ What keeps the site up when MongoDB or image storage fails, and how to restore a
 | --- | --- | --- |
 | **MongoDB unreachable** | Public pages, portfolio listings and filters are served from the content snapshot, read-only. Contact enquiries are saved encrypted to R2 and still reach your inbox by email. Admin is unavailable. | Check Atlas status. Nothing else is needed. |
 | **MongoDB emptied or wiped, still reachable** | If the database has no published artworks at all, reads are served from the snapshot, so pages keep their content. A single unpublished piece is not affected. The snapshot job refuses to overwrite a snapshot that has artworks with an empty one. | [Restore the database](#restore-the-database). |
-| **R2 media domain down** | Images don't load until R2 or the media domain recovers. There is no second image source. The health probe emails you within about 30 minutes. | Check Cloudflare status and the alert. Nothing else is needed. |
+| **R2 media domain down** | Images don't load until R2 or the media domain recovers. The health probe emails you within about 30 minutes. | Check Cloudflare status and the alert. Nothing else is needed. |
+| **Cloudflare account or R2 data lost** | Images are broken. Pages keep working while MongoDB is up, but the content snapshot is in R2 too, so the read fallback is gone until it's rebuilt. | Restore the images from the off-site copy with [Restore images](#restore-images). If MongoDB is also lost, [restore the database](#restore-the-database) first. |
 | **Media objects lost or deleted** | Affected images are broken. | [Restore images](#restore-images). |
 | **Deploy during an outage** | The build prerenders some pages, so it can fail. The last deployment keeps serving. | Wait for the database, or roll back in Vercel. |
 
@@ -21,8 +22,13 @@ What keeps the site up when MongoDB or image storage fails, and how to restore a
   up to 24 hours later. They are also emailed straight away.
 - **Crops.** Cropped images use CSS `object-fit: cover`, centred on the picture (or a face point on the About page).
   Variants are never cropped on the server.
-- **One image source.** Images have a single copy in Cloudflare R2 (the originals and the variants). An off-provider
-  copy of the images is not set up yet.
+- **Images are served from R2 only.** The off-site copy in the backup repo is for recovery, not delivery. It holds the
+  originals, and the WebP variants are rebuilt from them on restore. Images deleted in admin stay in the copy, so they
+  can be recovered.
+- **Build-time URL.** `NEXT_PUBLIC_MEDIA_BASE_URL` is compiled into the site, so moving images to a new domain needs a
+  redeploy.
+- **Domain renewal.** `artistswatigarg.com` renews at Porkbun. A lapsed domain takes the media domain down, so keep
+  auto-renew on.
 - **Admin, messages and analytics** need the database.
 - **Not a full backup.** The snapshot holds only what public pages show. The nightly dump is the full backup.
 
@@ -49,6 +55,11 @@ What keeps the site up when MongoDB or image storage fails, and how to restore a
   changed. A full dump is taken at least weekly, and whenever you run the workflow with `force` set. Dumps are
   encrypted with AES-256-GCM and uploaded to R2. They keep 30 days plus the first dump of each month. Each dump is named
   by its UTC time, for example `backups/mongo/2026-11-17T07-19-15Z.archive.gz.enc`.
+- **Off-site copy.** A second job in [disaster-recovery.yml](../../.github/workflows/disaster-recovery.yml) runs after the
+  backup. It clones the private `swati-portfolio-backups` repo and copies in the newest encrypted dump and any image
+  originals it doesn't have yet ([backup-r2-to-offsite.mjs](../../scripts/backup-r2-to-offsite.mjs)). It commits and pushes only when
+  something changed. Files are never removed from the repo. A failed media copy doesn't stop the database copy.
+  Every changed dump and every new original adds to the repo's size, so check the size after the first run.
 - **Monitoring.** [probe-media-health.mjs](../../scripts/probe-media-health.mjs) runs every 15 minutes in
   [media-health.yml](../../.github/workflows/media-health.yml). It fetches a canary image through the media domain, the
   way visitors load images, and checks the canary object in the R2 media bucket behind it. The result is saved to
@@ -66,7 +77,9 @@ What keeps the site up when MongoDB or image storage fails, and how to restore a
    no backup can be decrypted.
 4. **Add these GitHub Actions secrets:** `MONGODB_URI` (production), `BACKUP_ENCRYPTION_KEY`, `R2_ACCOUNT_ID`,
    `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, `R2_MEDIA_BUCKET`, `R2_ORIGINALS_BUCKET`, and
-   `NEXT_PUBLIC_MEDIA_BASE_URL` (`https://media.<your domain>`).
+   `NEXT_PUBLIC_MEDIA_BASE_URL` (`https://media.<your domain>`). Also add `BACKUP_REPO_TOKEN`: a fine-grained GitHub
+   token with Contents read and write on the private `swati-portfolio-backups` repo only. Create that repo first,
+   empty and private.
 5. **Add these Vercel environment variables** (Production): `NEXT_PUBLIC_MEDIA_BASE_URL`, `R2_MEDIA_BUCKET`,
    `R2_ORIGINALS_BUCKET`, `BACKUP_ENCRYPTION_KEY` (encrypts contact enquiries spooled during an outage), `R2_ACCOUNT_ID`,
    `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET` and `CRON_SECRET`.
@@ -143,14 +156,34 @@ Existing collections in production are replaced. If you restored into a differen
 in Vercel at it, redeploy, and copy the snapshot key as described above.
 `mongorestore` and `mongodump` must be on your PATH (the MongoDB Database Tools).
 
+To restore from the off-site copy instead, clone `swati-portfolio-backups` and pass the dump with `--from-file`. This
+works without R2:
+
+```bash
+node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs --from-file <backup-repo>/mongo/<dump>.archive.gz.enc \
+  --target-uri "<target-uri>" --target-db swati_portfolio_restore_test --dry-run
+```
+
+`--from-file` needs `BACKUP_ENCRYPTION_KEY` but no R2 variables.
+
 Restore drill check: once a quarter, restore into `swati_portfolio_restore_test`, run the site locally with
 `MONGODB_URI` pointed at it, check the homepage and admin, then drop that database.
 
 ## Restore images
 
 Each image has two copies in R2: the original in `swati-media-originals` and the WebP variants in `swati-media`. Both
-are keyed by the `public_id` stored in MongoDB, so the database needs no changes after a restore. Rebuilding lost
-variants from their original isn't scripted yet.
+are keyed by the `public_id` stored in MongoDB, so the database needs no changes after a restore. A third copy of the
+originals is in the off-site backup repo.
+
+To restore from the off-site copy:
+
+1. Clone `swati-portfolio-backups`. The images are in its `images/` folder.
+2. Dry run first. It lists what would be written and writes nothing:
+   `node --env-file=.env.prod scripts/restore-media-from-offsite.mjs <backup-repo>/images --dry-run`
+3. Run it with `--confirm`. It uploads any missing original, then builds and uploads any missing WebP variant. Existing
+   objects are never overwritten, so it's safe to re-run.
+
+Check a restored image with `curl -I https://media.<your domain>/<public_id>-w960.webp`.
 
 ## Checking health
 
@@ -180,3 +213,5 @@ local values, and clear the database variables below only in the copy.
    A dry run doesn't store the count. To see the second failure flip the status and send the alert, run it twice
    without `--dry-run`. Do this only against UAT buckets, because real runs write state and can send email.
 4. **Restore.** Follow [Restore the database](#restore-the-database) with `--dry-run` against the newest dump.
+5. **Images.** Run the [image restore](#restore-images) with `--dry-run` against the UAT buckets. Expect every original
+   and variant to be reported as present, and nothing uploaded.

@@ -5,13 +5,16 @@
  *   node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs latest --target-uri "mongodb+srv://<user>:<pass>@cluster/?..." --target-db swati_portfolio_restore_test --confirm
  *   node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs backups/mongo/2026-11-17T07-19-15Z.archive.gz.enc --target-uri "..." --target-db swati_portfolio_restore_test --confirm
  *   node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs latest --target-uri "..." --target-db swati_portfolio_restore_test --dry-run
+ *   node --env-file=.env.prod scripts/restore-mongo-from-r2.mjs --from-file <backup-repo>/mongo/<dump>.archive.gz.enc --target-uri "..." --target-db swati_portfolio_restore_test --dry-run
  *
- * Needs `mongorestore` (MongoDB Database Tools) on PATH, plus BACKUP_ENCRYPTION_KEY and the R2 variables.
+ * Needs `mongorestore` (MongoDB Database Tools) on PATH, plus BACKUP_ENCRYPTION_KEY and the R2 variables. With
+ * --from-file the dump is read from a local copy (the off-site backup repo) and the R2 variables aren't needed.
  * Archive namespaces are remapped from --source-db (default swati_portfolio_prod) to --target-db. The target URI
  * must not name a database, because a database in the URI filters the archive instead of remapping it. Restoring
  * over the source database needs --overwrite-source. Existing collections in the target are dropped and replaced.
  */
 import { spawn } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import { createDecipheriv, scryptSync } from 'node:crypto';
 import { GetObjectCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
 import { gunzipSync } from 'node:zlib';
@@ -23,11 +26,13 @@ const option = (name) => {
   const index = args.indexOf(name);
   return index === -1 ? undefined : args[index + 1];
 };
-const VALUE_OPTIONS = ['--target-uri', '--target-db', '--source-db'];
+const VALUE_OPTIONS = ['--target-uri', '--target-db', '--source-db', '--from-file'];
 const positional = args.find((arg, index) => !arg.startsWith('--') && !VALUE_OPTIONS.includes(args[index - 1]));
 
 const env = process.env;
-for (const name of ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BACKUP_BUCKET']) {
+// A local copy needs no R2 access, so the R2 variables are only checked when reading from the bucket.
+const fromFile = option('--from-file');
+for (const name of fromFile ? [] : ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BACKUP_BUCKET']) {
   if (!env[name]) {
     console.error(`Missing environment variable: ${name}`);
     process.exit(1);
@@ -83,7 +88,7 @@ if (flag('--list')) {
 const dryRun = flag('--dry-run');
 const targetUri = option('--target-uri');
 if (!targetUri || (!flag('--confirm') && !dryRun)) {
-  console.error('Usage: <key|latest> --target-uri <uri> --target-db <name> (--confirm | --dry-run)   (or --list)');
+  console.error('Usage: <key|latest|--from-file <path>> --target-uri <uri> --target-db <name> (--confirm | --dry-run)   (or --list)');
   process.exit(1);
 }
 const targetDb = option('--target-db');
@@ -111,15 +116,20 @@ if (!env.BACKUP_ENCRYPTION_KEY) {
   process.exit(1);
 }
 
-const dumps = await listDumps();
-const key = !positional || positional === 'latest' ? dumps.at(-1)?.Key : positional;
+const dumps = fromFile ? [] : await listDumps();
+const key = fromFile ?? (!positional || positional === 'latest' ? dumps.at(-1)?.Key : positional);
 if (!key) {
   console.error('No backup found.');
   process.exit(1);
 }
 
-const res = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
-const blob = Buffer.from(await res.Body.transformToByteArray());
+let blob;
+if (fromFile) {
+  blob = await readFile(fromFile);
+} else {
+  const res = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  blob = Buffer.from(await res.Body.transformToByteArray());
+}
 let archive;
 try {
   archive = decrypt(blob, env.BACKUP_ENCRYPTION_KEY);
