@@ -68,6 +68,7 @@ export async function GET() {
     `- [Exhibitions](${absoluteUrl("/exhibitions")}): solo and group exhibitions.`,
     `- [Contact](${absoluteUrl("/contact")}): enquiries about works.`,
     `- [FAQ](${absoluteUrl("/faq")}): common questions about the artist and works.`,
+    `- [API](${absoluteUrl("/api-docs")}): read-only JSON access to published works, described by OpenAPI at ${absoluteUrl("/openapi.json")}.`,
     "",
     "## Works",
     "",
