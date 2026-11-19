@@ -5,6 +5,7 @@ const seriesSchema = new Schema(
   {
     title: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    slugHistory: { type: [String], default: [] },
     description: { type: String, default: "" },
     coverImage: { type: mediaImageSchema, default: null },
     order: { type: Number, default: 0 },
@@ -14,5 +15,7 @@ const seriesSchema = new Schema(
   },
   { timestamps: true }
 );
+
+seriesSchema.index({ slugHistory: 1 });
 
 export default models.Series || model("Series", seriesSchema);

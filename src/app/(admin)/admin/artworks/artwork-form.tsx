@@ -57,7 +57,6 @@ export async function ArtworkForm({
       <Field label="Title">
         <input name="title" defaultValue={artwork?.title} required className={inputClass} />
       </Field>
-      <input type="hidden" name="slug" defaultValue={artwork?.slug} />
       <Field label="Date made">
         <input
           name="dateMade"

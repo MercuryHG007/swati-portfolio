@@ -5,6 +5,7 @@ const exhibitionSchema = new Schema(
   {
     title: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    slugHistory: { type: [String], default: [] },
     venue: { type: String, required: true },
     city: { type: String, default: "" },
     country: { type: String, default: "" },
@@ -18,5 +19,7 @@ const exhibitionSchema = new Schema(
   },
   { timestamps: true }
 );
+
+exhibitionSchema.index({ slugHistory: 1 });
 
 export default models.Exhibition || model("Exhibition", exhibitionSchema);

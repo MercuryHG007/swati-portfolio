@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
-import { getSeriesBySlug, getArtworksBySeriesId, getPublishedSeries } from "@/lib/queries";
+import { getSeriesBySlug, getArtworksBySeriesId, getPublishedSeries, findCurrentSeriesSlug } from "@/lib/queries";
 import { ArtworkCard } from "@/components/artwork-card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { JsonLd } from "@/components/json-ld";
@@ -33,7 +33,11 @@ export default async function SeriesDetailPage({
 }) {
   const { slug } = await params;
   const series = await getSeriesBySlug(slug);
-  if (!series) notFound();
+  if (!series) {
+    const currentSlug = await findCurrentSeriesSlug(slug);
+    if (currentSlug) permanentRedirect(`/portfolio/series/${currentSlug}`);
+    notFound();
+  }
 
   const [artworks, allSeries] = await Promise.all([getArtworksBySeriesId(series._id), getPublishedSeries()]);
   const currentIndex = allSeries.findIndex((s) => s.slug === slug);

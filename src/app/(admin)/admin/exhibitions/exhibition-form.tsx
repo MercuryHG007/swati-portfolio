@@ -48,7 +48,6 @@ export async function ExhibitionForm({
       <Field label="Title">
         <input name="title" defaultValue={exhibition?.title} required className={inputClass} />
       </Field>
-      <input type="hidden" name="slug" defaultValue={exhibition?.slug} />
       <Field label="Venue">
         <input name="venue" defaultValue={exhibition?.venue} required className={inputClass} />
       </Field>

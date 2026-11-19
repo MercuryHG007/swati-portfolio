@@ -8,23 +8,24 @@ import { PORTFOLIO_CACHE_TAG } from "@/lib/queries";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Series, Artwork, SeriesSettings } from "@/models";
 import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
-import { slugify } from "@/lib/slugify";
+import { isSlugTaken, prepareSlugChange, slugForTitle } from "@/lib/slug-history";
 import { withAltFallback, withSuggestedAlt } from "@/lib/image-alt";
 import { destroyMediaAssets, removedPublicIds } from "@/lib/media-cleanup";
 import { readSingleImage } from "@/lib/form-fields";
 
-function refresh(slug?: string) {
+function refresh(slug?: string, previousSlug?: string) {
   scheduleSnapshotRefresh();
   revalidatePath("/admin/series");
   revalidatePath("/portfolio");
   updateTag(PORTFOLIO_CACHE_TAG);
   revalidatePath("/series");
   if (slug) revalidatePath(`/portfolio/series/${slug}`);
+  if (previousSlug) revalidatePath(`/portfolio/series/${previousSlug}`);
 }
 
 function readFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
-  const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(title);
+  const slug = slugForTitle(title);
   const description = String(formData.get("description") ?? "").trim();
   const status = formData.get("status") === "published" ? "published" : "hidden";
   const featured = formData.get("featured") === "on";
@@ -43,6 +44,7 @@ export async function createSeries(formData: FormData) {
   if (!fields.title || !fields.slug) redirect("/admin/series/new?error=invalid");
 
   await connectToDatabase();
+  if (await isSlugTaken(Series, fields.slug)) redirect("/admin/series/new?error=slug-taken");
   const order = await Series.countDocuments();
   await Series.create({ ...fields, coverImage: fields.coverImage ?? null, order });
   refresh(fields.slug);
@@ -56,17 +58,21 @@ export async function updateSeries(formData: FormData) {
   if (!id || !fields.title || !fields.slug) redirect(`/admin/series/${id}?error=invalid`);
 
   await connectToDatabase();
+  if (await isSlugTaken(Series, fields.slug, id)) redirect(`/admin/series/${id}?error=slug-taken`);
   const { coverImage, ...rest } = fields;
-  const previous = await Series.findByIdAndUpdate(id, {
+  const previous = await Series.findById(id).lean<{ slug?: string; coverImage?: { publicId: string } | null }>();
+  const slugUpdate = await prepareSlugChange(Series, previous?.slug, fields.slug);
+  await Series.findByIdAndUpdate(id, {
     ...rest,
     ...(coverImage !== undefined && { coverImage }),
-  }).lean<{ coverImage?: { publicId: string } }>();
+    ...slugUpdate,
+  });
   if (coverImage !== undefined) {
     await destroyMediaAssets(
       removedPublicIds(previous?.coverImage ? [previous.coverImage] : [], coverImage ? [coverImage] : [])
     );
   }
-  refresh(fields.slug);
+  refresh(fields.slug, previous?.slug);
   redirect("/admin/series?saved=1");
 }
 

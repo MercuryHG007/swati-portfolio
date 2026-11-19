@@ -359,6 +359,22 @@ export const getPublishedExhibitions = resilient("getPublishedExhibitions", getP
 export const getExhibitionBySlug = resilient("getExhibitionBySlug", getExhibitionBySlugLive);
 export const getExhibitionsForArtwork = resilient("getExhibitionsForArtwork", getExhibitionsForArtworkLive);
 export const getAbout = resilient("getAbout", getAboutLive);
+
+// Used only when a slug matches nothing, to redirect an old URL. A stale link should 404 rather than error
+// when the database is unreachable, so failures return null.
+async function findPublishedSlugFromHistory(model: typeof Artwork | typeof Series | typeof Exhibition, oldSlug: string) {
+  try {
+    await connectToDatabase();
+    const doc = await model.findOne({ slugHistory: oldSlug, status: "published" }).select("slug").lean<{ slug: string }>();
+    return doc?.slug ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export const findCurrentArtworkSlug = (oldSlug: string) => findPublishedSlugFromHistory(Artwork, oldSlug);
+export const findCurrentSeriesSlug = (oldSlug: string) => findPublishedSlugFromHistory(Series, oldSlug);
+export const findCurrentExhibitionSlug = (oldSlug: string) => findPublishedSlugFromHistory(Exhibition, oldSlug);
 export const getSitemapEntries = resilient("getSitemapEntries", getSitemapEntriesLive);
 export const getPublishedFaqs = resilient("getPublishedFaqs", getPublishedFaqsLive);
 export const getLlmsContent = resilient("getLlmsContent", getLlmsContentLive);

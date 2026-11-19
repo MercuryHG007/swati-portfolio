@@ -14,6 +14,8 @@ const artworkSchema = new Schema(
   {
     title: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    // Earlier slugs, kept so old links redirect to the current URL.
+    slugHistory: { type: [String], default: [] },
     images: { type: [mediaImageSchema], default: [] },
     dateMade: { type: Date },
     medium: { type: Schema.Types.ObjectId, ref: "Medium", required: true },
@@ -35,5 +37,6 @@ const artworkSchema = new Schema(
 
 // Matches the portfolio sort so paged queries can use the index.
 artworkSchema.index({ status: 1, order: 1, createdAt: -1, _id: -1 });
+artworkSchema.index({ slugHistory: 1 });
 
 export default models.Artwork || model("Artwork", artworkSchema);
