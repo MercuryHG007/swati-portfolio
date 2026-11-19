@@ -311,14 +311,14 @@ async function getLlmsContentLive() {
     Series.find({ status: "published" })
       .sort({ order: 1 })
       .select("title slug description")
-      .lean<{ title: string; slug: string; description: string }[]>(),
+      .lean<{ _id: Types.ObjectId; title: string; slug: string; description: string }[]>(),
     Exhibition.find({ status: "published" })
       .sort({ startDate: -1 })
       .select("title slug venue city country type startDate endDate")
       .lean<{ title: string; slug: string; venue: string; city: string; country: string; type: string; startDate: Date; endDate?: Date }[]>(),
     Artwork.find({ status: "published" })
       .sort({ order: 1, createdAt: -1 })
-      .select("title slug dateMade dimensions availability medium")
+      .select("title slug dateMade dimensions availability medium description series seriesOrder")
       .populate("medium", "name")
       .lean<
         {
@@ -327,6 +327,9 @@ async function getLlmsContentLive() {
           dateMade?: Date;
           dimensions?: { height?: number; width?: number; unit?: string };
           availability?: string;
+          description?: string;
+          series?: Types.ObjectId | null;
+          seriesOrder?: number;
           medium?: { name: string } | null;
         }[]
       >(),

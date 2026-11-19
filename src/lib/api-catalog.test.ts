@@ -13,7 +13,7 @@ const LINK_TARGET_FILES: Record<string, string> = {
   "/.well-known/api-catalog": ".well-known/api-catalog/route.ts",
   "/openapi.json": "openapi.json/route.ts",
   "/api-docs": "(site)/api-docs/page.tsx",
-  "/sitemap.xml": "sitemap.ts",
+  "/llms.txt": "llms.txt/route.ts",
 };
 
 // Lists every GET route under the public API folder, as spec paths. Dynamic segments become {name}.
