@@ -1,9 +1,14 @@
-import { getCachedPortfolioArtwork } from "@/lib/queries";
+import { findCurrentArtworkSlug, getCachedPortfolioArtwork } from "@/lib/queries";
 
-// Public, read-only detail for one published work. Unpublished or unknown slugs return 404.
-export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
+// Public, read-only detail for one published work. Unknown slugs return 404; a renamed work's old slug
+// permanently redirects to its current API URL.
+export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const artwork = await getCachedPortfolioArtwork(slug);
-  if (!artwork) return Response.json({ error: "Not found" }, { status: 404 });
+  if (!artwork) {
+    const currentSlug = await findCurrentArtworkSlug(slug);
+    if (currentSlug) return Response.redirect(new URL(`/api/portfolio/artworks/${currentSlug}`, request.url), 308);
+    return Response.json({ error: "Not found" }, { status: 404 });
+  }
   return Response.json(artwork);
 }

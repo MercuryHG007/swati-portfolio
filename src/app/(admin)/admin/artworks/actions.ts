@@ -9,23 +9,25 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Artwork, Exhibition, Subject } from "@/models";
 import { AVAILABILITY_STATUS } from "@/models/shared";
 import { slugify } from "@/lib/slugify";
+import { isSlugTaken, prepareSlugChange, slugForTitle } from "@/lib/slug-history";
 import { normalizeSubjectName } from "@/lib/subject-names";
 import { withAltFallback, withSuggestedAlt } from "@/lib/image-alt";
 import { destroyMediaAssets, removedPublicIds } from "@/lib/media-cleanup";
 import { readImageList } from "@/lib/form-fields";
 import { recordSavedDescription } from "@/lib/artist-voice";
 
-function refresh(slug?: string) {
+function refresh(slug?: string, previousSlug?: string) {
   scheduleSnapshotRefresh();
   revalidatePath("/");
   revalidatePath("/portfolio");
   updateTag(PORTFOLIO_CACHE_TAG);
   if (slug) revalidatePath(`/artwork/${slug}`);
+  if (previousSlug) revalidatePath(`/artwork/${previousSlug}`);
 }
 
 function readFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
-  const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(title);
+  const slug = slugForTitle(title);
   const dateMadeRaw = String(formData.get("dateMade") ?? "");
   const dateMade = dateMadeRaw ? new Date(dateMadeRaw) : undefined;
   const medium = String(formData.get("medium") ?? "") || null;
@@ -93,6 +95,7 @@ export async function createArtwork(formData: FormData) {
   if (!fields.title || !fields.slug || !fields.medium) redirect("/admin/artworks/new?error=invalid");
 
   await connectToDatabase();
+  if (await isSlugTaken(Artwork, fields.slug)) redirect("/admin/artworks/new?error=slug-taken");
   const subjects = await resolveSubjectIds(fields.subjects, readNewSubjects(formData));
   const order = await Artwork.countDocuments();
   const seriesOrder = fields.series ? await Artwork.countDocuments({ series: fields.series }) : 0;
@@ -111,23 +114,26 @@ export async function updateArtwork(formData: FormData) {
   }
 
   await connectToDatabase();
-  const existing = await Artwork.findById(id).lean<{ series?: unknown; images?: { publicId: string }[] }>();
+  const existing = await Artwork.findById(id).lean<{ slug?: string; series?: unknown; images?: { publicId: string }[] }>();
+  if (await isSlugTaken(Artwork, fields.slug, id)) redirect(`/admin/artworks/${id}?error=slug-taken`);
   // Moved into a different series (or into one for the first time) — append to the end of that series' order.
   const seriesOrder =
     fields.series && String(existing?.series ?? "") !== fields.series
       ? await Artwork.countDocuments({ series: fields.series })
       : undefined;
   const subjects = await resolveSubjectIds(fields.subjects, readNewSubjects(formData));
+  const slugUpdate = await prepareSlugChange(Artwork, existing?.slug, fields.slug);
   const { images, ...rest } = fields;
   await Artwork.findByIdAndUpdate(id, {
     ...rest,
     subjects,
     ...(images !== undefined && { images }),
     ...(seriesOrder !== undefined && { seriesOrder }),
+    ...slugUpdate,
   });
   await recordAiFeedback(formData, id, fields);
   if (images !== undefined) await destroyMediaAssets(removedPublicIds(existing?.images ?? [], images));
-  refresh(fields.slug);
+  refresh(fields.slug, existing?.slug);
   redirect("/admin/artworks?saved=1");
 }
 

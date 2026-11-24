@@ -13,6 +13,7 @@ const LINK_TARGET_FILES: Record<string, string> = {
   "/.well-known/api-catalog": ".well-known/api-catalog/route.ts",
   "/openapi.json": "openapi.json/route.ts",
   "/api-docs": "(site)/api-docs/page.tsx",
+  "/llms.txt": "llms.txt/route.ts",
   "/sitemap.xml": "sitemap.ts",
 };
 
@@ -52,7 +53,7 @@ describe("API catalog and OpenAPI spec", () => {
   });
 
   it("advertises registered relation types on the homepage", () => {
-    const rels = HOMEPAGE_LINKS.map((link) => link.rel).sort();
+    const rels = [...new Set(HOMEPAGE_LINKS.map((link) => link.rel))].sort();
     expect(rels).toEqual(["api-catalog", "describedby", "service-desc", "service-doc"]);
     expect(homepageLinkHeader()).toContain('</.well-known/api-catalog>; rel="api-catalog"');
   });

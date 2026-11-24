@@ -9,6 +9,7 @@ export const API_DOCS_PATH = "/api-docs";
 export const OPENAPI_PATH = "/openapi.json";
 export const API_CATALOG_PATH = "/.well-known/api-catalog";
 export const SITEMAP_PATH = "/sitemap.xml";
+export const LLMS_TXT_PATH = "/llms.txt";
 
 // Links advertised on the homepage with RFC 8288 Link headers. Relative targets resolve against the request URL.
 export const HOMEPAGE_LINKS = [
@@ -16,6 +17,7 @@ export const HOMEPAGE_LINKS = [
   { rel: "service-desc", href: OPENAPI_PATH, type: OPENAPI_MEDIA_TYPE },
   { rel: "service-doc", href: API_DOCS_PATH, type: "text/html" },
   { rel: "describedby", href: SITEMAP_PATH, type: "application/xml" },
+  { rel: "describedby", href: LLMS_TXT_PATH, type: "text/plain" },
 ];
 
 export function homepageLinkHeader() {

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
 import { draftStyleGuide, saveStyleGuide } from "@/lib/artist-voice";
+import { parseModelList, saveGeminiModelOrder } from "@/lib/gemini-models";
 import { STYLE_GUIDE_MAX_LENGTH } from "@/models/ArtworkAssistSettings";
 
 export async function updateStyleGuide(formData: FormData) {
@@ -10,6 +11,14 @@ export async function updateStyleGuide(formData: FormData) {
   const styleGuide = String(formData.get("styleGuide") ?? "").trim().slice(0, STYLE_GUIDE_MAX_LENGTH);
   await saveStyleGuide(styleGuide);
   redirect("/admin/ai-assistant?saved=1");
+}
+
+export async function updateGeminiModels(formData: FormData) {
+  await requireAdminSession();
+  const models = parseModelList(String(formData.get("geminiModels") ?? ""));
+  if (!models) redirect("/admin/ai-assistant?error=invalid-models");
+  await saveGeminiModelOrder(models);
+  redirect("/admin/ai-assistant?modelsSaved=1");
 }
 
 export async function draftStyleGuideFromWork() {

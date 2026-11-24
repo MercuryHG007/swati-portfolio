@@ -1,13 +1,10 @@
 import { r2MediaUrl } from "@/lib/media-storage";
+import { getGeminiModelOrder, recordDailyLimit } from "@/lib/gemini-models";
 
 // Shared Gemini plumbing for the admin AI assistants. Model output is untrusted: each caller's `parse`
 // validates it, and a model whose output fails validation falls through to the next model.
 
-export const GEMINI_MODELS = (process.env.GEMINI_ARTWORK_MODELS ?? "gemini-3.7-flash,gemini-3.1-flash-lite")
-  .split(",")
-  .map((model) => model.trim())
-  .filter(Boolean);
-
+const DAILY_QUOTA_PATTERN = /per[\s_-]?day/i;
 const PUBLIC_ID_PATTERN = /^[\w\-/.]{1,300}$/;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -72,7 +69,7 @@ async function generateWithFallback<T>(
 ): Promise<{ value: T; model: string }> {
   const failures: string[] = [];
 
-  for (const model of GEMINI_MODELS) {
+  for (const model of await getGeminiModelOrder()) {
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -88,6 +85,13 @@ async function generateWithFallback<T>(
         },
       );
       if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        // Only a daily quota is skipped until the reset. A per-minute limit clears within a minute.
+        if (response.status === 429 && DAILY_QUOTA_PATTERN.test(detail)) {
+          await recordDailyLimit(model).catch((error) =>
+            console.error("Could not record Gemini daily limit:", error instanceof Error ? error.message : error),
+          );
+        }
         failures.push(`${model} returned HTTP ${response.status}`);
         continue;
       }

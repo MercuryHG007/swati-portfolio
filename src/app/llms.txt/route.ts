@@ -1,6 +1,7 @@
 import { getLlmsContent, getPublishedFaqs } from "@/lib/queries";
 import { absoluteUrl, isIndexableDeployment } from "@/lib/seo";
 import { formatDimensions, getYear } from "@/lib/format";
+import { toMetaDescription } from "@/lib/meta-description";
 
 // Rendered per request so new works and exhibitions appear without a redeploy.
 export const dynamic = "force-dynamic";
@@ -26,20 +27,30 @@ export async function GET() {
   ].map((name) => name.toLowerCase());
   const mediumSentence = mediumNames.length > 0 ? ` The portfolio presents ${joinList(mediumNames)} works.` : "";
 
-  const artworkLines = artworks.map((item) => {
+  // Spec format: one list item per work, with the facts and the artist's own description on the same line.
+  const workLines = artworks.map((item) => {
     const details = [
       item.medium?.name,
       getYear(item.dateMade),
       formatDimensions(item.dimensions),
       item.availability ? AVAILABILITY_TEXT[item.availability] : undefined,
     ].filter(Boolean);
-    const suffix = details.length > 0 ? `: ${details.join(", ")}.` : "";
-    return `- [${item.title}](${absoluteUrl(`/artwork/${item.slug}`)})${suffix}`;
+    const facts = details.length > 0 ? `${details.join(", ")}.` : "";
+    const description = toMetaDescription(item.description, 200);
+    const notes = [facts, description].filter(Boolean).join(" ");
+    return `- [${item.title}](${absoluteUrl(`/artwork/${item.slug}`)})${notes ? `: ${notes}` : ""}`;
   });
 
+  // Each series lists its paintings in the same order as the series page.
   const seriesLines = series.map((item) => {
-    const description = item.description ? `: ${oneLine(item.description)}` : "";
-    return `- [${item.title}](${absoluteUrl(`/portfolio/series/${item.slug}`)})${description}`;
+    const paintings = artworks
+      .filter((artwork) => artwork.series && String(artwork.series) === String(item._id))
+      .sort((a, b) => (a.seriesOrder ?? 0) - (b.seriesOrder ?? 0))
+      .map((artwork) => `[${artwork.title}](${absoluteUrl(`/artwork/${artwork.slug}`)})`);
+    const description = toMetaDescription(item.description, 200);
+    const paintingsNote = paintings.length > 0 ? `Paintings: ${paintings.join(", ")}.` : "";
+    const notes = [description, paintingsNote].filter(Boolean).join(" ");
+    return `- [${item.title}](${absoluteUrl(`/portfolio/series/${item.slug}`)})${notes ? `: ${notes}` : ""}`;
   });
 
   const exhibitionLines = exhibitions.map((item) => {
@@ -70,25 +81,26 @@ export async function GET() {
     `- [FAQ](${absoluteUrl("/faq")}): common questions about the artist and works.`,
     `- [API](${absoluteUrl("/api-docs")}): read-only JSON access to published works, described by OpenAPI at ${absoluteUrl("/openapi.json")}.`,
     "",
-    "## Works",
+    `## Works (${artworks.length})`,
     "",
     "Each work has its own page. Works marked sold remain listed.",
     "Contact the artist to enquire about a work.",
     "",
-    ...(artworkLines.length > 0 ? artworkLines : ["No works are published yet."]),
+    ...(workLines.length > 0 ? workLines : ["No works are published yet."]),
     "",
-    "## Series",
+    `## Series (${series.length})`,
     "",
     ...(seriesLines.length > 0 ? seriesLines : ["No series are published yet."]),
-    "",
-    "## Exhibitions",
-    "",
-    ...(exhibitionLines.length > 0 ? exhibitionLines : ["No exhibitions are published yet."]),
     "",
     "## Frequently asked questions",
     "",
     ...faqs.flatMap((item) => [`### ${oneLine(item.question)}`, "", item.answer.trim(), ""]),
     ...(faqs.length === 0 ? ["No questions are published yet.", ""] : []),
+    "## Optional",
+    "",
+    `Exhibitions: ${exhibitions.length}, most recent first.`,
+    "",
+    ...(exhibitionLines.length > 0 ? exhibitionLines : ["No exhibitions are published yet."]),
   ];
 
   return new Response(lines.join("\n"), {

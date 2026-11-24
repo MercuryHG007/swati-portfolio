@@ -41,7 +41,7 @@ Open [http://localhost:3000](http://localhost:3000) for the public site, and
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | optional | GA4 measurement ID (`G-…`). Loads gtag on the public site only; no consent banner yet |
 | `GA4_PROPERTY_ID` / `GA4_CLIENT_EMAIL` / `GA4_PRIVATE_KEY` | optional | Read-only GA4 Data API service account for `/admin/analytics`. Grant the service account Viewer on the GA4 property. Keep the key newlines as `\n` |
 | `GEMINI_API_KEY` | optional | Enables the admin "Suggest details with AI" buttons on artwork and series forms. Server-only |
-| `GEMINI_ARTWORK_MODELS` | optional | Comma-separated Gemini model IDs to try in order, shared by all AI assistants. Defaults to `gemini-3.7-flash,gemini-3.1-flash-lite` |
+| `GEMINI_ARTWORK_MODELS` | optional | Default Gemini model IDs to try in order, shared by all AI assistants. The order can be changed at `/admin/ai-assistant` without a redeploy, which takes priority over this value. Defaults to `gemini-3.7-flash,gemini-3.1-flash-lite` |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | optional | Cloudflare Turnstile captcha on the contact form. Set both or neither. Use a separate widget for UAT. See [docs/setup/turnstile.md](docs/setup/turnstile.md) |
 | `R2_BACKUP_BUCKET`, `BACKUP_ENCRYPTION_KEY`, `CRON_SECRET` | optional | Nightly backups, content snapshot, contact-enquiry spool. Blank locally unless you run a restore drill. See [docs/setup/disaster-recovery.md](docs/setup/disaster-recovery.md) |
 

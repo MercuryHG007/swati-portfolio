@@ -41,7 +41,6 @@ export function SeriesForm({
       <Field label="Title">
         <input name="title" defaultValue={series?.title} required className={inputClass} />
       </Field>
-      <input type="hidden" name="slug" defaultValue={series?.slug} />
       <Field label="Description">
         <textarea name="description" defaultValue={series?.description} rows={4} className={inputClass} />
       </Field>

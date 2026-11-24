@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ProtectedImage } from "@/components/media-image";
-import { getExhibitionBySlug, getPublishedExhibitions } from "@/lib/queries";
+import { getExhibitionBySlug, getPublishedExhibitions, findCurrentExhibitionSlug } from "@/lib/queries";
 import { formatDateRange } from "@/lib/format";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { JsonLd } from "@/components/json-ld";
@@ -37,7 +37,11 @@ export default async function ExhibitionDetailPage({
 }) {
   const { slug } = await params;
   const exhibition = await getExhibitionBySlug(slug);
-  if (!exhibition) notFound();
+  if (!exhibition) {
+    const currentSlug = await findCurrentExhibitionSlug(slug);
+    if (currentSlug) permanentRedirect(`/exhibitions/${currentSlug}`);
+    notFound();
+  }
 
   const allExhibitions = await getPublishedExhibitions();
   const currentIndex = allExhibitions.findIndex((e) => e.slug === slug);

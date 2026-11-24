@@ -2,12 +2,13 @@ import { Fragment, type ReactNode } from "react";
 import type { Metadata } from "next";
 import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import {
   getArtworkBySlug,
   getArtworksBySeriesId,
   getStandaloneArtworks,
   getExhibitionsForArtwork,
+  findCurrentArtworkSlug,
 } from "@/lib/queries";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/breadcrumbs";
 import { Pill } from "@/components/pill/pill";
@@ -57,7 +58,11 @@ export default async function ArtworkDetailPage({
 }) {
   const { slug } = await params;
   const artwork = await getArtworkBySlug(slug);
-  if (!artwork) notFound();
+  if (!artwork) {
+    const currentSlug = await findCurrentArtworkSlug(slug);
+    if (currentSlug) permanentRedirect(`/artwork/${currentSlug}`);
+    notFound();
+  }
 
   const dimensions = formatDimensions(artwork.dimensions);
   // Only the values that exist become parts, so the separators never lead, trail or double up.
