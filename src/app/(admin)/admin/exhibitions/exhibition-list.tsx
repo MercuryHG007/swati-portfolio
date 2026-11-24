@@ -15,9 +15,10 @@ export type ExhibitionRow = {
   status: string;
   range: string;
   startTime: number;
+  uploadedAt: number;
 };
 
-type SortKey = "newest" | "oldest" | "title";
+type SortKey = "newest" | "oldest" | "title" | "uploadNewest" | "uploadOldest";
 
 export function ExhibitionList({ exhibitions }: { exhibitions: ExhibitionRow[] }) {
   const [query, setQuery] = useState("");
@@ -32,6 +33,8 @@ export function ExhibitionList({ exhibitions }: { exhibitions: ExhibitionRow[] }
         (status === "all" || e.status === status)
     );
     if (sort === "title") return [...list].sort((a, b) => a.title.localeCompare(b.title));
+    if (sort === "uploadNewest") return [...list].sort((a, b) => b.uploadedAt - a.uploadedAt);
+    if (sort === "uploadOldest") return [...list].sort((a, b) => a.uploadedAt - b.uploadedAt);
     return [...list].sort((a, b) => (sort === "newest" ? b.startTime - a.startTime : a.startTime - b.startTime));
   }, [exhibitions, query, status, sort]);
 
@@ -56,6 +59,8 @@ export function ExhibitionList({ exhibitions }: { exhibitions: ExhibitionRow[] }
             <option value="newest">Date, newest</option>
             <option value="oldest">Date, oldest</option>
             <option value="title">Title A–Z</option>
+            <option value="uploadNewest">Uploaded, newest</option>
+            <option value="uploadOldest">Uploaded, oldest</option>
           </Select>
         </div>
       </div>

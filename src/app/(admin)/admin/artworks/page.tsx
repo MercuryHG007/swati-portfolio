@@ -18,6 +18,7 @@ export default async function AdminArtworksListPage() {
     seriesId: artwork.series ? String(artwork.series._id) : null,
     seriesTitle: artwork.series?.title ?? null,
     thumb: artwork.images?.[0] ? { publicId: artwork.images[0].publicId, alt: artwork.images[0].alt } : null,
+    uploadedAt: new Date(artwork.createdAt).getTime(),
   }));
 
   return (
@@ -28,14 +29,15 @@ export default async function AdminArtworksListPage() {
           { param: "deleted", type: "success", message: "Deleted." },
         ]}
       />
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-foreground">Artworks</h1>
-        <Link href="/admin/artworks/new" className={buttonClass}>
-          New Artwork
-        </Link>
-      </div>
 
-      <ArtworkList artworks={rows} />
+      <ArtworkList
+        artworks={rows}
+        action={
+          <Link href="/admin/artworks/new" className={buttonClass}>
+            New Artwork
+          </Link>
+        }
+      />
     </main>
   );
 }

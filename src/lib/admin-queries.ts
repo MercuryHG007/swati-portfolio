@@ -19,6 +19,20 @@ export async function getArtworksBySeriesIdAdmin(seriesId: string) {
   return Artwork.find({ series: seriesId }).sort({ seriesOrder: 1, createdAt: -1 }).lean();
 }
 
+// Subjects with the number of artworks tagged with each one, for the admin filters.
+export async function getAllSubjectsWithArtworkCount() {
+  await connectToDatabase();
+  const [subjects, usage] = await Promise.all([
+    Subject.find().sort({ name: 1 }).lean(),
+    Artwork.aggregate<{ _id: unknown; artworks: unknown[] }>([
+      { $unwind: "$subjects" },
+      { $group: { _id: "$subjects", artworks: { $addToSet: "$_id" } } },
+    ]),
+  ]);
+  const counts = new Map(usage.map((row) => [String(row._id), row.artworks.length]));
+  return subjects.map((subject) => ({ ...subject, artworkCount: counts.get(String(subject._id)) ?? 0 }));
+}
+
 export async function getAllMediums() {
   await connectToDatabase();
   return Medium.find().sort({ name: 1 }).lean();
