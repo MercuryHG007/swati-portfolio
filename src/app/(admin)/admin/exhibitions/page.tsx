@@ -14,6 +14,7 @@ export default async function AdminExhibitionsListPage() {
     status: exhibition.status,
     range: formatDateRange(exhibition.startDate, exhibition.endDate),
     startTime: new Date(exhibition.startDate).getTime(),
+    uploadedAt: new Date(exhibition.createdAt).getTime(),
   }));
 
   return (

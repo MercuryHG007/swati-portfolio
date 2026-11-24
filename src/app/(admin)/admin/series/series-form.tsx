@@ -5,9 +5,11 @@ import { ImageUploader } from "@/components/admin/image-uploader";
 import { AiSeriesAssist } from "@/components/admin/ai-series-assist";
 import { Field, FieldSet, Select, inputClass, buttonClass, secondaryButtonClass } from "@/components/admin/ui";
 import Link from "next/link";
+import { SeriesArtworksList, type CatalogArtwork } from "./[id]/series-artworks-list";
 
 export function SeriesForm({
   series,
+  artworkCatalog = [],
   action,
 }: {
   series?: {
@@ -15,10 +17,12 @@ export function SeriesForm({
     title: string;
     slug: string;
     description: string;
-    coverImage: { publicId: string; width: number; height: number; alt: string } | null;
+    coverImage: { publicId: string; width: number; height: number; alt: string; bytes?: number } | null;
     status: string;
     featured?: boolean;
   };
+  // Only used when creating a series. Editing manages artworks on its own page.
+  artworkCatalog?: CatalogArtwork[];
   action: (formData: FormData) => void;
 }) {
   const [featured, setFeatured] = useState(series?.featured ?? false);
@@ -66,6 +70,8 @@ export function SeriesForm({
           </p>
         ) : null}
       </div>
+
+      {series ? null : <SeriesArtworksList catalog={artworkCatalog} />}
 
       <div className="flex gap-3">
         <button type="submit" className={buttonClass}>

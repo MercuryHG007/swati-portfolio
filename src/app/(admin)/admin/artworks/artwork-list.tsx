@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
 import { deleteArtwork } from "./actions";
@@ -20,9 +20,10 @@ export type ArtworkRow = {
   seriesId: string | null;
   seriesTitle: string | null;
   thumb: { publicId: string; alt?: string } | null;
+  uploadedAt: number;
 };
 
-type SortKey = "order" | "newest" | "oldest" | "title";
+type SortKey = "order" | "newest" | "oldest" | "title" | "uploadNewest" | "uploadOldest";
 
 // Years sort with unknown years last, whichever direction is chosen.
 function byYear(direction: 1 | -1) {
@@ -34,7 +35,7 @@ function byYear(direction: 1 | -1) {
   };
 }
 
-export function ArtworkList({ artworks }: { artworks: ArtworkRow[] }) {
+export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; action: ReactNode }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [mediumId, setMediumId] = useState("all");
@@ -53,6 +54,8 @@ export function ArtworkList({ artworks }: { artworks: ArtworkRow[] }) {
     return [...map].sort((x, y) => x[1].localeCompare(y[1]));
   }, [artworks]);
 
+  const isFiltered = query.trim() !== "" || status !== "all" || mediumId !== "all" || seriesId !== "all";
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = artworks.filter(
@@ -64,11 +67,23 @@ export function ArtworkList({ artworks }: { artworks: ArtworkRow[] }) {
     );
     if (sort === "order") return list;
     if (sort === "title") return [...list].sort((a, b) => a.title.localeCompare(b.title));
+    if (sort === "uploadNewest") return [...list].sort((a, b) => b.uploadedAt - a.uploadedAt);
+    if (sort === "uploadOldest") return [...list].sort((a, b) => a.uploadedAt - b.uploadedAt);
     return [...list].sort(byYear(sort === "newest" ? -1 : 1));
   }, [artworks, query, status, mediumId, seriesId, sort]);
 
   return (
     <>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-foreground">
+          Artworks
+          <span className="ml-2 text-base font-normal text-muted">
+            {isFiltered ? `${visible.length} of ${artworks.length}` : artworks.length}
+          </span>
+        </h1>
+        {action}
+      </div>
+
       <div className="flex flex-col gap-3">
         <input
           type="search"
@@ -107,6 +122,8 @@ export function ArtworkList({ artworks }: { artworks: ArtworkRow[] }) {
             <option value="newest">Year, newest</option>
             <option value="oldest">Year, oldest</option>
             <option value="title">Title A–Z</option>
+            <option value="uploadNewest">Uploaded, newest</option>
+            <option value="uploadOldest">Uploaded, oldest</option>
           </Select>
         </div>
       </div>
