@@ -6,6 +6,8 @@ export const mediaImageSchema = new Schema(
     publicId: { type: String, required: true },
     width: { type: Number, required: true },
     height: { type: Number, required: true },
+    // Size of the original upload in bytes. Optional: images saved before this field existed don't have it.
+    bytes: { type: Number },
     alt: { type: String, default: "" },
   },
   { _id: false }

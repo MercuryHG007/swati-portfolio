@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capitalize, formatDateRange, formatDimensions, getYear } from "./format";
+import { capitalize, formatDateRange, formatDimensions, formatFileSize, getYear } from "./format";
 
 describe("getYear", () => {
   it("reads the year in UTC, so UTC-midnight dates stay in their year", () => {
@@ -24,6 +24,23 @@ describe("formatDimensions", () => {
     expect(formatDimensions(null)).toBeNull();
     expect(formatDimensions({ height: 100 })).toBeNull();
     expect(formatDimensions({ height: 0, width: 80 })).toBeNull();
+  });
+});
+
+describe("formatFileSize", () => {
+  it("shows kilobytes below one megabyte", () => {
+    expect(formatFileSize(512 * 1024)).toBe("512 KB");
+  });
+
+  it("shows megabytes with one decimal from one megabyte up", () => {
+    expect(formatFileSize(4.2 * 1024 * 1024)).toBe("4.2 MB");
+    expect(formatFileSize(1024 * 1024)).toBe("1.0 MB");
+  });
+
+  it("returns null when the size is unknown", () => {
+    expect(formatFileSize(undefined)).toBeNull();
+    expect(formatFileSize(null)).toBeNull();
+    expect(formatFileSize(0)).toBeNull();
   });
 });
 

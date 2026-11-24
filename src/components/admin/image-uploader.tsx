@@ -13,11 +13,13 @@ import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@d
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { r2MediaUrl } from "@/lib/media-storage";
+import { formatFileSize } from "@/lib/format";
 
 export type MediaImageValue = {
   publicId: string;
   width: number;
   height: number;
+  bytes?: number;
   alt: string;
 };
 
@@ -38,7 +40,7 @@ function thumbUrl(publicId: string) {
   return r2MediaUrl(publicId, 160);
 }
 
-type UploadResult = { ok: boolean; error?: string; publicId: string; width: number; height: number };
+type UploadResult = { ok: boolean; error?: string; publicId: string; width: number; height: number; bytes?: number };
 type SignedUpload = { ok: boolean; error?: string; publicId: string; uploadUrl: string };
 
 async function postJson<T extends { ok: boolean; error?: string }>(url: string, body: unknown): Promise<T> {
@@ -97,6 +99,7 @@ function SortableThumb({
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.uid });
+  const size = formatFileSize(item.bytes);
 
   return (
     <div
@@ -121,6 +124,7 @@ function SortableThumb({
           <GripVertical className="h-4 w-4" />
         </button>
       </div>
+      {size ? <p className="text-xs text-muted">{size}</p> : null}
       <input
         type="text"
         placeholder="Alt text"
@@ -178,7 +182,9 @@ export function ImageUploader({ name, folder, initial = [], multiple = false, on
           discardUploads([data.publicId]);
           break;
         }
-        uploaded.push(withUid({ publicId: data.publicId, width: data.width, height: data.height, alt: "" }));
+        uploaded.push(
+          withUid({ publicId: data.publicId, width: data.width, height: data.height, bytes: data.bytes, alt: "" })
+        );
       }
       setImages((prev) => (multiple ? [...prev, ...uploaded] : uploaded.slice(0, 1)));
     } catch (err) {
@@ -212,6 +218,7 @@ export function ImageUploader({ name, folder, initial = [], multiple = false, on
     publicId: img.publicId,
     width: img.width,
     height: img.height,
+    bytes: img.bytes,
     alt: img.alt,
   }));
   const serialized = multiple ? JSON.stringify(plain) : JSON.stringify(plain[0] ?? null);

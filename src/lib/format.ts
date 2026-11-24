@@ -16,6 +16,14 @@ export function formatDimensions(dimensions?: { height?: number; width?: number;
   return `${height} × ${width} ${unitLabel}`;
 }
 
+// Returns null when the size is unknown, so older images without a stored size show nothing.
+export function formatFileSize(bytes?: number | null) {
+  if (!bytes || bytes <= 0) return null;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${Math.round(kb)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
 export function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }

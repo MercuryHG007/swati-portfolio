@@ -5,7 +5,7 @@
 // clears it. Otherwise a form that didn't send a field, such as a page left open from before the
 // field existed, would wipe the stored data and delete its images.
 
-export type ImageValue = { publicId: string; width: number; height: number; alt?: string };
+export type ImageValue = { publicId: string; width: number; height: number; bytes?: number; alt?: string };
 
 function readJsonField(formData: FormData, name: string): unknown {
   if (!formData.has(name)) return undefined;
