@@ -46,8 +46,15 @@ export async function createSeries(formData: FormData) {
   await connectToDatabase();
   if (await isSlugTaken(Series, fields.slug)) redirect("/admin/series/new?error=slug-taken");
   const order = await Series.countDocuments();
-  await Series.create({ ...fields, coverImage: fields.coverImage ?? null, order });
+  const created = await Series.create({ ...fields, coverImage: fields.coverImage ?? null, order });
+  const artworkIds = [...new Set(formData.getAll("artworks").map(String).filter(Boolean))];
+  await Promise.all(
+    artworkIds.map((artworkId, index) =>
+      Artwork.updateOne({ _id: artworkId }, { series: created._id, seriesOrder: index })
+    )
+  );
   refresh(fields.slug);
+  if (artworkIds.length > 0) revalidatePath("/admin/artworks");
   redirect("/admin/series?saved=1");
 }
 

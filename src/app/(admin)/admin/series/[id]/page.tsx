@@ -64,6 +64,7 @@ export default async function EditSeriesPage({
                 width: series.coverImage.width,
                 height: series.coverImage.height,
                 alt: series.coverImage.alt,
+                bytes: series.coverImage.bytes,
               }
             : null,
           status: series.status,

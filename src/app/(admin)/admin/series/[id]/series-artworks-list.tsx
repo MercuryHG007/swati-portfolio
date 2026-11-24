@@ -31,7 +31,7 @@ type SeriesArtwork = {
   thumb?: { publicId: string; alt?: string } | null;
 };
 
-type CatalogArtwork = SeriesArtwork & {
+export type CatalogArtwork = SeriesArtwork & {
   year: number | null;
   seriesId: string | null;
   seriesTitle: string | null;
@@ -81,15 +81,16 @@ function SortableArtworkRow({  artwork,
   );
 }
 
+// Without seriesId this is a new series: changes stay local and are submitted with the form.
 export function SeriesArtworksList({
   seriesId,
   seriesTitle,
-  initialArtworks,
+  initialArtworks = [],
   catalog: initialCatalog,
 }: {
-  seriesId: string;
-  seriesTitle: string;
-  initialArtworks: SeriesArtwork[];
+  seriesId?: string;
+  seriesTitle?: string;
+  initialArtworks?: SeriesArtwork[];
   catalog: CatalogArtwork[];
 }) {
   const [items, setItems] = useState(initialArtworks);
@@ -126,6 +127,7 @@ export function SeriesArtworksList({
   }
 
   function handleSave() {
+    if (!seriesId) return;
     startTransition(async () => {
       await reorderArtworksInSeries(seriesId, items.map((item) => String(item._id)));
       setIsDirty(false);
@@ -135,8 +137,9 @@ export function SeriesArtworksList({
 
   function handleAdd(artwork: CatalogArtwork) {
     setItems((current) => [...current, { _id: artwork._id, title: artwork.title, status: artwork.status, thumb: artwork.thumb }]);
+    if (!seriesId) return;
     setCatalog((current) =>
-      current.map((entry) => (entry._id === artwork._id ? { ...entry, seriesId, seriesTitle } : entry))
+      current.map((entry) => (entry._id === artwork._id ? { ...entry, seriesId, seriesTitle: seriesTitle ?? null } : entry))
     );
     startTransition(async () => {
       await addArtworkToSeries(seriesId, artwork._id);
@@ -146,6 +149,7 @@ export function SeriesArtworksList({
 
   function handleRemove(artwork: SeriesArtwork) {
     setItems((current) => current.filter((item) => item._id !== artwork._id));
+    if (!seriesId) return;
     setCatalog((current) =>
       current.map((entry) => (entry._id === artwork._id ? { ...entry, seriesId: null, seriesTitle: null } : entry))
     );
@@ -174,7 +178,7 @@ export function SeriesArtworksList({
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Artwork order</h2>
-          {isDirty ? (
+          {seriesId && isDirty ? (
             <button type="button" onClick={handleSave} disabled={isPending} className={secondaryButtonClass}>
               {isPending ? "Saving…" : "Save order"}
             </button>
@@ -188,6 +192,9 @@ export function SeriesArtworksList({
             ))}
           </SortableContext>
         </DndContext>
+        {seriesId
+          ? null
+          : items.map((artwork) => <input key={String(artwork._id)} type="hidden" name="artworks" value={String(artwork._id)} />)}
       </div>
     </div>
   );
