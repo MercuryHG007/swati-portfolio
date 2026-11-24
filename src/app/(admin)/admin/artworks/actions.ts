@@ -164,3 +164,45 @@ export async function reorderArtworksInSeries(seriesId: string, orderedIds: stri
   updateTag(PORTFOLIO_CACHE_TAG);
 }
 
+function refreshSeriesMembership(seriesIds: (string | null)[], artworkSlug?: string) {
+  scheduleSnapshotRefresh();
+  revalidatePath("/admin/artworks");
+  revalidatePath("/admin/series");
+  for (const seriesId of seriesIds) {
+    if (seriesId) revalidatePath(`/admin/series/${seriesId}`);
+  }
+  revalidatePath("/portfolio");
+  updateTag(PORTFOLIO_CACHE_TAG);
+  if (artworkSlug) revalidatePath(`/artwork/${artworkSlug}`);
+}
+
+// Appends the artwork to the end of the series. An artwork belongs to one series, so it leaves its previous one.
+export async function addArtworkToSeries(seriesId: string, artworkId: string) {
+  await requireAdminSession();
+  await connectToDatabase();
+  const artwork = await Artwork.findById(artworkId).lean<{ slug?: string; series?: unknown }>();
+  if (!artwork) return;
+  const previousSeriesId = artwork.series ? String(artwork.series) : null;
+  if (previousSeriesId === seriesId) return;
+
+  const last = await Artwork.findOne({ series: seriesId })
+    .sort({ seriesOrder: -1 })
+    .select("seriesOrder")
+    .lean<{ seriesOrder?: number }>();
+  const seriesOrder = last ? (last.seriesOrder ?? 0) + 1 : 0;
+  await Artwork.updateOne({ _id: artworkId }, { series: seriesId, seriesOrder });
+  refreshSeriesMembership([seriesId, previousSeriesId], artwork.slug);
+}
+
+// Makes the artwork standalone. The rest of the series keeps its order.
+export async function removeArtworkFromSeries(seriesId: string, artworkId: string) {
+  await requireAdminSession();
+  await connectToDatabase();
+  const artwork = await Artwork.findOneAndUpdate(
+    { _id: artworkId, series: seriesId },
+    { series: null, seriesOrder: 0 }
+  ).lean<{ slug?: string }>();
+  if (!artwork) return;
+  refreshSeriesMembership([seriesId], artwork.slug);
+}
+

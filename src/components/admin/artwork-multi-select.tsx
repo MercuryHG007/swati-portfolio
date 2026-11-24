@@ -3,19 +3,28 @@
 import { useMemo, useState } from "react";
 import { inputClass } from "@/components/admin/ui";
 
-export type ArtworkOption = { id: string; title: string; year?: number };
+export type ArtworkOption = { id: string; title: string; year?: number; note?: string };
 
 export function ArtworkMultiSelect({
   name,
   options,
-  initialSelectedIds,
+  initialSelectedIds = [],
+  selectedIds,
+  onToggle,
 }: {
-  name: string;
+  // Renders hidden form inputs with this name. Omit when the parent handles the selection itself.
+  name?: string;
   options: ArtworkOption[];
-  initialSelectedIds: string[];
+  // Uncontrolled: the component tracks the selection, starting from these ids.
+  initialSelectedIds?: string[];
+  // Controlled: the parent owns the selection and changes it in onToggle.
+  selectedIds?: string[];
+  onToggle?: (id: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set(initialSelectedIds));
+  const [uncontrolledSelected, setUncontrolledSelected] = useState<Set<string>>(() => new Set(initialSelectedIds));
+  const isControlled = selectedIds !== undefined;
+  const selected = isControlled ? new Set(selectedIds) : uncontrolledSelected;
 
   const MAX_VISIBLE = 5;
 
@@ -31,7 +40,11 @@ export function ArtworkMultiSelect({
   const selectedOptions = options.filter((option) => selected.has(option.id));
 
   function toggle(id: string) {
-    setSelected((prev) => {
+    if (isControlled) {
+      onToggle?.(id);
+      return;
+    }
+    setUncontrolledSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -49,7 +62,7 @@ export function ArtworkMultiSelect({
               className="flex items-center gap-1 rounded-full border border-accent px-3 py-1 text-xs text-foreground"
             >
               {option.title}
-              <input type="hidden" name={name} value={option.id} />
+              {name ? <input type="hidden" name={name} value={option.id} /> : null}
               <button
                 type="button"
                 onClick={() => toggle(option.id)}
@@ -76,6 +89,7 @@ export function ArtworkMultiSelect({
             <input type="checkbox" checked={selected.has(option.id)} onChange={() => toggle(option.id)} />
             {option.title}
             {option.year ? ` (${option.year})` : ""}
+            {option.note ? <span className="text-xs text-muted">{` — ${option.note}`}</span> : null}
           </label>
         ))}
         {hiddenCount > 0 ? (
