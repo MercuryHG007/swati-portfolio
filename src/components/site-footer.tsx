@@ -17,7 +17,7 @@ export async function SiteFooter() {
   const logo = about?.footerLogo;
 
   return (
-    <footer className="border-t border-border">
+    <footer className="site-footer border-t border-border">
       {/* Top row: logo on the left, contacts on the right. Mobile: contacts first, then logo. */}
       <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-6 pt-12 pb-8 text-sm text-foreground md:grid-cols-2 md:items-start md:gap-x-10">
         <div className="order-1 flex flex-col gap-2 md:order-none md:col-start-2 md:row-start-1 md:justify-self-end">
