@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { Button } from "@/components/button/button";
-import { TextLink } from "@/components/text-link/text-link";
+import { TextLink, textLinkClasses } from "@/components/text-link/text-link";
 import { canTrackAnalytics } from "@/lib/analytics";
 import { captureAttribution } from "@/lib/attribution";
 import { clearConsent, readConsent, subscribeConsent, writeConsent } from "@/lib/consent";
@@ -50,8 +50,16 @@ export function CookieConsent() {
   );
 }
 
-// Lets visitors change their choice later. Reopens the banner.
-export function CookieSettingsButton() {
+// Lets visitors change their choice later. Reopens the banner. The link variant matches the footer's text links.
+export function CookieSettingsButton({ variant = "pill" }: { variant?: "pill" | "link" }) {
+  if (variant === "link") {
+    return (
+      <button type="button" className={`${textLinkClasses("inverse")} cursor-pointer text-xs text-muted`} onClick={clearConsent}>
+        Cookie settings
+      </button>
+    );
+  }
+
   return (
     <Button type="button" variant="inverse" size="sm" onClick={clearConsent}>
       Cookie settings
