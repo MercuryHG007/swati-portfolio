@@ -59,6 +59,20 @@ body {
   color: var(--color-foreground);
 }
 
+/*
+ * Inverted footer: black ground, white type. Redefines the tokens for everything inside it.
+ * Accent is flipped too, so the focus ring and text selection stay visible on black.
+ */
+.site-footer {
+  --color-fg: #ffffff;;
+  --color-fg-muted: #d9d2c6;
+  --color-border: #2a2826;
+  --color-accent: #ffffff;;
+  --color-accent-fg: #000000;
+
+  background-color: #000000;
+}
+
 /* Keep the page still while a confirmation dialog is open. */
 body:has(dialog[open]) {
   overflow: hidden;

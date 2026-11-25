@@ -7,8 +7,8 @@ import { Field, buttonClass, inputClass } from "@/components/admin/ui";
 import { STYLE_GUIDE_MAX_LENGTH } from "@/models/ArtworkAssistSettings";
 import { draftStyleGuideFromWork, updateGeminiModels, updateStyleGuide } from "./actions";
 
-function formatPacific(date: Date): string {
-  return `${date.toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" })} Pacific`;
+function formatIst(date: Date): string {
+  return `${date.toLocaleString("en-US", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })} IST`;
 }
 
 export default async function AdminAiAssistantPage() {
@@ -63,8 +63,8 @@ export default async function AdminAiAssistantPage() {
         <div className="flex flex-col gap-1 text-sm text-muted">
           <p>Currently trying: {modelStatus.order.join(" → ")}</p>
           {modelStatus.exhausted.map((entry) => (
-            <p key={entry.model}>
-              {entry.model} is over its daily limit until {formatPacific(entry.until)}.
+            <p key={entry.model} className="text-red-500">
+              <span className="font-medium">{entry.model}</span> is over its daily limit until <span className="font-medium">{formatIst(entry.until)}</span>.
             </p>
           ))}
         </div>
