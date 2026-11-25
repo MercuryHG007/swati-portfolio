@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { serif, sans } from "@/lib/fonts";
 import { SiteHeader } from "@/components/site-header";
-import { HeaderFilterProvider } from "@/components/header-filter";
 import { SiteFooter } from "@/components/site-footer";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { NavigationLockRelease } from "@/components/navigation-lock-release";
@@ -33,11 +32,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={null}>
           <NavigationLockRelease />
         </Suspense>
-        <HeaderFilterProvider>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">{children}</div>
-          <SiteFooter />
-        </HeaderFilterProvider>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">{children}</div>
+        <SiteFooter />
         <ScrollToTop />
         <SiteAnalytics />
         <CookieConsent />

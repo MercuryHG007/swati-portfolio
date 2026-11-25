@@ -1,9 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
-import { useHeaderFilter } from "@/components/header-filter";
 import { FilterDrawer } from "@/components/portfolio/filter-drawer";
 import {
   FILTER_LABELS,
@@ -28,7 +26,6 @@ type PortfolioFilterBarProps = {
   onChange: (next: PortfolioFilters) => void;
 };
 
-const HEADER_HEIGHT = 73; // matches --header-height
 const MOBILE_HEADER_OFFSET = 80;
 
 // Reports whether an element has fully scrolled above the sticky header. A hidden element (display: none) has no height, so it never counts as passed.
@@ -62,12 +59,11 @@ type FilterChipListProps = {
   keys: FilterKey[];
   filters: PortfolioFilters;
   facets: PortfolioFacets;
-  placement: "inline" | "header";
   onToggle: (key: FilterKey, value: string) => void;
 };
 
-// One chip per filter, each opening a checkbox panel. The page and the header render separate copies with their own open state.
-function FilterChipList({ keys, filters, facets, placement, onToggle }: FilterChipListProps) {
+// One chip per filter, each opening a checkbox panel.
+function FilterChipList({ keys, filters, facets, onToggle }: FilterChipListProps) {
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const containersRef = useRef<Partial<Record<FilterKey, HTMLElement | null>>>({});
 
@@ -90,18 +86,15 @@ function FilterChipList({ keys, filters, facets, placement, onToggle }: FilterCh
     };
   }, [openFilter]);
 
-  // The header is a fixed-height bar, so its panel is centred under it rather than anchored to a chip near the edge.
   const panelClass =
-    placement === "header"
-      ? "fixed left-1/2 top-[calc(var(--header-height)+0.5rem)] z-50 w-max max-w-[min(56rem,calc(100vw-3rem))] -translate-x-1/2 rounded-md border border-border bg-background p-5 shadow-lg"
-      : "absolute left-0 z-20 mt-2 w-max max-w-[min(56rem,calc(100vw-3rem))] rounded-md border border-border bg-background p-5 shadow-lg";
+    "absolute left-0 z-20 mt-2 w-max max-w-[min(56rem,calc(100vw-3rem))] rounded-md border border-border bg-background p-5 shadow-lg";
 
   return (
     <>
       {keys.map((key) => {
         const selected = filters[key];
         const isOpen = openFilter === key;
-        const panelId = `portfolio-filter-${placement}-${key}`;
+        const panelId = `portfolio-filter-${key}`;
         return (
           <div
             key={key}
@@ -149,22 +142,9 @@ export function PortfolioFilterBar({ filters, facets, total, onChange }: Portfol
   // True only once the inline button has scrolled above the header, so the floating one doesn't show before it is reached.
   const [inlineButtonPassed, setInlineButtonPassed] = useState(false);
   const [footerVisible, setFooterVisible] = useState(false);
-  const { active: headerFilterActive, setActive: setHeaderFilterActive, slot: headerSlot } = useHeaderFilter();
-  const desktopRowRef = useRef<HTMLDivElement>(null);
   const inlineButtonRef = useRef<HTMLButtonElement>(null);
   // The button that opened the drawer. Focus returns to it on close.
   const triggerRef = useRef<HTMLButtonElement | null>(null);
-
-  // Desktop only: once the chip row has fully scrolled above the header, the header takes over with its own copy.
-  useEffect(() => {
-    const node = desktopRowRef.current;
-    if (!node) return;
-    const stop = watchPassedHeader(node, HEADER_HEIGHT, setHeaderFilterActive);
-    return () => {
-      stop();
-      setHeaderFilterActive(false);
-    };
-  }, [setHeaderFilterActive]);
 
   // The sticky header covers the top of the viewport, so the inline button only counts as visible below it.
   // "Passed" means it has left through the top; a button still below the fold is not passed.
@@ -220,30 +200,27 @@ export function PortfolioFilterBar({ filters, facets, total, onChange }: Portfol
   const sections = visibleFilterKeys(facets);
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Desktop: a chip per filter, each opening a checkbox panel. */}
-      <div ref={desktopRowRef} className="hidden flex-wrap items-center gap-2 md:flex">
-        <FilterChipList keys={sections} filters={filters} facets={facets} placement="inline" onToggle={toggle} />
+    <div className="flex flex-col gap-4 md:contents">
+      {/* Desktop: the chips, count and Clear all form a bar that pins to the top once it scrolls up to it. */}
+      <div className="hidden items-center justify-between gap-4 md:sticky md:top-0 md:z-30 md:-mx-6 md:flex md:border-b md:border-border md:bg-background md:px-6 md:py-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <FilterChipList keys={sections} filters={filters} facets={facets} onToggle={toggle} />
+        </div>
+        <div className="flex shrink-0 items-center gap-4 text-sm text-muted">
+          <p aria-live="polite">
+            {total} {noun}
+          </p>
+          {/* Always rendered, so the layout doesn't shift when filters are added or removed. */}
+          <button
+            type="button"
+            disabled={!hasFilters}
+            onClick={() => onChange(EMPTY_PORTFOLIO_FILTERS)}
+            className="cursor-pointer whitespace-nowrap text-accent underline underline-offset-4 disabled:cursor-not-allowed disabled:text-muted disabled:no-underline"
+          >
+            Clear all
+          </button>
+        </div>
       </div>
-
-      {/* Desktop: once the chip row scrolls past the header, the header shows the chips and Clear all. */}
-      {headerFilterActive &&
-        headerSlot &&
-        createPortal(
-          <div className="flex min-w-0 items-center gap-2">
-            <FilterChipList keys={sections} filters={filters} facets={facets} placement="header" onToggle={toggle} />
-            {/* Always rendered, so the chips don't shift when filters are added or removed. */}
-            <button
-              type="button"
-              disabled={!hasFilters}
-              onClick={() => onChange(EMPTY_PORTFOLIO_FILTERS)}
-              className="ml-2 cursor-pointer whitespace-nowrap text-sm text-accent underline underline-offset-4 disabled:cursor-not-allowed disabled:text-muted disabled:no-underline"
-            >
-              Clear all
-            </button>
-          </div>,
-          headerSlot
-        )}
 
       {/* Mobile: one button opens the full-page drawer. The applied count stays visible on it. */}
       <div className="flex items-center gap-4 md:hidden">
@@ -277,7 +254,7 @@ export function PortfolioFilterBar({ filters, facets, total, onChange }: Portfol
         </ul>
       )}
 
-      <div className="flex items-center justify-between gap-4 text-sm text-muted">
+      <div className="flex items-center justify-between gap-4 text-sm text-muted md:hidden">
         <p aria-live="polite">
           {total} {noun}
         </p>

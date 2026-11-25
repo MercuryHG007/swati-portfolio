@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useHeaderFilter } from "@/components/header-filter";
 import { PortfolioFilterBar } from "@/components/portfolio/portfolio-filter-bar";
 
 import { PortfolioGrid } from "@/components/portfolio/portfolio-grid";
@@ -94,7 +93,6 @@ type PortfolioBrowserProps = {
 };
 
 export function PortfolioBrowser({ initialFilters, initialFacets, initialPage }: PortfolioBrowserProps) {
-  const { active: headerFilterActive } = useHeaderFilter();
   const [filters, setFilters] = useState(initialFilters);
   const [facets, setFacets] = useState(initialFacets);
   const [items, setItems] = useState(initialPage.items);
@@ -193,10 +191,9 @@ export function PortfolioBrowser({ initialFilters, initialFacets, initialPage }:
       clearReturnRecord();
       setStatus("loading");
       void loadFrom(next);
-      // While the desktop header shows the filter, scrolling up to the title would bring the chip row back under the header and close it. Scroll to the artworks instead.
-      scrollToSection(headerFilterActive ? ARTWORKS_ID : TITLE_ID);
+      scrollToSection(TITLE_ID);
     },
-    [loadFrom, headerFilterActive]
+    [loadFrom]
   );
 
 
