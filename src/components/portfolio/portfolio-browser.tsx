@@ -280,7 +280,7 @@ export function PortfolioBrowser({ initialFilters, initialFacets, initialPage }:
   }, [applyFilters]);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <PortfolioFilterBar filters={filters} facets={facets} total={total} onChange={onChange} />
       <div id={ARTWORKS_ID} className="scroll-mt-24">
         <PortfolioGrid

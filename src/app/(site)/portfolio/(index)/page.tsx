@@ -32,7 +32,7 @@ export default async function PortfolioPage({ searchParams }: PortfolioPageProps
   ]);
 
   return (
-    <main className="flex flex-1 flex-col gap-16 py-16">
+    <main className="flex flex-1 flex-col gap-8 py-16">
 
       <div className="flex w-full flex-col px-6">
         <Breadcrumbs items={[{ label: "Portfolio" }]} />
@@ -52,7 +52,7 @@ export default async function PortfolioPage({ searchParams }: PortfolioPageProps
         />
       )}
 
-      <div className="flex w-full flex-col gap-10 px-6">
+      <div className="flex w-full flex-col gap-4 px-6">
         <header id="portfolio" className="flex scroll-mt-24 flex-col gap-3">
           <h1 className="text-3xl font-medium text-foreground">Portfolio</h1>
           <p className="max-w-2xl text-muted">

@@ -202,7 +202,7 @@ export function PortfolioFilterBar({ filters, facets, total, onChange }: Portfol
   return (
     <div className="flex flex-col gap-4 md:contents">
       {/* Desktop: the chips, count and Clear all form a bar that pins to the top once it scrolls up to it. */}
-      <div className="hidden items-center justify-between gap-4 md:sticky md:top-0 md:z-30 md:-mx-6 md:flex md:border-b md:border-border md:bg-background md:px-6 md:py-3">
+      <div className="hidden items-center justify-between gap-4 md:sticky md:top-0 md:z-30 md:-mx-6 md:flex md:border-b md:border-border md:bg-background md:px-8 md:py-3">
         <div className="flex flex-wrap items-center gap-2">
           <FilterChipList keys={sections} filters={filters} facets={facets} onToggle={toggle} />
         </div>
