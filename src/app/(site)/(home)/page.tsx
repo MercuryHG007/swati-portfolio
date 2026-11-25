@@ -47,7 +47,7 @@ export default async function Home() {
   });
 
   return (
-    <main className="flex flex-1 flex-col gap-16 py-10 md:gap-24 md:py-16">
+    <main className="flex flex-1 flex-col gap-16 py-10 md:gap-24 md:py-10">
       <JsonLd
         data={artistJsonLd({
           instagram: about?.socials?.instagram,
