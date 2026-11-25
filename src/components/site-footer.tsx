@@ -55,6 +55,8 @@ export async function SiteFooter() {
         <TextLink href="/faq" variant="inverse" className="text-xs text-muted">FAQ</TextLink>
         <span aria-hidden="true">·</span>
         <TextLink href="/privacy" variant="inverse" className="text-xs text-muted">Privacy</TextLink>
+        <span aria-hidden="true">·</span>
+        <TextLink href="/copyright" variant="inverse" className="text-xs text-muted">Copyright</TextLink>
       </div>
     </footer>
   );
