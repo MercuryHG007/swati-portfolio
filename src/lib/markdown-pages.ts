@@ -15,6 +15,7 @@ import {
 } from "@/lib/queries";
 import { formatDateRange, formatDimensions, getYear } from "@/lib/format";
 import { toMetaDescription } from "@/lib/meta-description";
+import { getSiteCopy, taglineOf } from "@/lib/site-copy";
 import { absoluteUrl, mediaImageUrl } from "@/lib/seo";
 import { escapeLinkText, frontMatter } from "@/lib/markdown";
 
@@ -61,12 +62,12 @@ function renderPage(page: Page): string {
 }
 
 async function homePage(): Promise<Page> {
-  const [settings, featured] = await Promise.all([getHomeSettings(), getFeaturedArtworks(8)]);
+  const [settings, featured, copy] = await Promise.all([getHomeSettings(), getFeaturedArtworks(8), getSiteCopy()]);
   return {
     path: "/",
-    title: "Swati Garg — Watercolor Artist",
+    title: copy.title,
     heading: "Swati Garg",
-    description: "Portfolio of watercolor, acrylic, pencil and oil works by Swati Garg.",
+    description: copy.description,
     lines: [
       settings.heroHeading,
       "",
@@ -93,7 +94,7 @@ async function aboutPage(): Promise<Page> {
     heading: "Swati Garg",
     description: "About Swati Garg, a watercolor and mixed media artist: education, exhibitions and awards.",
     lines: [
-      "Watercolor & mixed media artist" + (about?.location ? `. Lives and works in ${about.location}.` : "."),
+      taglineOf(about) + (about?.location ? `. Lives and works in ${about.location}.` : "."),
       "",
       ...(about?.bio ? [about.bio.trim(), ""] : []),
       ...(about?.statement ? [`> ${about.statement.trim()}`, ""] : []),

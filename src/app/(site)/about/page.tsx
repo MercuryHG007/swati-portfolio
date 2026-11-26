@@ -6,6 +6,7 @@ import { ExhibitionList } from "@/components/exhibition-list";
 import { getAbout, getPublishedExhibitions } from "@/lib/queries";
 import { JsonLd } from "@/components/json-ld";
 import { artistJsonLd, pageMetadata } from "@/lib/seo";
+import { taglineOf } from "@/lib/site-copy";
 
 export const revalidate = 60;
 
@@ -26,8 +27,10 @@ export default async function AboutPage() {
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-16 px-6 py-16">
       <JsonLd
         data={artistJsonLd({
-          instagram: about?.socials?.instagram,
           location: about?.location,
+          bio: about?.bio,
+          photoPublicId: about?.photo?.publicId,
+          socials: about?.socials,
         })}
       />
       <header className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
@@ -36,7 +39,7 @@ export default async function AboutPage() {
             Swati Garg
           </h1>
           <p className="text-lg italic text-muted">
-            Watercolor &amp; mixed media artist
+            {taglineOf(about)}
             {location ? ` · Lives and works in ${location}` : ""}
           </p>
         </div>

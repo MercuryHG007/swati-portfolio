@@ -6,6 +6,7 @@ import { JsonLd } from "@/components/json-ld";
 import { getAbout, getFeaturedArtworks, getHomeSettings, getMediumsWithWork } from "@/lib/queries";
 import { r2MediaUrl } from "@/lib/media-storage";
 import { artistJsonLd, mediaImageUrl, pageMetadata, websiteJsonLd } from "@/lib/seo";
+import { getSiteCopy } from "@/lib/site-copy";
 
 export const revalidate = 60;
 
@@ -13,9 +14,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const [cover] = await getFeaturedArtworks(1);
   const image = cover?.images?.[0];
   const url = image ? mediaImageUrl(image.publicId) : undefined;
+  const copy = await getSiteCopy();
   return pageMetadata({
-    title: "Swati Garg — Watercolor Artist",
-    description: "Portfolio of watercolor, acrylic, pencil and oil works by Swati Garg.",
+    title: copy.title,
+    description: copy.description,
     path: "/",
     image: url && cover ? { url, alt: `${cover.title} by Swati Garg` } : undefined,
   });
@@ -50,8 +52,10 @@ export default async function Home() {
     <main className="flex flex-1 flex-col gap-16 py-10 md:gap-24 md:py-10">
       <JsonLd
         data={artistJsonLd({
-          instagram: about?.socials?.instagram,
           location: about?.location,
+          bio: about?.bio,
+          photoPublicId: about?.photo?.publicId,
+          socials: about?.socials,
         })}
       />
       <JsonLd data={websiteJsonLd()} />

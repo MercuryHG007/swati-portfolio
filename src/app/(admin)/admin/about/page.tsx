@@ -1,4 +1,5 @@
 import { getOrCreateAbout } from "@/lib/admin-queries";
+import { taglineOf } from "@/lib/site-copy";
 import { updateAbout } from "./actions";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { CvRowsField, type CvRow } from "@/components/admin/cv-rows-field";
@@ -24,6 +25,9 @@ export default async function AdminAboutPage() {
       <h1 className="text-2xl font-semibold text-foreground">About page</h1>
 
       <form action={updateAbout} className="flex flex-col gap-6">
+        <Field label="Tagline (shown under your name, and in the page title)">
+          <input name="tagline" defaultValue={taglineOf(about)} className={inputClass} />
+        </Field>
         <Field label="Bio">
           <textarea name="bio" defaultValue={about.bio} rows={8} className={inputClass} />
         </Field>
@@ -87,6 +91,30 @@ export default async function AdminAboutPage() {
             name="instagram"
             defaultValue={about.socials?.instagram}
             placeholder="https://www.instagram.com/…"
+            className={inputClass}
+          />
+        </Field>
+        <Field label="Facebook profile URL">
+          <input
+            name="facebook"
+            defaultValue={about.socials?.facebook}
+            placeholder="https://www.facebook.com/…"
+            className={inputClass}
+          />
+        </Field>
+        <Field label="LinkedIn profile URL">
+          <input
+            name="linkedin"
+            defaultValue={about.socials?.linkedin}
+            placeholder="https://www.linkedin.com/in/…"
+            className={inputClass}
+          />
+        </Field>
+        <Field label="YouTube channel URL">
+          <input
+            name="youtube"
+            defaultValue={about.socials?.youtube}
+            placeholder="https://www.youtube.com/…"
             className={inputClass}
           />
         </Field>

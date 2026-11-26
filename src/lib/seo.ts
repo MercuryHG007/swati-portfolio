@@ -1,6 +1,31 @@
 import type { Metadata } from "next";
 import type { AvailabilityStatus } from "@/models/shared";
 import { r2MediaUrl } from "@/lib/media-storage";
+import { toMetaDescription } from "@/lib/meta-description";
+
+// Search description built from the artist's profile, so it changes when the profile changes.
+// Reads as: "Swati Garg, <tagline>. Works in <mediums>. Based in <location>."
+export function siteDescription({
+  tagline,
+  location,
+  mediums,
+}: {
+  tagline?: string;
+  location?: string;
+  mediums: string[];
+}): string {
+  const sentences = [
+    tagline ? `Swati Garg, ${tagline}.` : "Swati Garg.",
+    mediums.length > 0 ? `Works in ${joinNames(mediums)}.` : "",
+    location ? `Based in ${location}.` : "",
+  ];
+  return toMetaDescription(sentences.filter(Boolean).join(" ")) ?? "Swati Garg.";
+}
+
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
 
 // Derived from Vercel's system variables, so no domain is hardcoded. VERCEL_PROJECT_PRODUCTION_URL is
 // the project's production domain, so preview and UAT deployments also point canonical links at the live site.
@@ -87,12 +112,20 @@ export function websiteJsonLd() {
   };
 }
 
+export type ArtistProfile = {
+  location?: string;
+  bio?: string;
+  photoPublicId?: string;
+  socials?: { instagram?: string; facebook?: string; linkedin?: string; youtube?: string };
+};
+
 // sameAs links the site to profiles the artist controls. homeLocation tells search engines and AI tools which "Swati Garg" this is.
-export function artistJsonLd({
-  instagram,
-  location,
-}: { instagram?: string; location?: string } = {}) {
-  const sameAs = [instagram].filter((url): url is string => Boolean(url));
+export function artistJsonLd({ location, bio, photoPublicId, socials }: ArtistProfile = {}) {
+  const sameAs = [socials?.instagram, socials?.facebook, socials?.linkedin, socials?.youtube].filter(
+    (url): url is string => Boolean(url)
+  );
+  const description = toMetaDescription(bio);
+  const image = photoPublicId ? mediaImageUrl(photoPublicId) : undefined;
   return {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -100,8 +133,22 @@ export function artistJsonLd({
     name: "Swati Garg",
     jobTitle: "Artist",
     url: absoluteUrl("/"),
+    ...(description && { description }),
+    ...(image && { image }),
     ...(location && { homeLocation: { "@type": "Place", name: location } }),
     ...(sameAs.length > 0 && { sameAs }),
+  };
+}
+
+// Listing pages (portfolio, series, exhibitions) describe a collection of the artist's work.
+export function collectionJsonLd({ name, description, path }: { name: string; description: string; path: string }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name,
+    description,
+    url: absoluteUrl(path),
+    isPartOf: { "@id": absoluteUrl("/#website") },
   };
 }
 
