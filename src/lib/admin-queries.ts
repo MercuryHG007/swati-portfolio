@@ -83,13 +83,15 @@ export async function getAllMessages() {
 
 export async function getCounts() {
   await connectToDatabase();
-  const [series, artworks, mediums, subjects, exhibitions, unreadMessages] = await Promise.all([
-    Series.countDocuments(),
-    Artwork.countDocuments(),
-    Medium.countDocuments(),
-    Subject.countDocuments(),
-    Exhibition.countDocuments(),
-    ContactMessage.countDocuments({ readAt: null }),
-  ]);
-  return { series, artworks, mediums, subjects, exhibitions, unreadMessages };
+  const [series, artworks, exhibitions, unreadMessages, hiddenArtworks, hiddenExhibitions, hiddenFaqs] =
+    await Promise.all([
+      Series.countDocuments(),
+      Artwork.countDocuments(),
+      Exhibition.countDocuments(),
+      ContactMessage.countDocuments({ readAt: null }),
+      Artwork.countDocuments({ status: "hidden" }),
+      Exhibition.countDocuments({ status: "hidden" }),
+      Faq.countDocuments({ status: "hidden" }),
+    ]);
+  return { series, artworks, exhibitions, unreadMessages, hiddenArtworks, hiddenExhibitions, hiddenFaqs };
 }
