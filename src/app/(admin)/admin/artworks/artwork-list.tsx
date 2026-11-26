@@ -1,13 +1,25 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
 import { deleteArtwork } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { AdminThumbnail } from "@/components/admin/thumbnail";
-import { ActionIcon, Select, cardClass, inputClass } from "@/components/admin/ui";
+import { ActionIcon, Select, inputClass, secondaryButtonClass } from "@/components/admin/ui";
 import { capitalize } from "@/lib/format";
+import {
+  PAGE_SIZES,
+  filterAndSortArtworks,
+  isListParam,
+  paginate,
+  parseArtworkListQuery,
+  serializeArtworkListQuery,
+  type ArtworkListQuery,
+  type PageSize,
+  type SortKey,
+} from "@/lib/admin-artwork-list";
 
 export type ArtworkRow = {
   id: string;
@@ -23,24 +35,60 @@ export type ArtworkRow = {
   uploadedAt: number;
 };
 
-type SortKey = "order" | "newest" | "oldest" | "title" | "uploadNewest" | "uploadOldest";
+// The filters live in the URL so reloads and Back keep them. Edit and save return to the bare
+// /admin/artworks, so the last state is also kept in sessionStorage and restored when the URL has no list params.
+const STORAGE_KEY = "admin-artworks-list";
 
-// Years sort with unknown years last, whichever direction is chosen.
-function byYear(direction: 1 | -1) {
-  return (a: ArtworkRow, b: ArtworkRow) => {
-    if (a.year == null && b.year == null) return 0;
-    if (a.year == null) return 1;
-    if (b.year == null) return -1;
-    return (a.year - b.year) * direction;
-  };
+function readStoredQuery() {
+  try {
+    return window.sessionStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredQuery(value: string) {
+  try {
+    window.sessionStorage.setItem(STORAGE_KEY, value);
+  } catch {
+    // Storage can be unavailable (private mode); the URL still carries the state.
+  }
+}
+
+function subscribeNone() {
+  return () => {};
 }
 
 export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; action: ReactNode }) {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [mediumId, setMediumId] = useState("all");
-  const [seriesId, setSeriesId] = useState("all");
-  const [sort, setSort] = useState<SortKey>("order");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Null on the server and during hydration, so the first render matches the server output.
+  const storedQuery = useSyncExternalStore(subscribeNone, readStoredQuery, () => null);
+  const listTopRef = useRef<HTMLDivElement>(null);
+
+  const hasListParams = Array.from(searchParams.keys()).some(isListParam);
+  const source = hasListParams ? searchParams.toString() : (storedQuery ?? "");
+  const listQuery = useMemo(() => parseArtworkListQuery(new URLSearchParams(source)), [source]);
+
+  useEffect(() => {
+    if (hasListParams) writeStoredQuery(serializeArtworkListQuery(listQuery).toString());
+  }, [hasListParams, listQuery]);
+
+  // Changes go through replaceState, which Next.js reflects in useSearchParams without a server request.
+  function update(patch: Partial<ArtworkListQuery>, { resetPage = true } = {}) {
+    const next: ArtworkListQuery = { ...listQuery, page: resetPage ? 1 : listQuery.page, ...patch };
+    const params = serializeArtworkListQuery(next);
+    // Keep one-off feedback params such as ?saved=1 for the toast.
+    searchParams.forEach((value, key) => {
+      if (!isListParam(key)) params.append(key, value);
+    });
+    window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
+  }
+
+  function goToPage(page: number) {
+    update({ page }, { resetPage: false });
+    listTopRef.current?.scrollIntoView({ block: "start" });
+  }
 
   const mediums = useMemo(() => {
     const map = new Map<string, string>();
@@ -54,23 +102,11 @@ export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; acti
     return [...map].sort((x, y) => x[1].localeCompare(y[1]));
   }, [artworks]);
 
-  const isFiltered = query.trim() !== "" || status !== "all" || mediumId !== "all" || seriesId !== "all";
+  const isFiltered =
+    listQuery.q.trim() !== "" || listQuery.status !== "all" || listQuery.mediumId !== "all" || listQuery.seriesId !== "all";
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const list = artworks.filter(
-      (a) =>
-        (!q || a.title.toLowerCase().includes(q)) &&
-        (status === "all" || (status === "featured" ? a.featured : a.status === status)) &&
-        (mediumId === "all" || a.mediumId === mediumId) &&
-        (seriesId === "all" || (seriesId === "standalone" ? !a.seriesId : a.seriesId === seriesId))
-    );
-    if (sort === "order") return list;
-    if (sort === "title") return [...list].sort((a, b) => a.title.localeCompare(b.title));
-    if (sort === "uploadNewest") return [...list].sort((a, b) => b.uploadedAt - a.uploadedAt);
-    if (sort === "uploadOldest") return [...list].sort((a, b) => a.uploadedAt - b.uploadedAt);
-    return [...list].sort(byYear(sort === "newest" ? -1 : 1));
-  }, [artworks, query, status, mediumId, seriesId, sort]);
+  const filtered = useMemo(() => filterAndSortArtworks(artworks, listQuery), [artworks, listQuery]);
+  const { pageItems, page, pageCount, rangeStart, rangeEnd } = paginate(filtered, listQuery.page, listQuery.size);
 
   return (
     <>
@@ -78,29 +114,37 @@ export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; acti
         <h1 className="text-2xl font-semibold text-foreground">
           Artworks
           <span className="ml-2 text-base font-normal text-muted">
-            {isFiltered ? `${visible.length} of ${artworks.length}` : artworks.length}
+            {isFiltered ? `${filtered.length} of ${artworks.length}` : artworks.length}
           </span>
         </h1>
         {action}
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div ref={listTopRef} className="flex scroll-mt-6 flex-col gap-3">
         <input
           type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          value={listQuery.q}
+          onChange={(event) => update({ q: event.target.value })}
           placeholder="Search by title"
           aria-label="Search artworks by title"
           className={`${inputClass} w-full`}
         />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)}>
+          <Select
+            aria-label="Filter by status"
+            value={listQuery.status}
+            onChange={(event) => update({ status: event.target.value })}
+          >
             <option value="all">All statuses</option>
             <option value="featured">Featured</option>
             <option value="published">Published</option>
             <option value="hidden">Hidden</option>
           </Select>
-          <Select aria-label="Filter by medium" value={mediumId} onChange={(event) => setMediumId(event.target.value)}>
+          <Select
+            aria-label="Filter by medium"
+            value={listQuery.mediumId}
+            onChange={(event) => update({ mediumId: event.target.value })}
+          >
             <option value="all">All mediums</option>
             {mediums.map(([id, name]) => (
               <option key={id} value={id}>
@@ -108,7 +152,11 @@ export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; acti
               </option>
             ))}
           </Select>
-          <Select aria-label="Filter by series" value={seriesId} onChange={(event) => setSeriesId(event.target.value)}>
+          <Select
+            aria-label="Filter by series"
+            value={listQuery.seriesId}
+            onChange={(event) => update({ seriesId: event.target.value })}
+          >
             <option value="all">All series</option>
             <option value="standalone">Standalone</option>
             {series.map(([id, title]) => (
@@ -117,20 +165,27 @@ export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; acti
               </option>
             ))}
           </Select>
-          <Select aria-label="Sort artworks" value={sort} onChange={(event) => setSort(event.target.value as SortKey)}>
-            <option value="order">Default order</option>
+          <Select
+            aria-label="Sort artworks"
+            value={listQuery.sort}
+            onChange={(event) => update({ sort: event.target.value as SortKey })}
+          >
+            <option value="uploadNewest">Uploaded, newest</option>
+            <option value="uploadOldest">Uploaded, oldest</option>
             <option value="newest">Year, newest</option>
             <option value="oldest">Year, oldest</option>
             <option value="title">Title A–Z</option>
-            <option value="uploadNewest">Uploaded, newest</option>
-            <option value="uploadOldest">Uploaded, oldest</option>
+            <option value="order">Portfolio order</option>
           </Select>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {visible.map((artwork) => (
-          <div key={artwork.id} className={`${cardClass} flex items-center justify-between gap-3`}>
+      <div className="flex flex-col gap-2">
+        {pageItems.map((artwork) => (
+          <div
+            key={artwork.id}
+            className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2"
+          >
             <div className="flex min-w-0 items-center gap-3">
               <AdminThumbnail image={artwork.thumb} alt={artwork.title} />
               <div className="min-w-0">
@@ -166,10 +221,63 @@ export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; acti
           </div>
         ))}
         {artworks.length === 0 ? <p className="text-muted">No artworks yet.</p> : null}
-        {artworks.length > 0 && visible.length === 0 ? (
-          <p className="text-muted">No artworks match these filters.</p>
+        {artworks.length > 0 && filtered.length === 0 ? (
+          <div className="flex flex-col gap-2 text-muted">
+            <p>No artworks match these filters.</p>
+            {isFiltered ? (
+              <button
+                type="button"
+                onClick={() => update({ q: "", status: "all", mediumId: "all", seriesId: "all" })}
+                className="w-fit cursor-pointer text-foreground underline"
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
+
+      {filtered.length > 0 ? (
+        <nav aria-label="Artwork pages" className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted">
+          <span>
+            {rangeStart}–{rangeEnd} of {filtered.length}
+          </span>
+          <div className="flex items-center gap-2">
+            <div className="w-36">
+              <Select
+                aria-label="Artworks per page"
+                value={listQuery.size}
+                onChange={(event) => update({ size: Number(event.target.value) as PageSize })}
+              >
+                {PAGE_SIZES.map((size) => (
+                  <option key={size} value={size}>
+                    {size} per page
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <button
+              type="button"
+              onClick={() => goToPage(page - 1)}
+              disabled={page <= 1}
+              className={`${secondaryButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              Previous
+            </button>
+            <span className="whitespace-nowrap">
+              Page {page} of {pageCount}
+            </span>
+            <button
+              type="button"
+              onClick={() => goToPage(page + 1)}
+              disabled={page >= pageCount}
+              className={`${secondaryButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              Next
+            </button>
+          </div>
+        </nav>
+      ) : null}
     </>
   );
 }

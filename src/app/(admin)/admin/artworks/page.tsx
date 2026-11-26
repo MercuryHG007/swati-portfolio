@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { getAllArtworks } from "@/lib/admin-queries";
 import { getYear } from "@/lib/format";
@@ -30,14 +31,16 @@ export default async function AdminArtworksListPage() {
         ]}
       />
 
-      <ArtworkList
-        artworks={rows}
-        action={
-          <Link href="/admin/artworks/new" className={buttonClass}>
-            New Artwork
-          </Link>
-        }
-      />
+      <Suspense fallback={null}>
+        <ArtworkList
+          artworks={rows}
+          action={
+            <Link href="/admin/artworks/new" className={buttonClass}>
+              New Artwork
+            </Link>
+          }
+        />
+      </Suspense>
     </main>
   );
 }
