@@ -9,15 +9,19 @@ import { SiteAnalytics } from "@/components/analytics/site-analytics";
 import { CookieConsent } from "@/components/analytics/cookie-consent";
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { getSiteUrl, isIndexableDeployment } from "@/lib/seo";
+import { getSiteCopy } from "@/lib/site-copy";
 import "../globals.css";
 
 // Child pages inherit metadataBase and robots, and use relative canonical paths against it.
-export const metadata: Metadata = {
-  metadataBase: getSiteUrl(),
-  title: "Swati Garg — Watercolor Artist",
-  description: "Portfolio of watercolor, acrylic, pencil and oil works by Swati Garg.",
-  ...(!isIndexableDeployment() && { robots: { index: false, follow: false } }),
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const copy = await getSiteCopy();
+  return {
+    metadataBase: getSiteUrl(),
+    title: copy.title,
+    description: copy.description,
+    ...(!isIndexableDeployment() && { robots: { index: false, follow: false } }),
+  };
+}
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -25,9 +29,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${sans.variable} ${serif.variable} h-full antialiased`}
     >
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </head>
       <body className="site-public min-h-full flex flex-col bg-background text-foreground font-sans">
         <Suspense fallback={null}>
           <NavigationLockRelease />

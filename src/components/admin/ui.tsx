@@ -24,10 +24,16 @@ export function ActionIcon({ icon: IconComp, variant = "default" }: { icon: Luci
   );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+// Renders as a block span so it can sit inside a <label> (where <p> is not valid).
+export function FieldHint({ children }: { children: ReactNode }) {
+  return <span className="block text-xs text-muted">{children}</span>;
+}
+
+export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-1 text-sm text-foreground">
       {label}
+      {hint ? <FieldHint>{hint}</FieldHint> : null}
       {children}
     </label>
   );
@@ -35,10 +41,11 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 
 // Use for a group of controls, such as checkboxes or an uploader. A <label> must not wrap several
 // controls: clicking its text would activate the first one.
-export function FieldSet({ label, children }: { label: string; children: ReactNode }) {
+export function FieldSet({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
   return (
     <fieldset className="flex flex-col gap-1 text-sm text-foreground">
       <legend className="mb-1">{label}</legend>
+      {hint ? <FieldHint>{hint}</FieldHint> : null}
       {children}
     </fieldset>
   );

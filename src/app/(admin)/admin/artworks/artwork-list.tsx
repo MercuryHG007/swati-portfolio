@@ -1,13 +1,24 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
 import { deleteArtwork } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { AdminThumbnail } from "@/components/admin/thumbnail";
-import { ActionIcon, Select, cardClass, inputClass } from "@/components/admin/ui";
+import { ListPagination } from "@/components/admin/list-pagination";
+import { useAdminListQuery } from "@/components/admin/use-admin-list-query";
+import { ActionIcon, Select, inputClass } from "@/components/admin/ui";
 import { capitalize } from "@/lib/format";
+import { paginate } from "@/lib/admin-list";
+import {
+  ARTWORK_LIST_PARAM_KEYS,
+  filterAndSortArtworks,
+  parseArtworkListQuery,
+  serializeArtworkListQuery,
+  type ArtworkListQuery,
+  type SortKey,
+} from "@/lib/admin-artwork-list";
 
 export type ArtworkRow = {
   id: string;
@@ -23,24 +34,25 @@ export type ArtworkRow = {
   uploadedAt: number;
 };
 
-type SortKey = "order" | "newest" | "oldest" | "title" | "uploadNewest" | "uploadOldest";
-
-// Years sort with unknown years last, whichever direction is chosen.
-function byYear(direction: 1 | -1) {
-  return (a: ArtworkRow, b: ArtworkRow) => {
-    if (a.year == null && b.year == null) return 0;
-    if (a.year == null) return 1;
-    if (b.year == null) return -1;
-    return (a.year - b.year) * direction;
-  };
-}
-
+// The filters live in the URL so reloads and Back keep them, and the last state is restored on the bare list URL.
 export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; action: ReactNode }) {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [mediumId, setMediumId] = useState("all");
-  const [seriesId, setSeriesId] = useState("all");
-  const [sort, setSort] = useState<SortKey>("order");
+  const listTopRef = useRef<HTMLDivElement>(null);
+  const { query: listQuery, update } = useAdminListQuery<ArtworkListQuery>({
+    storageKey: "admin-artworks-list",
+    paramKeys: ARTWORK_LIST_PARAM_KEYS,
+    parse: parseArtworkListQuery,
+    serialize: serializeArtworkListQuery,
+  });
+
+  // Any filter or sort change starts again from the first page.
+  function changeFilters(patch: Partial<ArtworkListQuery>) {
+    update({ page: 1, ...patch });
+  }
+
+  function goToPage(page: number) {
+    update({ page });
+    listTopRef.current?.scrollIntoView({ block: "start" });
+  }
 
   const mediums = useMemo(() => {
     const map = new Map<string, string>();
@@ -54,23 +66,11 @@ export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; acti
     return [...map].sort((x, y) => x[1].localeCompare(y[1]));
   }, [artworks]);
 
-  const isFiltered = query.trim() !== "" || status !== "all" || mediumId !== "all" || seriesId !== "all";
+  const isFiltered =
+    listQuery.q.trim() !== "" || listQuery.status !== "all" || listQuery.mediumId !== "all" || listQuery.seriesId !== "all";
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const list = artworks.filter(
-      (a) =>
-        (!q || a.title.toLowerCase().includes(q)) &&
-        (status === "all" || (status === "featured" ? a.featured : a.status === status)) &&
-        (mediumId === "all" || a.mediumId === mediumId) &&
-        (seriesId === "all" || (seriesId === "standalone" ? !a.seriesId : a.seriesId === seriesId))
-    );
-    if (sort === "order") return list;
-    if (sort === "title") return [...list].sort((a, b) => a.title.localeCompare(b.title));
-    if (sort === "uploadNewest") return [...list].sort((a, b) => b.uploadedAt - a.uploadedAt);
-    if (sort === "uploadOldest") return [...list].sort((a, b) => a.uploadedAt - b.uploadedAt);
-    return [...list].sort(byYear(sort === "newest" ? -1 : 1));
-  }, [artworks, query, status, mediumId, seriesId, sort]);
+  const filtered = useMemo(() => filterAndSortArtworks(artworks, listQuery), [artworks, listQuery]);
+  const { pageItems, page, pageCount, rangeStart, rangeEnd } = paginate(filtered, listQuery.page, listQuery.size);
 
   return (
     <>
@@ -78,29 +78,37 @@ export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; acti
         <h1 className="text-2xl font-semibold text-foreground">
           Artworks
           <span className="ml-2 text-base font-normal text-muted">
-            {isFiltered ? `${visible.length} of ${artworks.length}` : artworks.length}
+            {isFiltered ? `${filtered.length} of ${artworks.length}` : artworks.length}
           </span>
         </h1>
         {action}
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div ref={listTopRef} className="flex scroll-mt-6 flex-col gap-3">
         <input
           type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          value={listQuery.q}
+          onChange={(event) => changeFilters({ q: event.target.value })}
           placeholder="Search by title"
           aria-label="Search artworks by title"
           className={`${inputClass} w-full`}
         />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)}>
+          <Select
+            aria-label="Filter by status"
+            value={listQuery.status}
+            onChange={(event) => changeFilters({ status: event.target.value })}
+          >
             <option value="all">All statuses</option>
             <option value="featured">Featured</option>
             <option value="published">Published</option>
             <option value="hidden">Hidden</option>
           </Select>
-          <Select aria-label="Filter by medium" value={mediumId} onChange={(event) => setMediumId(event.target.value)}>
+          <Select
+            aria-label="Filter by medium"
+            value={listQuery.mediumId}
+            onChange={(event) => changeFilters({ mediumId: event.target.value })}
+          >
             <option value="all">All mediums</option>
             {mediums.map(([id, name]) => (
               <option key={id} value={id}>
@@ -108,7 +116,11 @@ export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; acti
               </option>
             ))}
           </Select>
-          <Select aria-label="Filter by series" value={seriesId} onChange={(event) => setSeriesId(event.target.value)}>
+          <Select
+            aria-label="Filter by series"
+            value={listQuery.seriesId}
+            onChange={(event) => changeFilters({ seriesId: event.target.value })}
+          >
             <option value="all">All series</option>
             <option value="standalone">Standalone</option>
             {series.map(([id, title]) => (
@@ -117,20 +129,27 @@ export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; acti
               </option>
             ))}
           </Select>
-          <Select aria-label="Sort artworks" value={sort} onChange={(event) => setSort(event.target.value as SortKey)}>
-            <option value="order">Default order</option>
+          <Select
+            aria-label="Sort artworks"
+            value={listQuery.sort}
+            onChange={(event) => changeFilters({ sort: event.target.value as SortKey })}
+          >
+            <option value="uploadNewest">Uploaded, newest</option>
+            <option value="uploadOldest">Uploaded, oldest</option>
             <option value="newest">Year, newest</option>
             <option value="oldest">Year, oldest</option>
             <option value="title">Title A–Z</option>
-            <option value="uploadNewest">Uploaded, newest</option>
-            <option value="uploadOldest">Uploaded, oldest</option>
+            <option value="order">Portfolio order</option>
           </Select>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {visible.map((artwork) => (
-          <div key={artwork.id} className={`${cardClass} flex items-center justify-between gap-3`}>
+      <div className="flex flex-col gap-2">
+        {pageItems.map((artwork) => (
+          <div
+            key={artwork.id}
+            className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2"
+          >
             <div className="flex min-w-0 items-center gap-3">
               <AdminThumbnail image={artwork.thumb} alt={artwork.title} />
               <div className="min-w-0">
@@ -166,10 +185,32 @@ export function ArtworkList({ artworks, action }: { artworks: ArtworkRow[]; acti
           </div>
         ))}
         {artworks.length === 0 ? <p className="text-muted">No artworks yet.</p> : null}
-        {artworks.length > 0 && visible.length === 0 ? (
-          <p className="text-muted">No artworks match these filters.</p>
+        {artworks.length > 0 && filtered.length === 0 ? (
+          <div className="flex flex-col gap-2 text-muted">
+            <p>No artworks match these filters.</p>
+            {isFiltered ? (
+              <button
+                type="button"
+                onClick={() => changeFilters({ q: "", status: "all", mediumId: "all", seriesId: "all" })}
+                className="w-fit cursor-pointer text-foreground underline"
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
+
+      <ListPagination
+        total={filtered.length}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+        page={page}
+        pageCount={pageCount}
+        size={listQuery.size}
+        onPageChange={goToPage}
+        onSizeChange={(size) => changeFilters({ size })}
+      />
     </>
   );
 }
