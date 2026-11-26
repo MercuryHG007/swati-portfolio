@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ARTWORK_LIST_QUERY,
   filterAndSortArtworks,
-  paginate,
   parseArtworkListQuery,
   serializeArtworkListQuery,
   type FilterableArtwork,
@@ -84,30 +83,5 @@ describe("filterAndSortArtworks", () => {
     expect(ids({ mediumId: "w" })).toEqual(["c", "a"]);
     expect(ids({ seriesId: "standalone" })).toEqual(["a"]);
     expect(ids({ seriesId: "s1" })).toEqual(["b", "c"]);
-  });
-});
-
-describe("paginate", () => {
-  const items = Array.from({ length: 45 }, (_, index) => index);
-
-  it("returns the requested page with its range", () => {
-    expect(paginate(items, 2, 20)).toEqual({
-      pageItems: items.slice(20, 40),
-      page: 2,
-      pageCount: 3,
-      rangeStart: 21,
-      rangeEnd: 40,
-    });
-  });
-
-  it("clamps a page that no longer exists to the last page", () => {
-    const result = paginate(items, 9, 20);
-    expect(result.page).toBe(3);
-    expect(result.pageItems).toEqual(items.slice(40));
-    expect(result.rangeEnd).toBe(45);
-  });
-
-  it("reports an empty result as one empty page", () => {
-    expect(paginate([], 4, 20)).toEqual({ pageItems: [], page: 1, pageCount: 1, rangeStart: 0, rangeEnd: 0 });
   });
 });

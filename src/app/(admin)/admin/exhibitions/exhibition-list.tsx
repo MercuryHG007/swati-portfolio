@@ -1,12 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef } from "react";
 import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
 import { deleteExhibition } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { ActionIcon, Select, cardClass, inputClass } from "@/components/admin/ui";
+import { ListPagination } from "@/components/admin/list-pagination";
+import { useAdminListQuery } from "@/components/admin/use-admin-list-query";
+import { ActionIcon, Select, inputClass } from "@/components/admin/ui";
 import { capitalize } from "@/lib/format";
+import { paginate } from "@/lib/admin-list";
+import {
+  EXHIBITION_LIST_PARAM_KEYS,
+  filterAndSortExhibitions,
+  parseExhibitionListQuery,
+  serializeExhibitionListQuery,
+  type ExhibitionListQuery,
+  type ExhibitionSortKey,
+} from "@/lib/admin-exhibition-list";
 
 export type ExhibitionRow = {
   id: string;
@@ -18,44 +29,57 @@ export type ExhibitionRow = {
   uploadedAt: number;
 };
 
-type SortKey = "newest" | "oldest" | "title" | "uploadNewest" | "uploadOldest";
-
+// The filters live in the URL so reloads and Back keep them, and the last state is restored on the bare list URL.
 export function ExhibitionList({ exhibitions }: { exhibitions: ExhibitionRow[] }) {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [sort, setSort] = useState<SortKey>("newest");
+  const listTopRef = useRef<HTMLDivElement>(null);
+  const { query, update } = useAdminListQuery<ExhibitionListQuery>({
+    storageKey: "admin-exhibitions-list",
+    paramKeys: EXHIBITION_LIST_PARAM_KEYS,
+    parse: parseExhibitionListQuery,
+    serialize: serializeExhibitionListQuery,
+  });
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const list = exhibitions.filter(
-      (e) =>
-        (!q || e.title.toLowerCase().includes(q) || e.venue.toLowerCase().includes(q)) &&
-        (status === "all" || e.status === status)
-    );
-    if (sort === "title") return [...list].sort((a, b) => a.title.localeCompare(b.title));
-    if (sort === "uploadNewest") return [...list].sort((a, b) => b.uploadedAt - a.uploadedAt);
-    if (sort === "uploadOldest") return [...list].sort((a, b) => a.uploadedAt - b.uploadedAt);
-    return [...list].sort((a, b) => (sort === "newest" ? b.startTime - a.startTime : a.startTime - b.startTime));
-  }, [exhibitions, query, status, sort]);
+  // Any filter or sort change starts again from the first page.
+  function changeFilters(patch: Partial<ExhibitionListQuery>) {
+    update({ page: 1, ...patch });
+  }
+
+  function goToPage(page: number) {
+    update({ page });
+    listTopRef.current?.scrollIntoView({ block: "start" });
+  }
+
+  const isFiltered = query.q.trim() !== "" || query.status !== "all";
+
+  const filtered = useMemo(() => filterAndSortExhibitions(exhibitions, query), [exhibitions, query]);
+  const { pageItems, page, pageCount, rangeStart, rangeEnd } = paginate(filtered, query.page, query.size);
 
   return (
     <>
-      <div className="flex flex-col gap-3">
+      <div ref={listTopRef} className="flex scroll-mt-6 flex-col gap-3">
         <input
           type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          value={query.q}
+          onChange={(event) => changeFilters({ q: event.target.value })}
           placeholder="Search by title or venue"
           aria-label="Search exhibitions by title or venue"
           className={`${inputClass} w-full`}
         />
         <div className="grid grid-cols-2 gap-3">
-          <Select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)}>
+          <Select
+            aria-label="Filter by status"
+            value={query.status}
+            onChange={(event) => changeFilters({ status: event.target.value })}
+          >
             <option value="all">All statuses</option>
             <option value="published">Published</option>
             <option value="hidden">Hidden</option>
           </Select>
-          <Select aria-label="Sort exhibitions" value={sort} onChange={(event) => setSort(event.target.value as SortKey)}>
+          <Select
+            aria-label="Sort exhibitions"
+            value={query.sort}
+            onChange={(event) => changeFilters({ sort: event.target.value as ExhibitionSortKey })}
+          >
             <option value="newest">Date, newest</option>
             <option value="oldest">Date, oldest</option>
             <option value="title">Title A–Z</option>
@@ -65,16 +89,19 @@ export function ExhibitionList({ exhibitions }: { exhibitions: ExhibitionRow[] }
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {visible.map((exhibition) => (
-          <div key={exhibition.id} className={`${cardClass} flex items-center justify-between gap-3`}>
-            <div>
-              <p className="text-foreground">{exhibition.title}</p>
+      <div className="flex flex-col gap-2">
+        {pageItems.map((exhibition) => (
+          <div
+            key={exhibition.id}
+            className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-foreground">{exhibition.title}</p>
               <p className="text-xs text-muted">
                 {capitalize(exhibition.status)} · {exhibition.venue} · {exhibition.range}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex shrink-0 gap-2">
               <Link href={`/admin/exhibitions/${exhibition.id}`} aria-label={`Edit ${exhibition.title}`}>
                 <ActionIcon icon={Pencil} />
               </Link>
@@ -91,10 +118,32 @@ export function ExhibitionList({ exhibitions }: { exhibitions: ExhibitionRow[] }
           </div>
         ))}
         {exhibitions.length === 0 ? <p className="text-muted">No exhibitions yet.</p> : null}
-        {exhibitions.length > 0 && visible.length === 0 ? (
-          <p className="text-muted">No exhibitions match these filters.</p>
+        {exhibitions.length > 0 && filtered.length === 0 ? (
+          <div className="flex flex-col gap-2 text-muted">
+            <p>No exhibitions match these filters.</p>
+            {isFiltered ? (
+              <button
+                type="button"
+                onClick={() => changeFilters({ q: "", status: "all" })}
+                className="w-fit cursor-pointer text-foreground underline"
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
+
+      <ListPagination
+        total={filtered.length}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+        page={page}
+        pageCount={pageCount}
+        size={query.size}
+        onPageChange={goToPage}
+        onSizeChange={(size) => changeFilters({ size })}
+      />
     </>
   );
 }

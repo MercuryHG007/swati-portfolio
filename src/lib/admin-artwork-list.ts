@@ -1,6 +1,4 @@
-export const PAGE_SIZES = [20, 50] as const;
-export type PageSize = (typeof PAGE_SIZES)[number];
-export const DEFAULT_PAGE_SIZE: PageSize = 20;
+import { DEFAULT_PAGE_SIZE, parseChoice, parsePage, parsePageSize, type PageSize } from "./admin-list";
 
 export const SORT_KEYS = ["uploadNewest", "uploadOldest", "newest", "oldest", "title", "order"] as const;
 export type SortKey = (typeof SORT_KEYS)[number];
@@ -8,11 +6,7 @@ export const DEFAULT_SORT: SortKey = "uploadNewest";
 
 const STATUS_FILTERS = ["all", "featured", "published", "hidden"] as const;
 
-const LIST_PARAM_KEYS = ["q", "status", "medium", "series", "sort", "page", "size"] as const;
-
-export function isListParam(key: string) {
-  return (LIST_PARAM_KEYS as readonly string[]).includes(key);
-}
+export const ARTWORK_LIST_PARAM_KEYS = ["q", "status", "medium", "series", "sort", "page", "size"] as const;
 
 export type ArtworkListQuery = {
   q: string;
@@ -36,18 +30,14 @@ export const DEFAULT_ARTWORK_LIST_QUERY: ArtworkListQuery = {
 
 // Invalid or missing values fall back to the defaults, so a hand-edited URL never breaks the list.
 export function parseArtworkListQuery(params: URLSearchParams): ArtworkListQuery {
-  const status = params.get("status") ?? "all";
-  const sort = params.get("sort") as SortKey | null;
-  const page = Number(params.get("page"));
-  const size = Number(params.get("size"));
   return {
     q: params.get("q") ?? "",
-    status: (STATUS_FILTERS as readonly string[]).includes(status) ? status : "all",
+    status: parseChoice(params.get("status"), STATUS_FILTERS, "all"),
     mediumId: params.get("medium") ?? "all",
     seriesId: params.get("series") ?? "all",
-    sort: sort && (SORT_KEYS as readonly string[]).includes(sort) ? sort : DEFAULT_SORT,
-    page: Number.isInteger(page) && page >= 1 ? page : 1,
-    size: (PAGE_SIZES as readonly number[]).includes(size) ? (size as PageSize) : DEFAULT_PAGE_SIZE,
+    sort: parseChoice(params.get("sort"), SORT_KEYS, DEFAULT_SORT),
+    page: parsePage(params.get("page")),
+    size: parsePageSize(params.get("size")),
   };
 }
 
@@ -108,18 +98,4 @@ export function filterAndSortArtworks<T extends FilterableArtwork>(artworks: T[]
     case "oldest":
       return [...list].sort(byYear<T>(1));
   }
-}
-
-// Clamps the requested page so a page emptied by a delete or filter change still shows real results.
-export function paginate<T>(items: T[], requestedPage: number, size: number) {
-  const pageCount = Math.max(1, Math.ceil(items.length / size));
-  const page = Math.min(Math.max(1, requestedPage), pageCount);
-  const start = (page - 1) * size;
-  return {
-    pageItems: items.slice(start, start + size),
-    page,
-    pageCount,
-    rangeStart: items.length === 0 ? 0 : start + 1,
-    rangeEnd: Math.min(start + size, items.length),
-  };
 }

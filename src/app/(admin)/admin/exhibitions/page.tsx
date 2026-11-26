@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { getAllExhibitions } from "@/lib/admin-queries";
 import { formatDateRange } from "@/lib/format";
@@ -32,7 +33,9 @@ export default async function AdminExhibitionsListPage() {
         </Link>
       </div>
 
-      <ExhibitionList exhibitions={rows} />
+      <Suspense fallback={null}>
+        <ExhibitionList exhibitions={rows} />
+      </Suspense>
     </main>
   );
 }
