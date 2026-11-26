@@ -28,6 +28,9 @@ export default async function AdminMessagesPage() {
         ]}
       />
       <h1 className="text-2xl font-semibold text-foreground">Messages</h1>
+      <p className="text-sm text-muted">
+        Messages sent through the Contact page. “Mark read” clears the unread flag; deleting a message cannot be undone.
+      </p>
 
       <div className="flex flex-col gap-3">
         {messages.map((message) => (

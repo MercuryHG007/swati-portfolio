@@ -2,7 +2,7 @@ import { Trash2 } from "lucide-react";
 import { getAllFaqs } from "@/lib/admin-queries";
 import { createFaq, updateFaq, deleteFaq, seedStarterFaqs } from "./actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { ActionIcon, Select, buttonClass, cardClass, inputClass } from "@/components/admin/ui";
+import { ActionIcon, FieldHint, Select, buttonClass, cardClass, inputClass } from "@/components/admin/ui";
 import { ToastOnLoad } from "@/components/admin/toast-on-load";
 
 export default async function AdminFaqPage() {
@@ -77,29 +77,45 @@ function FaqFields({
 }) {
   return (
     <>
-      <input
-        name="question"
-        defaultValue={question}
-        placeholder="Question"
-        aria-label="Question"
-        required
-        className={inputClass}
-      />
-      <textarea
-        name="answer"
-        defaultValue={answer}
-        placeholder="Answer"
-        aria-label="Answer"
-        rows={4}
-        required
-        className={inputClass}
-      />
+      <label className="flex flex-col gap-1 text-sm text-foreground">
+        Question
+        <FieldHint>The heading people click to open the question on the public FAQ page.</FieldHint>
+        <input
+          name="question"
+          defaultValue={question}
+          placeholder="Question"
+          aria-label="Question"
+          required
+          className={inputClass}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm text-foreground">
+        Answer
+        <FieldHint>Shown when the question is opened. Line breaks you type are kept.</FieldHint>
+        <textarea
+          name="answer"
+          defaultValue={answer}
+          placeholder="Answer"
+          aria-label="Answer"
+          rows={4}
+          required
+          className={inputClass}
+        />
+      </label>
       <div className="grid grid-cols-2 gap-3">
-        <input name="order" type="number" defaultValue={order} aria-label="Order" className={inputClass} />
-        <Select name="status" defaultValue={status} aria-label="Status">
-          <option value="published">Published</option>
-          <option value="hidden">Hidden</option>
-        </Select>
+        <label className="flex flex-col gap-1 text-sm text-foreground">
+          Order
+          <FieldHint>Lower numbers appear first. Equal numbers are sorted by creation date.</FieldHint>
+          <input name="order" type="number" defaultValue={order} aria-label="Order" className={inputClass} />
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-foreground">
+          Status
+          <FieldHint>Published questions appear on the FAQ page. Hidden ones are kept but not shown.</FieldHint>
+          <Select name="status" defaultValue={status} aria-label="Status">
+            <option value="published">Published</option>
+            <option value="hidden">Hidden</option>
+          </Select>
+        </label>
       </div>
     </>
   );
