@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { artistJsonLd, collectionJsonLd, siteDescription } from "./seo";
+import { artistJsonLd, collectionJsonLd } from "./seo";
 
 describe("artistJsonLd", () => {
   afterEach(() => {
@@ -49,30 +49,5 @@ describe("collectionJsonLd", () => {
     expect(json).toMatchObject({ "@type": "CollectionPage", name: "Series", description: "Painting series." });
     expect(String(json.url)).toMatch(/\/series$/);
     expect(json.isPartOf).toEqual({ "@id": expect.stringMatching(/\/#website$/) });
-  });
-});
-
-describe("siteDescription", () => {
-  it("builds the description from tagline, mediums and location", () => {
-    expect(
-      siteDescription({
-        tagline: "Watercolor & mixed media artist",
-        location: "Ghaziabad, India",
-        mediums: ["Watercolor", "Acrylic", "Oil"],
-      })
-    ).toBe(
-      "Swati Garg, Watercolor & mixed media artist. Works in Watercolor, Acrylic and Oil. Based in Ghaziabad, India."
-    );
-  });
-
-  it("leaves out the parts that have no data", () => {
-    expect(siteDescription({ mediums: [] })).toBe("Swati Garg.");
-    expect(siteDescription({ tagline: "Painter", mediums: ["Pencil"] })).toBe("Swati Garg, Painter. Works in Pencil.");
-  });
-
-  it("stays within a search snippet", () => {
-    const mediums = Array.from({ length: 12 }, (_, index) => `Medium number ${index + 1}`);
-    const text = siteDescription({ tagline: "Watercolor & mixed media artist", location: "Ghaziabad, India", mediums });
-    expect(text.length).toBeLessThanOrEqual(155);
   });
 });

@@ -10,17 +10,18 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { parsePortfolioFilters, portfolioSearchParams } from "@/lib/portfolio-filters";
 import { dailySeed } from "@/lib/portfolio-order";
 import { JsonLd } from "@/components/json-ld";
+import type { Metadata } from "next";
 import { collectionJsonLd, pageMetadata } from "@/lib/seo";
-
-const PORTFOLIO_DESCRIPTION =
-  "Browse watercolor, acrylic, pencil and oil works by Swati Garg, filtered by medium and subject.";
+import { getPortfolioDescription } from "@/lib/site-copy";
 
 // Filter and sort parameters share this canonical URL, so each filtered view isn't indexed separately.
-export const metadata = pageMetadata({
-  title: "Portfolio — Swati Garg",
-  description: PORTFOLIO_DESCRIPTION,
-  path: "/portfolio",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: "Portfolio — Swati Garg",
+    description: await getPortfolioDescription(),
+    path: "/portfolio",
+  });
+}
 
 type PortfolioPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -35,9 +36,11 @@ export default async function PortfolioPage({ searchParams }: PortfolioPageProps
     getCachedPortfolioFacets(filters),
   ]);
 
+  const description = await getPortfolioDescription();
+
   return (
     <main className="flex flex-1 flex-col gap-8 py-16">
-      <JsonLd data={collectionJsonLd({ name: "Portfolio", description: PORTFOLIO_DESCRIPTION, path: "/portfolio" })} />
+      <JsonLd data={collectionJsonLd({ name: "Portfolio", description, path: "/portfolio" })} />
 
       <div className="flex w-full flex-col px-6">
         <Breadcrumbs items={[{ label: "Portfolio" }]} />

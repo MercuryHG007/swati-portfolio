@@ -15,7 +15,8 @@ import {
 } from "@/lib/queries";
 import { formatDateRange, formatDimensions, getYear } from "@/lib/format";
 import { toMetaDescription } from "@/lib/meta-description";
-import { getSiteCopy, taglineOf } from "@/lib/site-copy";
+import { getPortfolioDescription, getSiteCopy, taglineOf } from "@/lib/site-copy";
+import { aboutDescription, exhibitionsDescription, faqDescription, seriesDescription } from "@/lib/descriptions";
 import { absoluteUrl, mediaImageUrl } from "@/lib/seo";
 import { escapeLinkText, frontMatter } from "@/lib/markdown";
 
@@ -92,7 +93,11 @@ async function aboutPage(): Promise<Page> {
     path: "/about",
     title: "About — Swati Garg",
     heading: "Swati Garg",
-    description: "About Swati Garg, a watercolor and mixed media artist: education, exhibitions and awards.",
+    description: aboutDescription({
+      tagline: taglineOf(about),
+      location: about?.location,
+      exhibitionCount: exhibitions.length,
+    }),
     lines: [
       taglineOf(about) + (about?.location ? `. Lives and works in ${about.location}.` : "."),
       "",
@@ -122,7 +127,7 @@ async function faqPage(): Promise<Page> {
     path: "/faq",
     title: "Frequently asked questions — Swati Garg",
     heading: "Frequently asked questions",
-    description: "Common questions about Swati Garg, her paintings, enquiries and exhibitions.",
+    description: faqDescription({ questions: faqs.map((faq) => faq.question) }),
     lines: faqs.flatMap((item) => [`## ${item.question}`, "", item.answer.trim(), ""]),
   };
 }
@@ -134,7 +139,7 @@ async function portfolioPage(): Promise<Page> {
     path: "/portfolio",
     title: "Portfolio — Swati Garg",
     heading: "Portfolio",
-    description: "Browse watercolor, acrylic, pencil and oil works by Swati Garg, filtered by medium and subject.",
+    description: await getPortfolioDescription(),
     lines: [
       `${artworks.length} published works.`,
       "",
@@ -156,7 +161,7 @@ async function seriesIndexPage(): Promise<Page> {
     path: "/series",
     title: "Series — Swati Garg",
     heading: "Series",
-    description: "Series of paintings by Swati Garg.",
+    description: seriesDescription({ titles: series.map((item) => item.title) }),
     lines: series.map((item) => `- ${link(item.title, `/portfolio/series/${item.slug}`)}${details([oneLine(item.description)])}`),
   };
 }
@@ -188,7 +193,10 @@ async function exhibitionsIndexPage(): Promise<Page> {
     path: "/exhibitions",
     title: "Exhibitions — Swati Garg",
     heading: "Exhibitions",
-    description: "Solo and group exhibitions featuring paintings by Swati Garg.",
+    description: exhibitionsDescription({
+      count: exhibitions.length,
+      latest: exhibitions[0] ? { title: exhibitions[0].title, venue: exhibitions[0].venue } : undefined,
+    }),
     lines: exhibitions.map(
       (item) =>
         `- ${link(item.title, `/exhibitions/${item.slug}`)}${details([

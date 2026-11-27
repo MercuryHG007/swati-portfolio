@@ -3,30 +3,6 @@ import type { AvailabilityStatus } from "@/models/shared";
 import { r2MediaUrl } from "@/lib/media-storage";
 import { toMetaDescription } from "@/lib/meta-description";
 
-// Search description built from the artist's profile, so it changes when the profile changes.
-// Reads as: "Swati Garg, <tagline>. Works in <mediums>. Based in <location>."
-export function siteDescription({
-  tagline,
-  location,
-  mediums,
-}: {
-  tagline?: string;
-  location?: string;
-  mediums: string[];
-}): string {
-  const sentences = [
-    tagline ? `Swati Garg, ${tagline}.` : "Swati Garg.",
-    mediums.length > 0 ? `Works in ${joinNames(mediums)}.` : "",
-    location ? `Based in ${location}.` : "",
-  ];
-  return toMetaDescription(sentences.filter(Boolean).join(" ")) ?? "Swati Garg.";
-}
-
-function joinNames(names: string[]): string {
-  if (names.length <= 1) return names.join("");
-  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
-}
-
 // Derived from Vercel's system variables, so no domain is hardcoded. VERCEL_PROJECT_PRODUCTION_URL is
 // the project's production domain, so preview and UAT deployments also point canonical links at the live site.
 export function getSiteUrl(): URL {
