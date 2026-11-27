@@ -1,5 +1,24 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { artistJsonLd, collectionJsonLd } from "./seo";
+import { absoluteUrl, artistJsonLd, collectionJsonLd, getSiteUrl } from "./seo";
+
+describe("getSiteUrl", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("uses NEXT_PUBLIC_SITE_URL over the Vercel domains when it is set", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://www.example.com/");
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "example.vercel.app");
+    expect(getSiteUrl().origin).toBe("https://www.example.com");
+    expect(absoluteUrl("/artwork/a")).toBe("https://www.example.com/artwork/a");
+  });
+
+  it("falls back to the Vercel production domain when no site URL is pinned", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "www.example.com");
+    expect(getSiteUrl().origin).toBe("https://www.example.com");
+  });
+});
 
 describe("artistJsonLd", () => {
   afterEach(() => {

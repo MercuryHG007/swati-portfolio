@@ -3,9 +3,12 @@ import type { AvailabilityStatus } from "@/models/shared";
 import { r2MediaUrl } from "@/lib/media-storage";
 import { toMetaDescription } from "@/lib/meta-description";
 
-// Derived from Vercel's system variables, so no domain is hardcoded. VERCEL_PROJECT_PRODUCTION_URL is
-// the project's production domain, so preview and UAT deployments also point canonical links at the live site.
+// NEXT_PUBLIC_SITE_URL pins the canonical host (e.g. https://www.example.com) so canonicals, the sitemap and
+// Bing's canonical checks never depend on which domain Vercel happens to list first. Without it, fall back to
+// VERCEL_PROJECT_PRODUCTION_URL, so preview and UAT deployments still point canonical links at the live site.
 export function getSiteUrl(): URL {
+  const pinned = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (pinned) return new URL(pinned);
   const host = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
   return new URL(host ? `https://${host}` : "http://localhost:3000");
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { AppLink as Link } from "@/components/app-link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type KeyboardEvent, type Ref } from "react";
 import { ProtectedImage } from "@/components/media-image";
 
@@ -301,20 +302,17 @@ function Group({ items, groupRef, hidden = false }: { items: CarouselItem[]; gro
 }
 
 function Tile({ item, hidden, eager }: { item: CarouselItem; hidden: boolean; eager: boolean }) {
+  const router = useRouter();
   const ratio = item.image && item.image.height ? item.image.width / item.image.height : 0.8;
   // Tile height is --h (55svh, or 40svh below 640px). Its width follows the image ratio. The image box is
   // overscanned on both sides, so the rendered width is larger than the tile. `sizes` needs that real width.
   const boxRatio = (ratio * (1 + OVERSCAN * 2)).toFixed(4);
   const imageSizes = `(max-width: 639px) calc(40svh * ${boxRatio}), calc(55svh * ${boxRatio})`;
 
-  return (
-    <Link
-      href={item.href}
-      draggable={false}
-      tabIndex={hidden ? -1 : undefined}
-      className="group flex shrink-0 cursor-grab flex-col gap-3 active:cursor-grabbing"
-      style={{ width: `calc(var(--h) * ${ratio.toFixed(4)})` }}
-    >
+  const className = "group flex shrink-0 cursor-grab flex-col gap-3 active:cursor-grabbing";
+  const style = { width: `calc(var(--h) * ${ratio.toFixed(4)})` };
+  const content = (
+    <>
       <span className="relative block h-(--h) w-full overflow-hidden bg-surface">
         <span
           data-parallax
@@ -344,6 +342,20 @@ function Tile({ item, hidden, eager }: { item: CarouselItem; hidden: boolean; ea
         </span>
       </span>
       <span className="truncate text-sm text-foreground">{item.title}</span>
+    </>
+  );
+
+  // Hidden loop copies are not links, so each artwork URL appears once in the HTML. A click still navigates.
+  if (hidden) {
+    return (
+      <div className={className} style={style} onClick={() => router.push(item.href)}>
+        {content}
+      </div>
+    );
+  }
+  return (
+    <Link href={item.href} draggable={false} className={className} style={style}>
+      {content}
     </Link>
   );
 }

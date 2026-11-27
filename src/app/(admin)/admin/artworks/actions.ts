@@ -15,6 +15,7 @@ import { withAltFallback, withSuggestedAlt } from "@/lib/image-alt";
 import { destroyMediaAssets, removedPublicIds } from "@/lib/media-cleanup";
 import { readImageList } from "@/lib/form-fields";
 import { recordSavedDescription } from "@/lib/artist-voice";
+import { notifyIndexNow } from "@/lib/indexnow";
 
 function refresh(slug?: string, previousSlug?: string) {
   scheduleSnapshotRefresh();
@@ -23,6 +24,11 @@ function refresh(slug?: string, previousSlug?: string) {
   updateTag(PORTFOLIO_CACHE_TAG);
   if (slug) revalidatePath(`/artwork/${slug}`);
   if (previousSlug) revalidatePath(`/artwork/${previousSlug}`);
+  notifyIndexNow(["/", "/portfolio", ...artworkPaths(slug, previousSlug)]);
+}
+
+function artworkPaths(...slugs: (string | undefined)[]) {
+  return slugs.filter((slug): slug is string => Boolean(slug)).map((slug) => `/artwork/${slug}`);
 }
 
 function readFields(formData: FormData) {
@@ -144,9 +150,9 @@ export async function deleteArtwork(formData: FormData) {
 
   await connectToDatabase();
   await Exhibition.updateMany({ artworks: id }, { $pull: { artworks: id } });
-  const deleted = await Artwork.findByIdAndDelete(id).lean<{ images?: { publicId: string }[] }>();
+  const deleted = await Artwork.findByIdAndDelete(id).lean<{ images?: { publicId: string }[]; slug?: string }>();
   await destroyMediaAssets((deleted?.images ?? []).map((img) => img.publicId));
-  refresh();
+  refresh(deleted?.slug);
   redirect("/admin/artworks?deleted=1");
 }
 
@@ -174,6 +180,7 @@ function refreshSeriesMembership(seriesIds: (string | null)[], artworkSlug?: str
   revalidatePath("/portfolio");
   updateTag(PORTFOLIO_CACHE_TAG);
   if (artworkSlug) revalidatePath(`/artwork/${artworkSlug}`);
+  notifyIndexNow(["/portfolio", ...artworkPaths(artworkSlug)]);
 }
 
 // Appends the artwork to the end of the series. An artwork belongs to one series, so it leaves its previous one.

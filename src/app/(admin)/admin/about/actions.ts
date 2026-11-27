@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { scheduleSnapshotRefresh } from "@/lib/content-snapshot";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/require-admin";
+import { notifyIndexNow } from "@/lib/indexnow";
 import { connectToDatabase } from "@/lib/mongodb";
 import { About } from "@/models";
 import { destroyMediaAssets, removedPublicIds } from "@/lib/media-cleanup";
@@ -59,5 +60,6 @@ export async function updateAbout(formData: FormData) {
 
   scheduleSnapshotRefresh();
   revalidatePath("/", "layout");
+  notifyIndexNow(["/", "/about"]);
   redirect("/admin/about?saved=1");
 }
