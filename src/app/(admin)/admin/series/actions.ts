@@ -9,6 +9,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Series, Artwork, SeriesSettings } from "@/models";
 import { SERIES_SETTINGS_DEFAULTS } from "@/models/SeriesSettings";
 import { isSlugTaken, prepareSlugChange, slugForTitle } from "@/lib/slug-history";
+import { notifyIndexNow } from "@/lib/indexnow";
 import { withAltFallback, withSuggestedAlt } from "@/lib/image-alt";
 import { destroyMediaAssets, removedPublicIds } from "@/lib/media-cleanup";
 import { readSingleImage } from "@/lib/form-fields";
@@ -21,6 +22,11 @@ function refresh(slug?: string, previousSlug?: string) {
   revalidatePath("/series");
   if (slug) revalidatePath(`/portfolio/series/${slug}`);
   if (previousSlug) revalidatePath(`/portfolio/series/${previousSlug}`);
+  notifyIndexNow(["/series", "/portfolio", ...seriesPaths(slug, previousSlug)]);
+}
+
+function seriesPaths(...slugs: (string | undefined)[]) {
+  return slugs.filter((slug): slug is string => Boolean(slug)).map((slug) => `/portfolio/series/${slug}`);
 }
 
 function readFields(formData: FormData) {
@@ -91,9 +97,9 @@ export async function deleteSeries(formData: FormData) {
   await connectToDatabase();
   // A series is an optional grouping — unlink its artworks (make them standalone) instead of blocking.
   await Artwork.updateMany({ series: id }, { series: null });
-  const deleted = await Series.findByIdAndDelete(id).lean<{ coverImage?: { publicId: string } }>();
+  const deleted = await Series.findByIdAndDelete(id).lean<{ coverImage?: { publicId: string }; slug?: string }>();
   await destroyMediaAssets(deleted?.coverImage ? [deleted.coverImage.publicId] : []);
-  refresh();
+  refresh(deleted?.slug);
   redirect("/admin/series?deleted=1");
 }
 

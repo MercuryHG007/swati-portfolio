@@ -4,25 +4,28 @@ import { getPublishedSeries } from "@/lib/queries";
 import { CardTitle } from "@/components/card-title/card-title";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { JsonLd } from "@/components/json-ld";
+import type { Metadata } from "next";
 import { collectionJsonLd, pageMetadata } from "@/lib/seo";
+import { seriesDescription } from "@/lib/descriptions";
+import { getSeriesDescription } from "@/lib/site-copy";
 
 export const revalidate = 60;
 
-const SERIES_DESCRIPTION =
-  "Browse Swati Garg's painting series in watercolor, acrylic, pencil and oil, shown as groups of related works.";
-
-export const metadata = pageMetadata({
-  title: "Series — Swati Garg",
-  description: SERIES_DESCRIPTION,
-  path: "/series",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: "Series — Swati Garg",
+    description: await getSeriesDescription(),
+    path: "/series",
+  });
+}
 
 export default async function SeriesIndexPage() {
   const series = await getPublishedSeries();
+  const description = seriesDescription({ titles: series.map((item) => item.title) });
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-6 py-16">
-      <JsonLd data={collectionJsonLd({ name: "Series", description: SERIES_DESCRIPTION, path: "/series" })} />
+      <JsonLd data={collectionJsonLd({ name: "Series", description, path: "/series" })} />
       <Breadcrumbs items={[{ label: "Portfolio", href: "/portfolio" }, { label: "Series" }]} />
       <header className="flex flex-col gap-3">
         <h1 className="text-3xl font-medium text-foreground">Series</h1>

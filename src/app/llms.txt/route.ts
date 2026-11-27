@@ -1,5 +1,6 @@
 import { getLlmsContent, getPublishedFaqs } from "@/lib/queries";
 import { absoluteUrl, isIndexableDeployment } from "@/lib/seo";
+import { getSiteCopy } from "@/lib/site-copy";
 import { formatDimensions, getYear } from "@/lib/format";
 import { toMetaDescription } from "@/lib/meta-description";
 
@@ -9,23 +10,19 @@ export const dynamic = "force-dynamic";
 const oneLine = (value: string) => value.replace(/\s+/g, " ").trim();
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 const AVAILABILITY_TEXT: Record<string, string> = { available: "Available", sold: "Sold" };
-const joinList = (items: string[]) =>
-  items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 
 export async function GET() {
   // Matches the sitemap: preview and UAT deployments publish nothing.
   if (!isIndexableDeployment()) return new Response("Not found", { status: 404 });
 
-  const [{ series, exhibitions, artworks, statement }, faqs] = await Promise.all([
+  const [{ series, exhibitions, artworks, statement }, faqs, copy] = await Promise.all([
     getLlmsContent(),
     getPublishedFaqs(),
+    getSiteCopy(),
   ]);
 
-  // Built from published works so the summary never names a medium the portfolio doesn't show.
-  const mediumNames = [
-    ...new Set(artworks.map((item) => item.medium?.name).filter((name): name is string => Boolean(name))),
-  ].map((name) => name.toLowerCase());
-  const mediumSentence = mediumNames.length > 0 ? ` The portfolio presents ${joinList(mediumNames)} works.` : "";
+  // The summary matches the site description, which is built from the artist's profile and mediums with published work.
+  const summary = copy.description;
 
   // Spec format: one list item per work, with the facts and the artist's own description on the same line.
   const workLines = artworks.map((item) => {
@@ -63,7 +60,7 @@ export async function GET() {
   const lines = [
     "# Swati Garg",
     "",
-    `> Swati Garg is an artist.${mediumSentence}`,
+    `> ${summary}`,
     "",
     "## About the artist",
     "",

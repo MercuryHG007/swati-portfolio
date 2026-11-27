@@ -1,15 +1,19 @@
+import type { Metadata } from "next";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { JsonLd } from "@/components/json-ld";
 import { getPublishedFaqs } from "@/lib/queries";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
+import { getFaqDescription } from "@/lib/site-copy";
 
 export const revalidate = 60;
 
-export const metadata = pageMetadata({
-  title: "Frequently asked questions — Swati Garg",
-  description: "Common questions about Swati Garg, her paintings, enquiries and exhibitions.",
-  path: "/faq",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: "Frequently asked questions — Swati Garg",
+    description: await getFaqDescription(),
+    path: "/faq",
+  });
+}
 
 export default async function FaqPage() {
   const faqs = await getPublishedFaqs();

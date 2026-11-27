@@ -28,6 +28,16 @@ These aren't tied to a single service. They sign admin login sessions.
 Set them in `.env.local` for local work, and in Vercel for production. Use a different
 `NEXTAUTH_SECRET` for production than for local development.
 
+## Search indexing variables (Bing)
+
+| Variable | Production | UAT and local |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | `https://www.artistswatigarg.com`, with the `www` host you want indexed | blank. Previews then point canonicals at the production domain |
+| `INDEXNOW_KEY` | a random 8 to 128 character string of letters, digits and hyphens. Generate one with `openssl rand -hex 16` | blank. Only the live deployment submits URLs |
+
+`NEXT_PUBLIC_SITE_URL` pins the host used for canonical links, the sitemap and `robots.txt`. `INDEXNOW_KEY` is served
+publicly at `/indexnow-key.txt` on purpose, so Bing can verify the site owns the URLs it is told about.
+
 ## Production, UAT and local values
 
 Production and UAT run from the same code but must not share data or analytics. Set each value below

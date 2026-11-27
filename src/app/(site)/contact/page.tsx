@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { Button } from "@/components/button/button";
@@ -14,14 +15,16 @@ import { TURNSTILE_SITE_KEY, verifyTurnstile } from "@/lib/turnstile";
 import { getAbout, getArtworkBySlug } from "@/lib/queries";
 import { parseArtworkSlug, parseAttribution } from "@/lib/lead-source";
 import { pageMetadata } from "@/lib/seo";
-
+import { getContactDescription } from "@/lib/site-copy";
 export const revalidate = 60;
 
-export const metadata = pageMetadata({
-  title: "Contact — Swati Garg",
-  description: "Get in touch with Swati Garg about commissions, exhibitions or general enquiries.",
-  path: "/contact",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: "Contact — Swati Garg",
+    description: await getContactDescription(),
+    path: "/contact",
+  });
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

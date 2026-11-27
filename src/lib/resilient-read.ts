@@ -20,13 +20,18 @@ function isEmptyResult(value: unknown) {
 
 // A reachable database with no published artworks at all looks wiped. A single unpublished piece or an empty
 // list does not, so those are honoured and admin changes show straight away.
-async function databaseHasNoPublishedArtworks() {
+export async function databaseHasNoPublishedArtworks() {
   try {
     await connectToDatabase();
     return !(await Artwork.exists({ status: "published" }));
   } catch {
     return false;
   }
+}
+
+// True while a recent database failure has the breaker open, so reads are served from the snapshot.
+export function databaseBreakerOpen() {
+  return Date.now() < breakerOpenUntil;
 }
 
 export type Fallback<T> = { found: true; value: T } | { found: false };

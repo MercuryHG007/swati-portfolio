@@ -7,6 +7,7 @@ import { requireAdminSession } from "@/lib/require-admin";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Exhibition } from "@/models";
 import { isSlugTaken, prepareSlugChange, slugForTitle } from "@/lib/slug-history";
+import { notifyIndexNow } from "@/lib/indexnow";
 import { withAltFallback } from "@/lib/image-alt";
 import { destroyMediaAssets, removedPublicIds } from "@/lib/media-cleanup";
 import { readImageList } from "@/lib/form-fields";
@@ -16,6 +17,11 @@ function refresh(slug?: string, previousSlug?: string) {
   revalidatePath("/about");
   if (slug) revalidatePath(`/exhibitions/${slug}`);
   if (previousSlug) revalidatePath(`/exhibitions/${previousSlug}`);
+  notifyIndexNow(["/exhibitions", "/about", ...exhibitionPaths(slug, previousSlug)]);
+}
+
+function exhibitionPaths(...slugs: (string | undefined)[]) {
+  return slugs.filter((slug): slug is string => Boolean(slug)).map((slug) => `/exhibitions/${slug}`);
 }
 
 function readFields(formData: FormData) {
@@ -81,8 +87,8 @@ export async function deleteExhibition(formData: FormData) {
   if (!id) redirect("/admin/exhibitions");
 
   await connectToDatabase();
-  const deleted = await Exhibition.findByIdAndDelete(id).lean<{ images?: { publicId: string }[] }>();
+  const deleted = await Exhibition.findByIdAndDelete(id).lean<{ images?: { publicId: string }[]; slug?: string }>();
   await destroyMediaAssets((deleted?.images ?? []).map((img) => img.publicId));
-  refresh();
+  refresh(deleted?.slug);
   redirect("/admin/exhibitions?deleted=1");
 }

@@ -6,6 +6,7 @@ import { JsonLd } from "@/components/json-ld";
 import { getAbout, getFeaturedArtworks, getHomeSettings, getMediumsWithWork } from "@/lib/queries";
 import { r2MediaUrl } from "@/lib/media-storage";
 import { artistJsonLd, mediaImageUrl, pageMetadata, websiteJsonLd } from "@/lib/seo";
+import { toMetaDescription } from "@/lib/meta-description";
 import { getSiteCopy } from "@/lib/site-copy";
 
 export const revalidate = 60;
@@ -48,6 +49,9 @@ export default async function Home() {
     };
   });
 
+  // Trimmed bio, so visible text matches the artist JSON-LD on this page.
+  const intro = toMetaDescription(about?.bio, 320);
+
   return (
     <main className="flex flex-1 flex-col gap-16 py-10 md:gap-24 md:py-10">
       <JsonLd
@@ -63,6 +67,14 @@ export default async function Home() {
         <h1 className="max-w-4xl text-4xl font-medium leading-[1.02] tracking-tight text-foreground sm:text-5xl md:text-7xl">
           {settings.heroHeading}
         </h1>
+        {intro ? (
+          <p className="max-w-2xl text-lg leading-relaxed text-muted">
+            {intro}{" "}
+            <TextLink href="/about" variant="primary" className="text-sm text-foreground">
+              About the artist
+            </TextLink>
+          </p>
+        ) : null}
         <Button href="/portfolio" size="lg">
           {settings.heroButtonLabel}
         </Button>

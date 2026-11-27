@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Button } from "@/components/button/button";
 import { TextLink } from "@/components/text-link/text-link";
@@ -6,15 +7,17 @@ import { ExhibitionList } from "@/components/exhibition-list";
 import { getAbout, getPublishedExhibitions } from "@/lib/queries";
 import { JsonLd } from "@/components/json-ld";
 import { artistJsonLd, pageMetadata } from "@/lib/seo";
-import { taglineOf } from "@/lib/site-copy";
+import { getAboutDescription, taglineOf } from "@/lib/site-copy";
 
 export const revalidate = 60;
 
-export const metadata = pageMetadata({
-  title: "About — Swati Garg",
-  description: "About Swati Garg, a watercolor and mixed media artist: education, exhibitions and awards.",
-  path: "/about",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: "About — Swati Garg",
+    description: await getAboutDescription(),
+    path: "/about",
+  });
+}
 
 type CvEntry = { title: string; detail?: string; date?: string };
 

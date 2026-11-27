@@ -1,5 +1,24 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { artistJsonLd, collectionJsonLd, siteDescription } from "./seo";
+import { absoluteUrl, artistJsonLd, collectionJsonLd, getSiteUrl } from "./seo";
+
+describe("getSiteUrl", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("uses NEXT_PUBLIC_SITE_URL over the Vercel domains when it is set", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://www.example.com/");
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "example.vercel.app");
+    expect(getSiteUrl().origin).toBe("https://www.example.com");
+    expect(absoluteUrl("/artwork/a")).toBe("https://www.example.com/artwork/a");
+  });
+
+  it("falls back to the Vercel production domain when no site URL is pinned", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "www.example.com");
+    expect(getSiteUrl().origin).toBe("https://www.example.com");
+  });
+});
 
 describe("artistJsonLd", () => {
   afterEach(() => {
@@ -49,30 +68,5 @@ describe("collectionJsonLd", () => {
     expect(json).toMatchObject({ "@type": "CollectionPage", name: "Series", description: "Painting series." });
     expect(String(json.url)).toMatch(/\/series$/);
     expect(json.isPartOf).toEqual({ "@id": expect.stringMatching(/\/#website$/) });
-  });
-});
-
-describe("siteDescription", () => {
-  it("builds the description from tagline, mediums and location", () => {
-    expect(
-      siteDescription({
-        tagline: "Watercolor & mixed media artist",
-        location: "Ghaziabad, India",
-        mediums: ["Watercolor", "Acrylic", "Oil"],
-      })
-    ).toBe(
-      "Swati Garg, Watercolor & mixed media artist. Works in Watercolor, Acrylic and Oil. Based in Ghaziabad, India."
-    );
-  });
-
-  it("leaves out the parts that have no data", () => {
-    expect(siteDescription({ mediums: [] })).toBe("Swati Garg.");
-    expect(siteDescription({ tagline: "Painter", mediums: ["Pencil"] })).toBe("Swati Garg, Painter. Works in Pencil.");
-  });
-
-  it("stays within a search snippet", () => {
-    const mediums = Array.from({ length: 12 }, (_, index) => `Medium number ${index + 1}`);
-    const text = siteDescription({ tagline: "Watercolor & mixed media artist", location: "Ghaziabad, India", mediums });
-    expect(text.length).toBeLessThanOrEqual(155);
   });
 });
