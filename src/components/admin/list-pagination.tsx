@@ -23,11 +23,11 @@ export function ListPagination({
   if (total === 0) return null;
 
   return (
-    <nav aria-label="Pages" className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted">
-      <span>
-        {rangeStart}–{rangeEnd} of {total}
-      </span>
-      <div className="flex items-center gap-2">
+    <nav aria-label="Pages" className="flex flex-col gap-3 text-sm text-muted">
+      <div className="flex items-center justify-between gap-3">
+        <span>
+          {rangeStart}–{rangeEnd} of {total}
+        </span>
         <div className="w-36">
           <Select
             aria-label="Items per page"
@@ -41,22 +41,24 @@ export function ListPagination({
             ))}
           </Select>
         </div>
+      </div>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         <button
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className={`${secondaryButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}
+          className={`${secondaryButtonClass} justify-self-start disabled:cursor-not-allowed disabled:opacity-50`}
         >
           Previous
         </button>
-        <span className="whitespace-nowrap">
+        <span className="whitespace-nowrap text-center">
           Page {page} of {pageCount}
         </span>
         <button
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= pageCount}
-          className={`${secondaryButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}
+          className={`${secondaryButtonClass} justify-self-end disabled:cursor-not-allowed disabled:opacity-50`}
         >
           Next
         </button>
